@@ -4,6 +4,28 @@ const adminUrl = new URL(
   rawAdminUrl.endsWith("/") ? rawAdminUrl : `${rawAdminUrl}/`,
 ).href;
 
+const mongoUsername =
+  process.env.MONGO_USERNAME || process.env.MONGO_USER || "indiekit";
+const mongoPassword = process.env.MONGO_PASSWORD || "";
+const mongoHost = process.env.MONGO_HOST || "10.100.0.20";
+const mongoPort = process.env.MONGO_PORT || "27017";
+const mongoDatabase =
+  process.env.MONGO_DATABASE || process.env.MONGO_DB || "indiekit";
+const mongoAuthSource = process.env.MONGO_AUTH_SOURCE || "";
+const mongoCredentials =
+  mongoUsername && mongoPassword
+    ? `${encodeURIComponent(mongoUsername)}:${encodeURIComponent(
+        mongoPassword,
+      )}@`
+    : "";
+const mongoQuery =
+  mongoCredentials && mongoAuthSource
+    ? `?authSource=${encodeURIComponent(mongoAuthSource)}`
+    : "";
+const mongoUrl =
+  process.env.MONGO_URL ||
+  `mongodb://${mongoCredentials}${mongoHost}:${mongoPort}/${mongoDatabase}${mongoQuery}`;
+
 export default {
   debug: "indiekit:*",
   application: {
@@ -12,7 +34,7 @@ export default {
     authorizationEndpoint: new URL("auth", adminUrl).href,
     introspectionEndpoint: new URL("auth/introspect", adminUrl).href,
     tokenEndpoint: new URL("auth/token", adminUrl).href,
-    mongodbUrl: `mongodb://indiekit:${process.env.MONGO_PASSWORD}@10.100.0.20:27017/indiekit`,
+    mongodbUrl: mongoUrl,
   },
   publication: {
     me: "https://blog.giersig.eu",

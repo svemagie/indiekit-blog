@@ -1,0 +1,29 @@
+/*
+ * Embedded content
+ * ================
+ * https://html.spec.whatwg.org/#embedded-content
+ */
+
+svg {
+  display: block;
+}
+
+iframe,
+img,
+embed,
+object {
+  block-size: auto;
+  break-inside: avoid;
+  display: block;
+  max-inline-size: 100%;
+}
+
+@media (prefers-color-scheme: dark) {
+  :not([data-color-scheme]) img {
+    filter: brightness(0.8) contrast(1.2);
+  }
+}
+
+[data-color-scheme="dark"] img {
+  filter: brightness(0.8) contrast(1.2);
+}

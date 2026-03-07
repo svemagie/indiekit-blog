@@ -1,0 +1,60 @@
+{
+  "addAnother": {
+    "add": "再添加一个 %s",
+    "delete": "删除"
+  },
+  "backLink": {
+    "text": "返回"
+  },
+  "characterCount": {
+    "char": {
+      "one": "%s字符",
+      "other": "%s字符"
+    },
+    "word": {
+      "one": "%s字",
+      "other": "%s字"
+    }
+  },
+  "error": "错误",
+  "errorSummary": {
+    "title": "有一个问题"
+  },
+  "fileInput": {
+    "uploadFile": "上传文件…",
+    "uploadingFile": "正在上传文件"
+  },
+  "geoInput": {
+    "denied": "无法获得使用当前位置的权限",
+    "failed": "无法获取当前位置",
+    "getCurrentPosition": "使用当前位置"
+  },
+  "important": "重要",
+  "noValue": "未设置",
+  "optionalValue": "（可选）",
+  "pagination": {
+    "defaultType": "结果",
+    "item": "第 %s 页",
+    "next": "后 %s",
+    "page": "页",
+    "previous": "前 %s"
+  },
+  "skipLink": {
+    "text": "跳到内容"
+  },
+  "success": "成功",
+  "tagInput": {
+    "added": "{{tag}} {{name}} 已添加。",
+    "defaultTag": "标签",
+    "defaultTags": "标签",
+    "delete": "删除 {{tag}} {{name}}。",
+    "deleted": "{{tag}} {{name}} 已删除。",
+    "edit": "编辑 {{tag}}。",
+    "instruction": "{{list}} {{tags}}。使用向左和向右箭头键导航，使用 Enter 或 Tab 键创建，使用删除键删除 {{tags}}。",
+    "noneSelected": "未选择 {{tags}}。",
+    "placeholder": "添加 {{tags}}",
+    "selected": "{{tag}} {{name}} 已选择。按 Enter 键进行编辑，按 “删除” 进行删除。",
+    "updated": "{{tag}} 已更新至 {{name}}。"
+  },
+  "warning": "警告"
+}

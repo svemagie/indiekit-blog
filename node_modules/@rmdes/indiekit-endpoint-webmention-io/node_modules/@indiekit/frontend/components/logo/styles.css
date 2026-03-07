@@ -1,0 +1,24 @@
+.logo {
+  display: inline flow-root;
+  padding: var(--space-s);
+
+  & img {
+    block-size: var(--icon-size, 1em);
+    inline-size: var(--icon-size, 1em);
+    opacity: 0.25;
+  }
+
+  &:hover img {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :not([data-color-scheme]) .logo {
+    filter: invert(100%);
+  }
+}
+
+[data-color-scheme="dark"] .logo {
+  filter: invert(100%);
+}

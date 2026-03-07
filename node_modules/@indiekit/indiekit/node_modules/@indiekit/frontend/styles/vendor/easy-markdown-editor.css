@@ -1,0 +1,219 @@
+/* Positioning context for floating toolbar */
+textarea-field[editor] {
+  display: block;
+  position: relative;
+}
+
+.EasyMDEContainer {
+  --toolbar-button-size: 44px;
+  --toolbar-padding: var(--space-2xs);
+
+  background-color: var(--color-background);
+  border: var(--input-border-width) solid var(--color-outline-variant);
+  border-radius: var(--border-radius-small);
+}
+
+.editor-statusbar,
+.editor-toolbar {
+  --fieldset-flow-space: 0;
+
+  background-color: var(--color-offset);
+  border: var(--border-width-thickest) solid var(--color-background);
+  border-radius: var(--border-radius-small);
+  color: var(--color-on-offset);
+  display: flex;
+  flex-wrap: wrap;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.editor-statusbar {
+  font: var(--font-caption);
+  gap: var(--space-xs) var(--space-l);
+  justify-content: space-between;
+  margin-block-start: 0;
+  padding-block: var(--space-s);
+  padding-inline: var(--space-m);
+
+  & > * {
+    font-variant-numeric: tabular-nums;
+    min-inline-size: max-content;
+  }
+
+  & .autosave {
+    font-variant-numeric: normal;
+    text-align: end;
+  }
+
+  & .characters {
+    margin-inline-end: auto;
+  }
+
+  & .characters::after {
+    content: " characters";
+  }
+
+  & .words::after {
+    content: " words";
+  }
+
+  & .upload-image {
+    min-inline-size: 100%;
+  }
+}
+
+.editor-toolbar {
+  display: grid;
+  gap: var(--toolbar-padding);
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(var(--toolbar-button-size), 1fr)
+  );
+  padding: var(--toolbar-padding);
+  place-items: center;
+  position: relative;
+
+  &.fullscreen {
+    border: 0;
+    border-block-end: var(--border-hairline);
+    border-radius: 0;
+    inset-block-start: 0;
+    inset-inline: 0;
+    position: fixed;
+    z-index: 1010;
+  }
+
+  & button {
+    background: none;
+    block-size: var(--toolbar-button-size);
+    border-radius: var(--border-radius-small);
+    display: flex;
+    inline-size: 100%;
+    min-inline-size: var(--toolbar-button-size);
+    place-content: center;
+
+    & svg {
+      place-self: center;
+    }
+
+    &:hover,
+    &.active {
+      background: var(--color-offset-variant);
+    }
+
+    &:active {
+      background: var(--color-offset-variant-darker);
+    }
+  }
+
+  & .separator {
+    border-left: var(--border-width-thin) solid var(--color-outline);
+    color: transparent;
+    inline-size: 0;
+
+    @media (width < 48rem) {
+      display: none;
+    }
+  }
+
+  &.disabled-for-preview button:not(.no-disable) {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+}
+
+.editor-preview {
+  --fieldset-flow-space: 1em;
+
+  background-color: var(--color-offset);
+  font: var(--font-body);
+  margin-block-start: 0;
+  padding: var(--space-m);
+
+  &:not(.editor-preview-active):not(.editor-preview-active-side) {
+    display: none;
+  }
+}
+
+.editor-preview-full {
+  inset-block: 0;
+  inset-inline: 2px;
+  overflow: auto;
+  position: absolute;
+}
+
+.editor-preview-side {
+  border: var(--border-width-thickest) solid var(--color-background);
+  inline-size: 50%;
+  inset-block: 0;
+  inset-block-start: calc(
+    var(--toolbar-height) + calc(var(--toolbar-padding) * 2)
+  );
+  inset-inline-end: 0;
+  overflow: auto;
+  overflow-wrap: break-word;
+  padding: var(--space-l);
+  position: fixed;
+  z-index: 1009;
+}
+
+/* Floating selection toolbar */
+.editor-floating-toolbar {
+  background: var(--color-on-background, #1a1a2e);
+  border-radius: var(--border-radius-small, 6px);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 25%);
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  padding: 4px;
+  pointer-events: none;
+  position: absolute;
+  transform: translateY(4px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+  z-index: 1020;
+
+  &.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  /* Arrow pointing down */
+  &::after {
+    border-color: var(--color-on-background, #1a1a2e) transparent transparent;
+    border-style: solid;
+    border-width: 6px 6px 0;
+    content: "";
+    inset-block-start: 100%;
+    inset-inline-start: 16px;
+    position: absolute;
+  }
+}
+
+.floating-btn {
+  background: none;
+  block-size: 32px;
+  border: 0;
+  border-radius: 4px;
+  color: var(--color-background, #fff);
+  cursor: pointer;
+  display: flex;
+  inline-size: 32px;
+  place-content: center;
+  place-items: center;
+
+  & svg {
+    block-size: 14px;
+    inline-size: 14px;
+  }
+
+  &:hover {
+    background: rgb(255 255 255 / 15%);
+  }
+
+  &:active {
+    background: rgb(255 255 255 / 25%);
+  }
+}

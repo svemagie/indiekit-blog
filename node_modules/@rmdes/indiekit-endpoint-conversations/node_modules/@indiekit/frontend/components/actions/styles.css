@@ -1,0 +1,19 @@
+.actions {
+  --anchor-decoration-color: transparent;
+  --icon-margin: var(--space-2xs);
+  display: flex;
+  flex-wrap: wrap;
+  font: var(--font-body);
+  gap: var(--space-2xs) var(--space-l);
+}
+
+.actions__link {
+  margin: calc(var(--space-s) * -1);
+  padding: var(--space-s);
+  white-space: nowrap;
+}
+
+.actions__link--warning {
+  --anchor-color: var(--color-error);
+  --anchor-color-hover: var(--color-error-variant);
+}

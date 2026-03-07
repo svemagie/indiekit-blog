@@ -1,0 +1,45 @@
+{% from "../error-message/macro.njk" import errorMessage with context %}
+{% from "../field/macro.njk" import field with context %}
+{% from "../hint/macro.njk" import hint with context %}
+{% from "../label/macro.njk" import label with context %}
+{% set id = opts.id or opts.name | slugify({ decamelize: true }) %}
+{% set describedBy = opts.describedBy if opts.describedBy else "" %}
+{% call field({
+  element: opts.field.element,
+  classes: opts.field.classes,
+  attributes: opts.field.attributes
+}) -%}
+  {{- label({
+    for: id,
+    optional: opts.optional === true,
+    text: opts.label
+  }) if opts.label }}
+{% if opts.hint %}
+  {%- set hintId = id + "-hint" %}
+  {%- set describedBy = describedBy + " " + hintId if describedBy else hintId %}
+  {{- hint({
+    id: hintId,
+    text: opts.hint
+  }) }}
+{% endif %}
+{% if opts.errorMessage %}
+  {%- set errorId = id + "-error" %}
+  {%- set describedBy = describedBy + " " + errorId if describedBy else errorId %}
+  {{- errorMessage({
+    id: errorId,
+    classes: opts.errorMessage.classes,
+    attributes: opts.errorMessage.attributes,
+    text: opts.errorMessage.text,
+    visuallyHiddenText: opts.errorMessage.visuallyHiddenText
+  }) }}
+{% endif %}
+<input class="{{ classes("input", opts) }}" id="{{ id }}" name="{{ opts.name }}" type="{{ opts.type | default("text") }}"
+  {%- if opts.value %} value="{{ opts.value}}"{% endif %}
+  {%- if describedBy %} aria-describedby="{{ describedBy }}"{% endif %}
+  {%- if opts.autocomplete %} autocomplete="{{ opts.autocomplete}}"{% endif %}
+  {%- if opts.pattern %} pattern="{{ opts.pattern }}"{% endif %}
+  {%- if opts.inputmode %} inputmode="{{ opts.inputmode }}"{% endif %}
+  {%- if opts.required %} required{% endif %}
+  {{- attributes(opts.attributes) }}>
+  {{ caller() if caller }}
+{%- endcall %}

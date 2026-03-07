@@ -1,0 +1,63 @@
+add-another {
+  --counter-size: 1.66667em;
+  display: block;
+}
+
+.add-another__list {
+  counter-reset: items;
+}
+
+.add-another__list-item {
+  --label-font: var(--font-fieldset-label);
+  margin-block-end: var(--space-m);
+  padding-block: var(--space-xs);
+  padding-inline-start: calc(var(--counter-size) + var(--space-s));
+  position: relative;
+
+  & .fieldset--group {
+    margin-block-start: 0;
+  }
+
+  &::before {
+    align-items: center;
+    background-color: var(--color-offset);
+    block-size: var(--counter-size);
+    border-radius: var(--border-radius-small);
+    color: var(--color-on-offset);
+    content: counter(items);
+    counter-increment: items;
+    display: flex;
+    font: var(--font-label);
+    inline-size: var(--counter-size);
+    inset: 0;
+    justify-content: center;
+    position: absolute;
+  }
+
+  &:not([hidden]) {
+    display: flex;
+  }
+
+  & > :first-child {
+    flex: 1;
+  }
+}
+
+.add-another__add.button {
+  display: flex;
+  inline-size: calc(100% - var(--counter-size) - var(--space-s));
+  margin-block-start: 0;
+  margin-inline-start: calc(var(--counter-size) + var(--space-s));
+}
+
+.add-another__delete.button {
+  --button-padding: 0;
+  --icon-size: 0.875em;
+
+  block-size: var(--counter-size);
+  display: flex;
+  inline-size: var(--counter-size);
+  inset-block-start: var(--counter-size);
+  inset-inline-start: 0;
+  position: absolute;
+}

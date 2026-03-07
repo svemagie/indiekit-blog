@@ -1,0 +1,154 @@
+{% from "../logo/macro.njk" import logo with context %}
+{% set items = opts.navigation.items %}
+{% set renames = { "Reader": "Microsub" } %}
+<sidebar-nav class="{{ classes("sidebar", opts) }}" aria-label="Main">
+  <div class="sidebar__header">
+    <a class="sidebar__title u-url" href="{{ opts.url or "/" }}">
+      <span class="p-name">{{ opts.name }}</span>
+    </a>
+    <button class="sidebar__close" type="button" aria-label="Close menu">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+  <nav class="sidebar__nav">
+    {# --- PUBLISH --- #}
+    <div class="sidebar__group">
+      <span class="sidebar__group-label">Publish</span>
+      <ul class="sidebar__list" role="list">
+        {% for item in items %}{% if item.href and item.text %}
+          {% if "/posts" in item.href or "/files" in item.href %}
+          <li class="sidebar__list-item">
+            <a href="{{ item.href }}"{{- attributes(item.attributes) }}>
+              {{- item.text | safe -}}
+            </a>
+          </li>
+          {% endif %}
+        {% endif %}{% endfor %}
+      </ul>
+    </div>
+
+    {# --- READ & ENGAGE --- #}
+    <div class="sidebar__group">
+      <span class="sidebar__group-label">Read & Engage</span>
+      <ul class="sidebar__list" role="list">
+        {% for item in items %}{% if item.href and item.text %}
+          {% if "/microsub" in item.href or "/webmention" in item.href %}
+          <li class="sidebar__list-item">
+            <a href="{{ item.href }}"{{- attributes(item.attributes) }}>
+              {%- if renames[item.text] %}{{ renames[item.text] }}{% else %}{{ item.text | safe }}{% endif -%}
+            </a>
+          </li>
+          {% endif %}
+        {% endif %}{% endfor %}
+      </ul>
+    </div>
+
+    {# --- CURATE --- #}
+    <div class="sidebar__group">
+      <span class="sidebar__group-label">Curate</span>
+      <ul class="sidebar__list" role="list">
+        {% for item in items %}{% if item.href and item.text %}
+          {% if "/blogroll" in item.href or "/podroll" in item.href %}
+          <li class="sidebar__list-item">
+            <a href="{{ item.href }}"{{- attributes(item.attributes) }}>
+              {{- item.text | safe -}}
+            </a>
+          </li>
+          {% endif %}
+        {% endif %}{% endfor %}
+      </ul>
+    </div>
+
+    {# --- BUILD --- #}
+    <div class="sidebar__group">
+      <span class="sidebar__group-label">Build</span>
+      <ul class="sidebar__list" role="list">
+        {% for item in items %}{% if item.href and item.text %}
+          {% if "/homepage" in item.href or "/cv" in item.href %}
+          <li class="sidebar__list-item">
+            <a href="{{ item.href }}"{{- attributes(item.attributes) }}>
+              {{- item.text | safe -}}
+            </a>
+          </li>
+          {% endif %}
+        {% endif %}{% endfor %}
+      </ul>
+    </div>
+
+    {# --- ACTIVITY --- #}
+    <div class="sidebar__group">
+      <span class="sidebar__group-label">Activity</span>
+      <ul class="sidebar__list" role="list">
+        {% for item in items %}{% if item.href and item.text %}
+          {% if "/github" in item.href or "/lastfm" in item.href or "/funkwhale" in item.href or "/youtube" in item.href or "/rss" in item.href %}
+          <li class="sidebar__list-item">
+            <a href="{{ item.href }}"{{- attributes(item.attributes) }}>
+              {{- item.text | safe -}}
+            </a>
+          </li>
+          {% endif %}
+        {% endif %}{% endfor %}
+      </ul>
+    </div>
+
+    {# --- UNCATEGORIZED (catch-all for future plugins) --- #}
+    {% set knownPaths = ["/posts", "/files", "/microsub", "/webmention", "/blogroll", "/podroll", "/homepage", "/cv", "/github", "/lastfm", "/funkwhale", "/youtube", "/rss"] %}
+    {% set hasOther = [] %}
+    {% for item in items %}{% if item.href and item.text %}
+      {% set matched = false %}
+      {% for kp in knownPaths %}
+        {% if kp in item.href %}{% set matched = true %}{% endif %}
+      {% endfor %}
+      {% if not matched %}{% set hasOther = hasOther.concat([item]) %}{% endif %}
+    {% endif %}{% endfor %}
+    {% if hasOther | length > 0 %}
+    <div class="sidebar__group">
+      <span class="sidebar__group-label">Other</span>
+      <ul class="sidebar__list" role="list">
+        {% for item in hasOther %}
+        <li class="sidebar__list-item">
+          <a href="{{ item.href }}"{{- attributes(item.attributes) }}>
+            {{- item.text | safe -}}
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {# --- SYSTEM (hardcoded core pages) --- #}
+    <div class="sidebar__group">
+      <span class="sidebar__group-label">System</span>
+      <ul class="sidebar__list" role="list">
+        <li class="sidebar__list-item">
+          <a href="{{ opts.url }}/status">Status</a>
+        </li>
+        <li class="sidebar__list-item">
+          <a href="{{ opts.url }}/plugins">Plugins</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+  <div class="sidebar__footer">
+    {% if opts.secondaryNavigation.items.length > 0 %}
+    <ul class="sidebar__list sidebar__list--secondary" role="list">
+      {% for item in opts.secondaryNavigation.items %}{% if item.href and item.text %}
+      <li class="sidebar__list-item sidebar__list-item--inline">
+        <a href="{{ item.href }}"{{- attributes(item.attributes) }}>
+          {{- item.text | safe -}}
+        </a>
+      </li>
+      {% endif %}{% endfor %}
+    </ul>
+    {% endif %}
+    {{ logo({
+      classes: "h-x-app sidebar__logo",
+      href: "https://getindiekit.com",
+      src: opts.logoSrc,
+      alt: "Indiekit",
+      size: 14
+    }) }}
+  </div>
+</sidebar-nav>

@@ -1,0 +1,114 @@
+.s-flow {
+  --flow-line-measure: var(--line-measure);
+  --flow-inset: 1.25em;
+  --flow-space: 1em;
+
+  & * + * {
+    margin-block-start: var(--flow-space);
+  }
+
+  & > *:not(pre) {
+    max-inline-size: var(--flow-line-measure);
+    overflow-wrap: anywhere;
+  }
+
+  & svg {
+    vertical-align: text-bottom;
+  }
+
+  & h2:not([class]) {
+    font: var(--font-heading);
+  }
+
+  & h3:not([class]) {
+    color: var(--color-primary-variant);
+    font: var(--font-subhead);
+  }
+
+  & h4:not([class]) {
+    font: var(--font-label);
+  }
+
+  & *:has(+ h2, + h3, + h4):not([class]):not(:first-child) {
+    margin-block-start: calc(var(--flow-space) * 2);
+  }
+
+  & :is(h2, h3, h4):not([class]) + *:not([class]) {
+    margin-block-start: calc(var(--flow-space) * 0.5);
+  }
+
+  & hr {
+    border-block-start: var(--border-width-thickest) solid
+      var(--color-offset-variant);
+    inline-size: 100%;
+    margin: var(--flow-space) 0;
+    max-inline-size: 100%;
+  }
+
+  & figcaption {
+    color: var(--color-on-offset);
+  }
+
+  & blockquote {
+    border-inline-start: var(--border-width-thickest) solid var(--color-primary);
+    color: var(--color-on-offset);
+    padding-inline-start: var(--space-m);
+  }
+
+  & pre {
+    background-color: var(--color-offset);
+    border-inline-start: var(--border-width-thickest) solid var(--color-outline);
+    font: var(--font-code);
+    overflow: scroll;
+    padding-block: var(--space-s);
+    padding-inline-start: var(--space-m);
+    word-break: normal;
+  }
+
+  & code,
+  & samp {
+    border-radius: var(--border-radius-small);
+    font: var(--font-code);
+    font-variant-numeric: tabular-nums;
+  }
+
+  & *:is(p, li, dd) code {
+    font-size: 90%;
+  }
+
+  & table:not([class]) {
+    font: var(--font-caption);
+    inline-size: 100%;
+    max-inline-size: 100%;
+  }
+
+  & tbody tr:nth-child(odd) {
+    background-color: var(--color-offset);
+  }
+
+  & td,
+  & th {
+    padding-block: calc(var(--space-m) / 2);
+    padding-inline: var(--space-m);
+  }
+
+  & dt {
+    font-weight: 600;
+  }
+
+  & :is(li, dd) {
+    margin-block-start: 0;
+  }
+
+  & dd + dt {
+    margin-block-start: var(--flow-space);
+  }
+
+  & dd {
+    margin-inline-start: var(--flow-inset, 0);
+  }
+
+  & :is(ol, ul) {
+    padding-inline-start: var(--flow-inset, 0);
+  }
+}

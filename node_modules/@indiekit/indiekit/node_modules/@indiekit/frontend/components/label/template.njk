@@ -1,0 +1,4 @@
+<label class="{{ classes("label", opts) }}" for="{{ opts.for }}"
+  {{- attributes(opts.attributes) }}>
+  {{- opts.text }}{{ " " + __("optionalValue") if opts.optional -}}
+</label>

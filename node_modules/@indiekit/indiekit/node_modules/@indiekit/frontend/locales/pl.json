@@ -1,0 +1,60 @@
+{
+  "addAnother": {
+    "add": "Dodaj kolejne %s",
+    "delete": "Usuń"
+  },
+  "backLink": {
+    "text": "Wstecz"
+  },
+  "characterCount": {
+    "char": {
+      "one": "%s znak",
+      "other": "%s znaki"
+    },
+    "word": {
+      "one": "%s słowo",
+      "other": "%s słowa"
+    }
+  },
+  "error": "Błąd",
+  "errorSummary": {
+    "title": "Wystąpił problem"
+  },
+  "fileInput": {
+    "uploadFile": "Prześlij plik…",
+    "uploadingFile": "Wysyłanie pliku"
+  },
+  "geoInput": {
+    "denied": "Nie można uzyskać uprawnień do korzystania z bieżącej lokalizacji",
+    "failed": "Nie można uzyskać bieżącej lokalizacji",
+    "getCurrentPosition": "Użyj bieżącej lokalizacji"
+  },
+  "important": "Ważne",
+  "noValue": "Nie ustawiono",
+  "optionalValue": "(opcjonalnie)",
+  "pagination": {
+    "defaultType": "wyniki",
+    "item": "Strona %s",
+    "next": "Następne %s",
+    "page": "strona",
+    "previous": "Poprzednie %s"
+  },
+  "skipLink": {
+    "text": "Przejdź do treści"
+  },
+  "success": "Sukces",
+  "tagInput": {
+    "added": "{{tag}} {{name}} dodano.",
+    "defaultTag": "etykietka",
+    "defaultTags": "tagi",
+    "delete": "Usuń {{tag}} {{name}}.",
+    "deleted": "{{tag}} {{name}} usunięte.",
+    "edit": "Edytuj {{tag}}.",
+    "instruction": "{{list}} {{tags}}. Użyj klawiszy strzałek w lewo i w prawo, aby nawigować, wprowadź lub zakładaj, aby utworzyć, usuń, aby usunąć {{tags}}.",
+    "noneSelected": "Nie wybrano {{tags}}.",
+    "placeholder": "Dodaj {{tags}}",
+    "selected": "{{tag}} {{name}} zaznaczono. Naciśnij klawisz Enter, aby edytować, usuń, aby usunąć.",
+    "updated": "{{tag}} zaktualizowano do {{name}}."
+  },
+  "warning": "Uwaga"
+}

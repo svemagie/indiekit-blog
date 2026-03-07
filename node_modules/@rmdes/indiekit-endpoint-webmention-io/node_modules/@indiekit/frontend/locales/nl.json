@@ -1,0 +1,60 @@
+{
+  "addAnother": {
+    "add": "Nog een %s toevoegen",
+    "delete": "Verwijderen"
+  },
+  "backLink": {
+    "text": "Terug"
+  },
+  "characterCount": {
+    "char": {
+      "one": "%s karakter",
+      "other": "%s karakters"
+    },
+    "word": {
+      "one": "%s woord",
+      "other": "%s woorden"
+    }
+  },
+  "error": "Fout",
+  "errorSummary": {
+    "title": "Er is een Probleem"
+  },
+  "fileInput": {
+    "uploadFile": "Upload bestand…",
+    "uploadingFile": "Uploaden van bestanden"
+  },
+  "geoInput": {
+    "denied": "Kan geen toestemming krijgen om de huidige locatie te gebruiken",
+    "failed": "Kan de huidige locatie niet ophalen",
+    "getCurrentPosition": "Huidige locatie gebruiken"
+  },
+  "important": "Belangrijk",
+  "noValue": "Niet ingesteld",
+  "optionalValue": "(optioneel)",
+  "pagination": {
+    "defaultType": "resultaten",
+    "item": "Pagina %s",
+    "next": "Volgende %s",
+    "page": "pagina",
+    "previous": "Vorige %s"
+  },
+  "skipLink": {
+    "text": "Skip naar content"
+  },
+  "success": "Succes",
+  "tagInput": {
+    "added": "{{tag}} {{name}} toegevoegd.",
+    "defaultTag": "label",
+    "defaultTags": "labels",
+    "delete": "{{tag}} {{name}} verwijderen.",
+    "deleted": "{{tag}} {{name}} verwijderd.",
+    "edit": "{{tag}} bewerken.",
+    "instruction": "{{list}} {{tags}}. Gebruik de linker- en rechterpijltoetsen om te navigeren, enter of tab om te creëren, verwijder om {{tags}} te verwijderen.",
+    "noneSelected": "Geen {{tags}} geselecteerd.",
+    "placeholder": "{{tags}} toevoegen",
+    "selected": "{{tag}} {{name}} geselecteerd. Druk op enter om te bewerken, verwijder om te verwijderen.",
+    "updated": "{{tag}} geüpdatet naar {{name}}."
+  },
+  "warning": "Waarschuwing"
+}

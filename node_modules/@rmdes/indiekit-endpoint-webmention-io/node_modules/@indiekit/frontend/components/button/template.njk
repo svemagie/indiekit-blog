@@ -1,0 +1,17 @@
+{%- if opts.href %}
+<a class="{{ classes("button", opts) }}" href="{{ opts.href }}" role="button" draggable="false"{{ attributes(opts.attributes) }}>
+  {{- icon(opts.icon, opts.iconText) if opts.icon -}}
+  {{- opts.text | safe -}}
+</a>
+{%- else %}
+<button class="{{ classes("button", opts) }}"
+  {%- if opts.type %} type="{{ opts.type }}"{% endif %}
+  {%- if opts.name %} name="{{ opts.name }}"{% endif %}
+  {%- if opts.value %} value="{{ opts.value }}"{% endif %}
+  {%- if opts.disabled %} disabled aria-disabled="true"{% endif %}
+  {{- buttonAttributes | safe }}
+  {{- attributes(opts.attributes) }}>
+  {{- icon(opts.icon, opts.iconText) if opts.icon -}}
+  {{- opts.text | safe -}}
+</button>
+{%- endif %}

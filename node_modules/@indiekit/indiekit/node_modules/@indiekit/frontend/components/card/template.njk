@@ -1,0 +1,46 @@
+{% from "../badge/macro.njk" import badge with context %}
+{% from "../prose/macro.njk" import prose with context %}
+{% set srcOnError = opts.photo.srcOnError or "/assets/not-found.svg" %}
+{% set headingLevel = opts.headingLevel or 2 %}
+<article class="card">
+  {% if opts.photo %}
+  <div class="card__photo">
+    <img src="{{ opts.photo.url | imageUrl(application, width=240, height=240) }}" alt="{{ opts.photo.alt }}" width="240" height="240" decoding="async" loading="lazy" onerror="this.src='{{ srcOnError }}'"{{- attributes(opts.photo.attributes) }}>
+  </div>
+  {% endif %}
+  <div class="card__body">
+    {% if opts.title %}
+    <h{{ headingLevel }} class="card__title">
+      {% if opts.url and not opts.permalink %}
+      <a href="{{ opts.url }}" rel="bookmark">
+      {% endif %}
+        {{- icon(opts.icon) if opts.icon -}}
+        {{- opts.title | safe -}}
+      {% if opts.url and not opts.permalink %}
+      </a>
+      {% endif %}
+    </h{{ headingLevel }}>
+    {% endif %}
+    {{ prose({
+      classes: "card__meta",
+      text: opts.description.text,
+      html: opts.description.html
+    }) | indent(4) if opts.description }}
+    {% if opts.published or opts.badges %}
+    <footer class="card__footer">
+      {% for item in opts.badges %}
+      {{ badge(item) | indent(6) if item }}
+      {% endfor %}
+      {% if opts.permalink and not opts.url %}
+      <a href="{{ opts.permalink }}" rel="bookmark">
+      {% endif %}
+      <time datetime="{{ opts.published }}">
+        {{ opts.published | date("PPp", { locale: opts.locale, timeZone: application.timeZone }) }}
+      </time>
+      {% if opts.permalink and not opts.url %}
+      </a>
+      {% endif %}
+    </footer>
+    {% endif %}
+  </div>
+</article>

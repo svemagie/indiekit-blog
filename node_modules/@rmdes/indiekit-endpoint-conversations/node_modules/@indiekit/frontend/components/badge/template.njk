@@ -1,0 +1,7 @@
+<strong class="{{ classes("badge", opts) }}
+  {{- " badge--" + opts.size if opts.size }}
+  {{- " badge--" + opts.color if opts.color }}"
+  {{- attributes(opts.attributes) }}>
+  {{- icon(opts.icon) if opts.icon -}}
+  {{- opts.text | safe -}}
+</strong>

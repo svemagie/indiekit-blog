@@ -1,0 +1,46 @@
+.back-link {
+  --anchor-decoration-color: transparent;
+  --back-link-padding: var(--space-s);
+  --back-link-chevron-rotation: -45deg;
+  --back-link-chevron-size: 0.5em;
+  --back-link-chevron-thickness: var(--text-thickness);
+
+  display: inline-block;
+  font: var(--font-caption);
+  margin-inline: calc(var(--back-link-padding) * -1);
+  padding: var(--back-link-padding);
+  padding-block-start: var(--back-link-padding);
+  padding-inline-start: calc(var(--back-link-padding) * 2);
+  position: relative;
+
+  &::before {
+    block-size: var(--back-link-chevron-size);
+    border: 0 solid currentcolor;
+    border-block-start-width: var(--back-link-chevron-thickness);
+    border-inline-start-width: var(--back-link-chevron-thickness);
+    content: "";
+    display: block;
+    inline-size: var(--back-link-chevron-size);
+    inset-block-start: calc(
+      var(--back-link-padding) + var(--back-link-chevron-size)
+    );
+    inset-inline-start: var(--back-link-padding);
+    position: absolute;
+    transform: rotate(var(--back-link-chevron-rotation));
+  }
+
+  &:focus-visible::before,
+  &:hover::before {
+    --back-link-chevron-thickness: calc(var(--text-thickness) * 2);
+  }
+
+  &::after {
+    content: "";
+    inset: 0;
+    position: absolute;
+  }
+}
+
+:root[dir="rtl"] .back-link {
+  --back-link-chevron-rotation: 45deg;
+}

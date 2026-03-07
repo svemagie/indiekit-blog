@@ -1,0 +1,48 @@
+{% from "../error-message/macro.njk" import errorMessage with context %}
+{% from "../field/macro.njk" import field with context %}
+{% from "../hint/macro.njk" import hint with context %}
+{% from "../label/macro.njk" import label with context %}
+{% set id = opts.id or opts.name | slugify({ decamelize: true }) %}
+{% set describedBy = opts.describedBy if opts.describedBy else "" %}
+{% call field({
+  element: opts.field.element,
+  classes: opts.field.classes,
+  attributes: opts.field.attributes
+}) %}
+  {{- label({
+    for: id,
+    optional: opts.optional === true,
+    text: opts.label
+  }) if opts.label }}
+{% if opts.hint %}
+  {%- set hintId = id + "-hint" %}
+  {%- set describedBy = describedBy + " " + hintId if describedBy else hintId %}
+  {{- hint({
+    id: hintId,
+    text: opts.hint
+  }) }}
+{% endif %}
+{% if opts.errorMessage %}
+  {%- set errorId = id + "-error" %}
+  {%- set describedBy = describedBy + " " + errorId if describedBy else errorId %}
+  {{- errorMessage({
+    id: errorId,
+    classes: opts.errorMessage.classes,
+    attributes: opts.errorMessage.attributes,
+    text: opts.errorMessage.text,
+    visuallyHiddenText: opts.errorMessage.visuallyHiddenText
+  }) }}
+{% endif %}
+<select class="{{ classes("select", opts) }}" id="{{ id }}" name="{{ opts.name }}"
+  {%- if describedBy %} aria-describedby="{{ describedBy }}"{% endif %}
+  {{- attributes(opts.attributes) }}>
+  {% for item in opts.items %}{% if item %}
+  <option value="{{ item.value }}"
+    {{-" selected" if item.selected }}
+    {{-" disabled" if item.disabled }}
+    {{- attributes(opts.attributes) }}>
+    {{- item.text -}}
+  </option>
+  {% endif %}{% endfor %}
+</select>
+{%- endcall %}

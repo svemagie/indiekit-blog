@@ -1,0 +1,108 @@
+.button,
+::file-selector-button {
+  --anchor-color-hover: var(--button-color, var(--color-on-primary));
+  --anchor-decoration-line: none;
+  --icon-size: 1.5em;
+  align-items: center;
+  background-color: var(--button-background-color, var(--color-primary));
+  border: var(--input-border-width) solid transparent;
+  border-block-end-color: var(--color-shadow);
+  border-radius: var(--border-radius-small);
+  color: var(--button-color, var(--color-on-primary));
+  display: inline-block;
+  font: var(--button-font, var(--font-label));
+  font-weight: var(--button-font-weight, 500);
+  justify-content: center;
+  line-height: var(--line-height-loose);
+  margin-block-end: var(--input-border-width-focus-offset);
+  padding-block: calc(
+    calc(var(--button-padding, var(--space-m)) / 2) - var(--input-border-width)
+  );
+  padding-inline: var(--button-padding, var(--space-m));
+}
+
+.button--secondary,
+::file-selector-button {
+  --button-background-color: var(--color-offset-variant);
+  --button-background-hover-color: var(--color-offset-variant-darker);
+  --button-color: var(--color-on-offset);
+  --button-font-weight: normal;
+}
+
+/* Icon button with text moved to SVG title */
+.button:has(title) {
+  --icon-margin: 0;
+  font: unset;
+  padding: calc(var(--button-padding, var(--space-m)) / 2);
+}
+
+.button:disabled {
+  --button-background-color: var(--color-offset);
+  --button-color: var(--color-on-offset);
+  border-block-end-color: transparent;
+}
+
+.button:not(:disabled):hover,
+::file-selector-button:hover {
+  background-color: var(
+    --button-background-hover-color,
+    var(--color-primary-variant)
+  );
+}
+
+.button--secondary-on-offset {
+  --button-background-color: var(--color-background);
+  --button-background-hover-color: var(--color-offset-variant);
+  --button-color: var(--color-on-background);
+}
+
+.button--warning {
+  --button-color: var(--color-on-error);
+  background-color: var(--color-error);
+
+  &:not(:disabled):hover {
+    background-color: var(--color-error-variant);
+  }
+}
+
+.button--small {
+  --button-font: var(--font-caption);
+  --button-font-weight: 500;
+  --button-padding: var(--space-s);
+  --icon-size: 1em;
+}
+
+.button--block {
+  display: flex;
+  inline-size: 100%;
+}
+
+.button--inline {
+  --icon-margin: 0;
+  --icon-size: 1.5em;
+  display: inline flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  padding-block-end: calc(var(--space-m) * 0.75);
+  padding-block-start: var(--space-m);
+}
+
+.button-grid {
+  display: grid;
+  gap: var(--space-xs);
+  grid-template-columns: repeat(auto-fill, minmax(6em, 1fr));
+}
+
+.button-group {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-m);
+  text-align: center;
+
+  @media (width < 30rem) {
+    & > * {
+      inline-size: 100%;
+    }
+  }
+}

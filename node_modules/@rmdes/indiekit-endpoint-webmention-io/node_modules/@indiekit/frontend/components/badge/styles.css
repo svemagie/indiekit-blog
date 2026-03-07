@@ -1,0 +1,85 @@
+.badge {
+  /*
+   * 1. When a user customises their colours, often the background is removed.
+   * Adding an outline ensures that badge still keeps it’s meaning.
+   *
+   * @link https://accessibility.blog.gov.uk/2017/03/27/how-users-change-colours-on-websites/
+   *
+   * 2. Adjust baseline to visually center text within pill shape.
+   */
+  --icon-margin: var(--space-xs);
+  align-items: center;
+  background-color: var(--color-primary);
+  border-radius: var(--space-l);
+  color: var(--color-on-primary);
+  display: inline flow-root;
+  font: var(--font-caption);
+  font-weight: 500;
+  outline: var(--border-width-thick) solid transparent; /* 1 */
+  outline-offset: calc(var(--border-width-thick) * -1); /* 1 */
+  padding-block-end: calc(var(--space-2xs) - 0.0625rem); /* 2 */
+  padding-block-start: calc(var(--space-2xs) + 0.0625rem); /* 2 */
+  padding-inline: var(--space-m);
+  white-space: nowrap;
+
+  & + .badge {
+    margin-inline-start: var(--space-2xs);
+  }
+
+  & .icon {
+    inset-block-start: -0.125em;
+  }
+}
+
+.badge--small {
+  font-size: 0.75rem;
+  padding-block-end: calc(var(--space-2xs) / 2 - 0.0625rem);
+  padding-block-start: calc(var(--space-2xs) / 2 + 0.0625rem);
+  padding-inline: var(--space-s);
+}
+
+.badge--green {
+  background: var(--color-green50);
+  color: var(--color-green10);
+}
+
+.badge--purple {
+  background: var(--color-purple45);
+  color: var(--color-neutral99);
+}
+
+.badge--red {
+  background: var(--color-red45);
+  color: var(--color-neutral99);
+}
+
+.badge--yellow {
+  background: var(--color-yellow50);
+  color: var(--color-neutral10);
+}
+
+.badge--offset {
+  background: var(--color-offset);
+  box-shadow: inset 0 0 0 1px var(--color-shadow);
+  color: var(--color-on-offset);
+}
+
+.badge--offset-green {
+  background: var(--color-green90);
+  color: var(--color-green10);
+}
+
+.badge--offset-purple {
+  background: var(--color-purple90);
+  color: var(--color-purple10);
+}
+
+.badge--offset-red {
+  background: var(--color-red90);
+  color: var(--color-red10);
+}
+
+.badge--offset-yellow {
+  background: var(--color-yellow90);
+  color: var(--color-yellow10);
+}

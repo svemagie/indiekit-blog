@@ -1,0 +1,19 @@
+{% extends "document.njk" %}
+
+{% set appClasses = "app--minimalui" %}
+
+{% block header %}
+{{ header({
+  url: application.url,
+  name: application.name
+}) }}
+{% endblock %}
+
+{% block content %}
+{{ prose({ text: content | linkTo(uri) }) }}
+
+{{ details({
+  summary: "Status code: <code>" + status + "</code>",
+  text: "```\n" + stack + "\n```"
+}) }}
+{% endblock %}

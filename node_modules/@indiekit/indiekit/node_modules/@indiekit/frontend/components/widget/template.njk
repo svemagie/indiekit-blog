@@ -1,0 +1,20 @@
+{% from "../actions/macro.njk" import actions with context %}
+{% from "../prose/macro.njk" import prose with context %}
+{% set id = opts.id or opts.title | slugify %}
+<section class="{{ classes("widget", opts) }}"
+  {%- if opts.title %} aria-labelledby="{{ id }}"{% endif %}>
+  {% if opts.title or opts.actions %}
+  <header class="widget__header">
+    {% if opts.title %}
+    <h2 class="widget__title" id="{{ id }}">
+      <img class="icon icon--rounded" src="{{ opts.image }}" alt="" onerror="this.src='/assets/plug-in.svg'" height="20" width="20">
+      {{- opts.title | safe }}
+    </h2>
+    {% endif %}
+    {{ actions({ items: opts.actions }) | indent(4) if opts.actions.length }}
+  </header>
+  {% endif %}
+  <div class="widget__main">
+    {{ caller() if caller else prose(opts) }}
+  </div>
+</section>

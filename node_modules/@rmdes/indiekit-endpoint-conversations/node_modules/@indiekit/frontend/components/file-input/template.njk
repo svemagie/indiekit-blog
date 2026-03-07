@@ -1,0 +1,45 @@
+{% from "../button/macro.njk" import button with context %}
+{% from "../error-message/macro.njk" import errorMessage with context %}
+{% from "../input/macro.njk" import input with context %}
+{% from "../progress/macro.njk" import progress with context %}
+{% set id = opts.id or opts.name | slugify({ decamelize: true }) %}
+{% call input({
+  field: {
+    element: "file-input-field",
+    classes: opts.field.classes,
+    attributes: opts.field.attributes,
+    errorMessage: opts.errorMessage
+  },
+  classes: classes("file-input__path", opts),
+  id: id,
+  name: opts.name,
+  value: opts.value,
+  label: opts.label,
+  hint: opts.hint,
+  optional: opts.optional,
+  attributes: {
+    "aria-describedby": id + "-progress",
+    placeholder: opts.attributes.placeholder
+  },
+  errorMessage: opts.errorMessage
+}) %}
+  {{ progress({
+    classes: "file-input__progress",
+    id: id + "-progress",
+    label: __("fileInput.uploadingFile"),
+    attributes: {
+      hidden: true
+    }
+  }) }}
+  <template id="file-input-picker">
+    <div class="file-input__picker">
+      <label class="file-input__button button button--secondary" for="{{ id }}-file" role="button" tabindex="0">{{ __("fileInput.uploadFile") }}</label>
+      <input class="file-input__file" hidden id="{{ id }}-file" type="file"{% if opts.accept %} accept="{{ opts.accept }}"{% endif %}>
+    </div>
+  </template>
+  <template id="error-message">
+    {{ errorMessage({
+      id: id + "-error"
+    }) | indent(4) }}
+  </template>
+{% endcall %}

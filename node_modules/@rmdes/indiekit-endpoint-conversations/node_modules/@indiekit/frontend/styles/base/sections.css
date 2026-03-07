@@ -1,0 +1,59 @@
+/*
+ * Sections
+ * ========
+ * https://html.spec.whatwg.org/#sections
+ */
+
+html {
+  block-size: 100vh;
+}
+
+html:focus-within {
+  scroll-behavior: smooth;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-block-size: 100dvh;
+  overflow-x: hidden;
+}
+
+@media print {
+  nav {
+    display: none;
+  }
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+legend {
+  break-after: avoid;
+  font-size: inherit;
+  font-weight: inherit;
+  hanging-punctuation: first;
+  margin: 0;
+  text-rendering: optimizelegibility;
+}
+
+[tabindex="-1"]:focus:not(button),
+:focus-visible {
+  border-radius: var(--border-radius-small);
+  box-shadow: 0 0 0 var(--focus-width) var(--color-focus);
+  color: var(--color-on-focus);
+  outline: 0;
+  position: relative;
+}
+
+::selection {
+  background-color: var(--color-selection);
+}

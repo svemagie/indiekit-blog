@@ -1,0 +1,4 @@
+.label {
+  display: block;
+  font: var(--label-font, var(--font-label));
+}

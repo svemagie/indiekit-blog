@@ -1,0 +1,20 @@
+{% from "../actions/macro.njk" import actions with context %}
+{% set srcOnError = opts.photo.srcOnError or "/assets/not-found.svg" %}
+<header class="{{ classes("heading", opts) }}">
+  {% if opts.photo %}
+  <img class="heading__photo icon icon--rounded" src="{{ opts.photo.src }}" alt="{{ opts.photo.alt }}" onerror="this.src='{{ srcOnError }}'" height="80" width="80">
+  {% endif %}
+  <h1 class="heading__title">
+    {% if opts.parent.href %}
+    <a class="heading__parent" href="{{ opts.parent.href }}">
+      {{- opts.parent.text -}}
+    </a>
+    {% elif opts.parent %}
+    <span class="heading__parent">
+      {{- opts.parent.text -}}
+    </span>
+    {% endif %}
+    {{ opts.text }}
+  </h1>
+  {{ actions({ items: opts.actions }) | indent(2) if opts.actions.length }}
+</header>

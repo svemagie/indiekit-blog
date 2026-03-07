@@ -1,0 +1,55 @@
+/*
+ * Forms
+ * =====
+ * https://html.spec.whatwg.org/#forms
+ */
+
+/*
+ * 1. Reset rounded corners on Safari iOS
+ * 2. Reset font properties to `inherit`
+ * 3. Reset the margin in Firefox and Safari
+ * 4. Consistent outline offset in Safari
+ * 5. Show overflow in IE and Edge
+ */
+button,
+input,
+select,
+textarea {
+  border-radius: 0; /* 1 */
+  color: inherit;
+  font: inherit; /* 2 */
+  margin: 0; /* 3 */
+  outline-offset: 0; /* 4 */
+  overflow: visible; /* 5 */
+}
+
+textarea {
+  display: flow-root;
+}
+
+button,
+[type="button"],
+[type="submit"] {
+  border: 0;
+  padding: 0;
+}
+
+[placeholder]:focus::placeholder {
+  color: transparent;
+}
+
+/*
+  * http://thatemil.com/blog/2015/01/03/reset-your-fieldset/
+  * 1. Reset minimum width based on content inside fieldset
+  *    in WebKit, Blink and Firefox
+  */
+fieldset {
+  border: 0;
+  margin: 0;
+  min-inline-size: 0; /* 1 */
+  padding: 0;
+}
+
+legend {
+  padding: 0;
+}

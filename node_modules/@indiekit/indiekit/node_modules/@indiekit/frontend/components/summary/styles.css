@@ -1,0 +1,60 @@
+.summary__row {
+  align-items: baseline;
+  border-block-end: var(--border-width-thin) solid var(--color-outline);
+  column-gap: var(--space-s);
+  display: flex;
+  flex-wrap: wrap;
+  padding-block: var(--space-s);
+  row-gap: var(--space-xs);
+}
+
+.summary__key {
+  align-self: start;
+  flex-basis: 12rem;
+  flex-grow: 1;
+  font: var(--font-label);
+  line-height: var(--line-height-loose);
+  overflow-wrap: anywhere;
+}
+
+.summary__value {
+  --card-photo-size: 3.75em;
+  --card-space: var(--space-xs);
+  --card-title-font: var(--font-label);
+  --flow-inset: 0;
+  --flow-space: var(--space-s);
+  flex-basis: 0;
+  flex-grow: 999;
+  font: var(--font-body);
+  min-inline-size: 55%;
+
+  & a,
+  & code {
+    overflow-wrap: anywhere;
+  }
+
+  & small code {
+    margin-inline-start: var(--space-2xs);
+  }
+
+  & pre {
+    background: none;
+    border-inline-start: none;
+    padding: 0;
+  }
+}
+
+.summary__actions {
+  flex-basis: 0;
+  flex-grow: 999;
+  min-inline-size: max-content;
+
+  & .actions {
+    justify-content: end;
+  }
+}
+
+.summary__note {
+  color: var(--color-on-offset);
+  font: var(--font-caption);
+}

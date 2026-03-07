@@ -1,0 +1,111 @@
+.input {
+  appearance: none;
+  background-color: var(--color-background);
+  border: var(--input-border-width) solid var(--color-outline-variant);
+  border-radius: var(--border-radius-small);
+  font: var(--font-body);
+  inline-size: 100%;
+  margin-block-end: var(--input-border-width-focus-offset);
+  padding-block: calc(var(--space-s) / 2);
+  padding-inline: var(--space-s);
+
+  &:focus-visible {
+    border-color: var(--color-on-background);
+    border-width: var(--input-border-width-focus);
+    inset-block-start: calc(var(--input-border-width-focus-offset) * -1);
+    margin-block-end: calc(var(--input-border-width-focus-offset) * -1);
+    padding-inline-start: calc(
+      var(--space-s) - var(--input-border-width-focus-offset)
+    );
+  }
+
+  &:disabled,
+  &[readonly] {
+    background: var(--color-offset);
+    border-color: var(--color-offset);
+    color: var(--color-on-offset);
+  }
+
+  &[type="color"] {
+    max-inline-size: 6ch;
+    min-block-size: 3rem;
+    padding: var(--border-width-thickest);
+
+    &::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+
+    &:focus-visible {
+      min-block-size: calc(3rem + var(--input-border-width-focus-offset));
+    }
+  }
+
+  &[type="datetime-local"],
+  &[type="date"],
+  &[type="time"] {
+    min-block-size: 2.5rem;
+    padding-block: 0.25rem;
+
+    &::-webkit-datetime-edit-year-field:focus,
+    &::-webkit-datetime-edit-month-field:focus,
+    &::-webkit-datetime-edit-day-field:focus,
+    &::-webkit-datetime-edit-hour-field:focus,
+    &::-webkit-datetime-edit-minute-field:focus {
+      background-color: var(--color-selection);
+    }
+  }
+
+  &[type="file"] {
+    background: none;
+    border: 0;
+    padding: 0;
+
+    &:focus-visible {
+      inset-block-start: 0;
+      margin-block-end: var(--input-border-width-focus-offset);
+    }
+  }
+}
+
+.input--error {
+  border-color: var(--color-error);
+}
+
+.input--width-25 {
+  max-inline-size: 44ch;
+}
+
+.input--width-10 {
+  max-inline-size: 19ch;
+}
+
+.input--width-5 {
+  max-inline-size: 11ch;
+}
+
+.input--width-2 {
+  max-inline-size: 6ch;
+}
+
+/* Show an input and button combined */
+.input-button-group {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+
+  & *:first-child {
+    flex: 999 1 auto;
+    inline-size: auto;
+    max-inline-size: 100%;
+  }
+
+  & .input:focus-visible {
+    margin-inline-end: calc(var(--input-border-width-focus) * -1);
+  }
+
+  & *:last-child {
+    flex: 1 1 auto;
+    margin-block-start: 0;
+  }
+}

@@ -1,0 +1,104 @@
+radios-field {
+  --radio-size: 1.7778em;
+  --radio-space: var(--space-s);
+  --radio-padding-inline: calc(var(--radio-size) + var(--radio-space));
+  display: block;
+}
+
+.radios {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (width >= 30rem) {
+  .radios--inline {
+    column-gap: var(--space-xl);
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
+.radios__item {
+  margin-block: var(--space-2xs);
+  padding-block: var(--space-xs);
+  padding-inline-start: var(--radio-padding-inline);
+  position: relative;
+}
+
+.radios__input {
+  appearance: none;
+  background: var(--color-background);
+  block-size: var(--radio-size);
+  border: var(--input-border-width) solid var(--color-outline-variant);
+  border-radius: 50%;
+  cursor: pointer;
+  inline-size: var(--radio-size);
+  inset: 0;
+  position: absolute;
+  z-index: 1;
+
+  &:checked {
+    background: var(--color-background)
+      url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4"/></svg>')
+      center center / 100% auto no-repeat;
+
+    @media (prefers-color-scheme: dark) {
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle fill="white" cx="8" cy="8" r="4"/></svg>');
+    }
+  }
+
+  &:focus-visible {
+    border-color: var(--color-on-background);
+    border-width: var(--input-border-width-focus);
+  }
+
+  &:disabled,
+  &[readonly] {
+    background-color: var(--color-offset);
+    border-color: var(--color-offset);
+    color: var(--color-on-offset);
+    cursor: default;
+
+    & + .radios__label {
+      cursor: default;
+    }
+  }
+}
+
+.radios__label.label {
+  --label-font: var(--font-fieldset-label);
+  cursor: pointer;
+  margin: 0;
+  touch-action: manipulation; /* remove 300ms pause on mobile */
+}
+
+.radios__hint {
+  inline-size: 100%;
+}
+
+/* Divider (‘or’) */
+.radios__divider {
+  inline-size: var(--radio-size);
+  text-align: center;
+}
+
+/* Conditonal reveals */
+.radios__conditional {
+  --label-font: var(--font-fieldset-label);
+  padding-inline-start: var(--radio-padding-inline);
+  position: relative;
+
+  &::before {
+    border-inline-start: var(--input-border-width) solid
+      var(--color-outline-variant);
+    content: "";
+    display: block;
+    inset-block: 0;
+    inset-inline-start: calc(var(--radio-size) / 2);
+    position: absolute;
+  }
+
+  .js-enabled &.radios__conditional--hidden {
+    display: none;
+  }
+}

@@ -1,0 +1,22 @@
+{% extends "default.njk" %}
+
+{% block main %}
+<form class="main__container -!-container" method="post" novalidate>
+{{ errorSummary({
+  errorList: errorList(errors)
+}) if errors }}
+
+{% block form %}
+{% call fieldset({
+  attributes: { "aria-label": title } if minimalui,
+  legend: heading({ text: title, parent: parent }) if not minimalui
+}) -%}
+  {% block fieldset %}
+  {% endblock %}
+{% endcall %}
+{% endblock %}
+
+{% block buttons %}
+{% endblock %}
+</form>
+{% endblock %}

@@ -1,0 +1,27 @@
+.fieldset {
+  font: var(--font-body);
+  max-inline-size: var(--line-measure);
+
+  & * + * {
+    margin-block-start: var(--fieldset-flow-space, var(--space-xl));
+  }
+}
+
+.fieldset__legend {
+  font: var(--font-label);
+}
+
+.fieldset--group {
+  --fieldset-flow-space: var(--space-l);
+  --label-font: var(--font-fieldset-label);
+  box-shadow: inset var(--border-width-thickest) 0 var(--color-offset-variant);
+  margin-block-start: calc(var(--fieldset-flow-space) + var(--space-xs));
+  padding-inline-start: var(--space-m);
+
+  & .fieldset__legend {
+    background-color: var(--color-background);
+    margin-block-end: calc(var(--space-s) * -1);
+    margin-inline-start: calc(var(--space-m) * -1);
+    padding-block-end: var(--space-xs);
+  }
+}

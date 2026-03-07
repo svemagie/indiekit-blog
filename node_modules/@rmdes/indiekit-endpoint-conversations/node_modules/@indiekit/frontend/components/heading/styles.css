@@ -1,0 +1,24 @@
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-s);
+}
+
+.heading__photo {
+  --icon-size: 5em;
+  --icon-margin: 0;
+}
+
+.heading__title {
+  font: var(--font-title);
+  max-inline-size: var(--line-measure);
+  text-wrap: balance;
+}
+
+.heading__parent {
+  --anchor-decoration-color: var(--color-shadow);
+  color: var(--color-on-offset);
+  display: block;
+  font: var(--font-body);
+  max-inline-size: max-content;
+}

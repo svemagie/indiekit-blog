@@ -30,32 +30,29 @@ export default {
   },
   publication: {
     me: "https://blog.giersig.eu",
-    postTypes: [
-      {
-        type: "article",
+    postTypes: {
+      article: {
         name: "Artikel",
         post: {
           path: "src/posts/{slug}.md",
           url: "https://blog.giersig.eu/posts/{slug}/",
         },
       },
-      {
-        type: "note",
+      note: {
         name: "Notiz",
         post: {
           path: "src/notes/{slug}.md",
           url: "https://blog.giersig.eu/notes/{slug}/",
         },
       },
-      {
-        type: "bookmark",
+      bookmark: {
         name: "Lesezeichen",
         post: {
           path: "src/bookmarks/{slug}.md",
           url: "https://blog.giersig.eu/bookmarks/{slug}/",
         },
       },
-    ],
+    },
   },
 
   plugins: [

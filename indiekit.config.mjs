@@ -63,9 +63,7 @@ export default {
 
   plugins: [
     "@indiekit/store-github",
-    "@rmdes/indiekit-endpoint-posts",
-    "@rmdes/indiekit-endpoint-auth",
-    "@rmdes/indiekit-endpoint-share",
+    "@rmdes/indiekit-preset-eleventy",
     "@rmdes/indiekit-endpoint-github",
     "@rmdes/indiekit-endpoint-webmention-io",
     "@rmdes/indiekit-endpoint-conversations",
@@ -77,7 +75,7 @@ export default {
     branch: "main",
     token: githubContentToken,
   },
-  "@rmdes/indiekit-endpoint-posts": {
+  "@indiekit/endpoint-posts": {
     mountPath: "/blog",
   },
   "@rmdes/indiekit-endpoint-github": {
@@ -87,8 +85,8 @@ export default {
   "@rmdes/indiekit-endpoint-webmention-io": {
     token: process.env.WEBMENTION_IO_TOKEN,
   },
-    "@rmdes/indiekit-endpoint-conversations": {
-    enabled: true,
+  "@rmdes/indiekit-endpoint-conversations": {
+    mountPath: "/conversations",
   },
   "@rmdes/indiekit-endpoint-activitypub": {
     username: "blog.giersig.eu",

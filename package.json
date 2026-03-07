@@ -4,20 +4,29 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "postinstall": "node scripts/patch-lightningcss.mjs",
+    "serve": "node node_modules/@indiekit/indiekit/bin/cli.js serve --config indiekit.config.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "overrides": {
+    "@indiekit/endpoint-auth": "npm:@rmdes/indiekit-endpoint-auth@^1.0.0-beta.25",
+    "@indiekit/endpoint-files": "npm:@rmdes/indiekit-endpoint-files@^1.0.0",
+    "@indiekit/endpoint-micropub": "npm:@rmdes/indiekit-endpoint-micropub@^1.0.0-beta.29",
+    "@indiekit/endpoint-posts": "npm:@rmdes/indiekit-endpoint-posts@^1.0.0-beta.25",
+    "@indiekit/endpoint-share": "npm:@rmdes/indiekit-endpoint-share@^1.0.2",
+    "@indiekit/endpoint-syndicate": "npm:@rmdes/indiekit-endpoint-syndicate@^1.0.0-beta.34",
+    "@indiekit/frontend": "npm:@rmdes/indiekit-frontend@^1.0.0-beta.27"
+  },
   "dependencies": {
     "@indiekit/indiekit": "^1.0.0-beta.25",
     "@indiekit/store-github": "^1.0.0-beta.25",
-    "@rmdes/indiekit-endpoint-auth": "^1.0.0-beta.25",
     "@rmdes/indiekit-endpoint-conversations": "^2.1.6",
     "@rmdes/indiekit-endpoint-github": "^1.2.3",
-    "@rmdes/indiekit-endpoint-posts": "^1.0.0-beta.25",
-    "@rmdes/indiekit-endpoint-share": "^1.0.2",
+    "@rmdes/indiekit-preset-eleventy": "^1.0.0-beta.33",
     "@rmdes/indiekit-endpoint-webmention-io": "^1.0.7",
     "dotenv": "^17.3.1",
     "node-gyp": "^12.2.0"

@@ -1,15 +1,18 @@
+const rawAdminUrl =
+  process.env.INDIEKIT_ADMIN_URL || "https://blog.giersig.eu/admin/";
+const adminUrl = new URL(
+  rawAdminUrl.endsWith("/") ? rawAdminUrl : `${rawAdminUrl}/`,
+).href;
+
 export default {
-  url: "https://blog.giersig.eu",
   debug: "indiekit:*",
   application: {
     name: "Indiekit",
-    admin: {
-      username: "admin@blog.giersig.eu",
-      password: process.env.INDIEKIT_PASSWORD
-    }
-  },
-  "@indiekit/endpoint-auth": {
-    publicUrl: "https://blog.giersig.eu"
+    url: adminUrl,
+    authorizationEndpoint: new URL("auth", adminUrl).href,
+    introspectionEndpoint: new URL("auth/introspect", adminUrl).href,
+    tokenEndpoint: new URL("auth/token", adminUrl).href,
+    mongodbUrl: `mongodb://indiekit:${process.env.MONGO_PASSWORD}@10.100.0.20:27017/indiekit`,
   },
   publication: {
     me: "https://blog.giersig.eu",
@@ -41,8 +44,6 @@ export default {
     ],
   },
 
-  secret: process.env.SECRET,
-  mongodbUrl: `mongodb://indiekit:${process.env.MONGO_PASSWORD}@10.100.0.20:27017/indiekit`,
   plugins: [
     "@indiekit/store-github",
     "@rmdes/indiekit-endpoint-posts",

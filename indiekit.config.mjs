@@ -41,7 +41,7 @@ export default {
         name: "Artikel",
         post: {
           path: "content/articles/{slug}.md",
-          url: "https://blog.giersig.eu/posts/{slug}/",
+          url: "https://blog.giersig.eu/articles/{slug}/",
         },
       },
       note: {
@@ -56,6 +56,41 @@ export default {
         post: {
           path: "content/bookmarks/{slug}.md",
           url: "https://blog.giersig.eu/bookmarks/{slug}/",
+        },
+      },
+      like: {
+        name: "Like",
+        post: {
+          path: "content/likes/{slug}.md",
+          url: "https://blog.giersig.eu/likes/{slug}/",
+        },
+      },
+      photo: {
+        name: "Foto",
+        post: {
+          path: "content/photos/{slug}.md",
+          url: "https://blog.giersig.eu/photos/{slug}/",
+        },
+      },
+      reply: {
+        name: "Antwort",
+        post: {
+          path: "content/replies/{slug}.md",
+          url: "https://blog.giersig.eu/replies/{slug}/",
+        },
+      },
+      repost: {
+        name: "Repost",
+        post: {
+          path: "content/reposts/{slug}.md",
+          url: "https://blog.giersig.eu/reposts/{slug}/",
+        },
+      },
+      page: {
+        name: "Seite",
+        post: {
+          path: "content/pages/{slug}.md",
+          url: "https://blog.giersig.eu/{slug}/",
         },
       },
     },

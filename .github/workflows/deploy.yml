@@ -33,10 +33,7 @@ jobs:
           key: ${{ secrets.FREEBSD_DEPLOY_SSH_KEY }}
           port: 222
           script: |
-            cd /usr/local/bastille/jails/node/root/usr/local/indiekit
-            git pull origin main
-            npm ci
-            sudo bastille cmd node "service indiekit restart"
+            sudo bastille cmd node "su -l indiekit -c 'git pull origin main && npm ci && sudo service indiekit restart'"
 
       # Optionally reload nginx on web jail
       # - name: Reload nginx
@@ -48,12 +45,3 @@ jobs:
       #     port: ${{ secrets.FREEBSD_WEB_PORT }}
       #     script: sudo service nginx reload
 
-# Set up the following GitHub secrets:
-# - FREEBSD_NODE_HOST: 10.100.0.20
-# - FREEBSD_NODE_USER: indiekit
-# - FREEBSD_NODE_SSH_KEY: (private key)
-# - FREEBSD_NODE_PORT: 22
-# - FREEBSD_WEB_HOST: 10.100.0.10 (optional)
-# - FREEBSD_WEB_USER: (optional)
-# - FREEBSD_WEB_SSH_KEY: (optional)
-# - FREEBSD_WEB_PORT: 22 (optional)

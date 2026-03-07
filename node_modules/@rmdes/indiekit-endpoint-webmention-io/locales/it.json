@@ -1,0 +1,75 @@
+{
+  "webmention-io": {
+    "title": "Webmentions",
+    "webmentions": {
+      "none": "Nessun webmention trovato. Prova ad eseguire una sincronizzazione."
+    },
+    "mention": {
+      "bookmark-of": "ha aggiunto ai segnalibri %s",
+      "in-reply-to": "ha risposto a %s",
+      "like-of": "piace %s",
+      "mention-of": "ha menzionato %s",
+      "repost-of": "ha ricondiviso %s",
+      "rsvp": "ha risposto a %s"
+    },
+    "sync": {
+      "now": "Sincronizza ora",
+      "full": "Risincronizzazione completa",
+      "lastSync": "Ultima sincronizzazione",
+      "never": "Mai sincronizzato",
+      "synced": "Sincronizzazione completata",
+      "added": "nuove menzioni aggiunte",
+      "inProgress": "Sincronizzazione in corso…"
+    },
+    "filter": {
+      "all": "Tutti",
+      "visible": "Visibile",
+      "hidden": "Nascosto",
+      "show": "Mostra",
+      "type": "Tipo",
+      "likes": "Mi piace",
+      "replies": "Risposte",
+      "reposts": "Ricondivisioni",
+      "mentions": "Menzioni"
+    },
+    "actions": {
+      "hide": "Nascondi",
+      "unhide": "Mostra",
+      "block": "Blocca",
+      "hidden": "Nascosto",
+      "reasonManual": "manuale",
+      "reasonBlocklist": "lista blocco",
+      "reasonPrivacy": "privacy"
+    },
+    "blocklist": {
+      "title": "Lista blocco Webmention",
+      "description": "I domini bloccati non appariranno nei webmention. Le menzioni esistenti da domini bloccati vengono nascoste automaticamente.",
+      "add": "Blocca un dominio",
+      "domainLabel": "Dominio",
+      "domainPlaceholder": "spam.example.com",
+      "reasonLabel": "Motivo",
+      "reasonSpam": "Spam",
+      "reasonManual": "Manuale",
+      "blockButton": "Blocca dominio",
+      "unblock": "Sblocca",
+      "empty": "Nessun dominio bloccato.",
+      "privacy": {
+        "title": "Rimozione per privacy",
+        "description": "Elimina definitivamente tutti i webmention da un dominio e blocca quelli futuri. Utilizzare per richieste GDPR o di rimozione personale.",
+        "domainLabel": "Dominio da rimuovere",
+        "removeButton": "Rimuovi e blocca"
+      },
+      "blocked": "Dominio bloccato",
+      "unblocked": "Dominio sbloccato",
+      "removed": "menzioni eliminate definitivamente",
+      "unhidden": "menzioni ripristinate",
+      "mentionsHidden": "menzioni nascoste",
+      "blockedAt": "Bloccato"
+    },
+    "counts": {
+      "total": "totale",
+      "hidden": "nascosto",
+      "visible": "visibile"
+    }
+  }
+}

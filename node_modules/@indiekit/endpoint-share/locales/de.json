@@ -1,0 +1,30 @@
+{
+  "share": {
+    "bookmark-of": {
+      "label": "URL"
+    },
+    "content": {
+      "label": "Inhalt"
+    },
+    "error": {
+      "bookmark-of": {
+        "empty": "Geben Sie eine Webadresse wie %s"
+      },
+      "name": {
+        "empty": "Titel eingeben"
+      }
+    },
+    "name": {
+      "label": "Titel"
+    },
+    "submit": "Veröffentlichen",
+    "title": "Teilen"
+  },
+  "status": {
+    "bookmarklet": {
+      "guidance": "Ziehen Sie diesen Link in Ihre Lesezeichenleiste: %s",
+      "label": "Seite teilen",
+      "title": "Teilen bookmarklet"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{% from "../button/macro.njk" import button with context %}
+{% from "../error-message/macro.njk" import errorMessage with context %}
+{% from "../input/macro.njk" import input with context %}
+{% set id = opts.id or opts.name | slugify({ decamelize: true }) %}
+{% call input({
+  field: {
+    element: "geo-input-field",
+    classes: opts.field.classes,
+    attributes: {
+      "i18n-denied": __("geoInput.denied"),
+      "i18n-failed": __("geoInput.failed")
+    }
+  },
+  classes: classes("geo-input", opts),
+  id: id,
+  name: opts.name,
+  value: opts.value,
+  label: opts.label,
+  hint: opts.hint,
+  optional: opts.optional,
+  errorMessage: opts.errorMessage
+}) %}
+  <template id="geo-input-button">
+    {{ button({
+      classes: "geo-input__button button--secondary",
+      type: "button",
+      text: __("geoInput.getCurrentPosition")
+    }) | indent(4) }}
+  </template>
+  <template id="error-message">
+    {{ errorMessage({
+      id: id + "-error"
+    }) | indent(4) }}
+  </template>
+{% endcall %}

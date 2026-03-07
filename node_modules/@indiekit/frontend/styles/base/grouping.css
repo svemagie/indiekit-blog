@@ -1,0 +1,43 @@
+/*
+ * Grouping content
+ * ================
+ * https://html.spec.whatwg.org/#grouping-content
+ */
+
+address {
+  font-style: normal;
+}
+
+hr {
+  border: 0;
+}
+
+pre {
+  hanging-punctuation: none;
+  hyphens: none;
+  margin: 0;
+  tab-size: 2;
+  white-space: pre;
+}
+
+address,
+figure,
+blockquote,
+dl,
+p,
+ol,
+ul {
+  hanging-punctuation: first;
+  margin: 0;
+  orphans: 2;
+  widows: 2;
+}
+
+[role="list"] {
+  list-style: none;
+  padding: 0;
+}
+
+dd {
+  margin-inline-start: 0;
+}

@@ -1,0 +1,93 @@
+.card {
+  --anchor-decoration-color: transparent;
+  --icon-margin: var(--space-2xs);
+  --icon-size: 1.125em;
+  background-color: var(--color-offset);
+  border-radius: var(--border-radius-small);
+  display: flex;
+  flex-grow: 1;
+  flex-wrap: wrap;
+  overflow: hidden;
+  position: relative;
+
+  &:hover {
+    background-color: var(--color-offset-variant);
+  }
+
+  &:has(:focus-visible) {
+    overflow: visible;
+  }
+}
+
+.card__photo {
+  flex-basis: var(--card-photo-size, 8em);
+  flex-grow: 1;
+
+  & :is(img, video) {
+    aspect-ratio: 1;
+    background-color: var(--color-offset);
+    block-size: 100%;
+    display: block;
+    inline-size: 100%;
+    object-fit: cover;
+  }
+}
+
+.card__body {
+  display: flex;
+  flex-basis: 0;
+  flex-direction: column;
+  flex-grow: 999;
+  gap: calc(var(--card-space, var(--space-s)) / 2);
+  margin-block-start: 0;
+  min-inline-size: 67%;
+  padding: var(--card-space, var(--space-s));
+
+  a:not([rel="bookmark"]) {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+.card__title {
+  font: var(--card-title-font, var(--font-subhead));
+}
+
+.card a[rel="bookmark"] {
+  &::before {
+    border-radius: var(--border-radius-small);
+    content: "";
+    display: block;
+    inset: 0;
+    position: absolute;
+  }
+
+  &:focus-visible {
+    box-shadow: none;
+    position: initial;
+  }
+
+  &:focus-visible::before {
+    box-shadow: 0 0 0 var(--focus-width) var(--color-focus);
+  }
+}
+
+.card__meta {
+  --flow-line-measure: 40rem;
+  --prose-font: var(--font-caption);
+  margin-block-start: 0;
+}
+
+.card__footer {
+  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-block-start: auto;
+  padding-block-start: var(--space-2xs);
+
+  & time {
+    color: var(--color-on-offset);
+    font-size: var(--font-size-xs);
+  }
+}

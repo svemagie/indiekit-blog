@@ -1,0 +1,49 @@
+notification-banner {
+  --anchor-color: currentcolor;
+  --anchor-color-hover: currentcolor;
+  background-color: var(--color-notification);
+  color: var(--color-on-notification);
+  display: block;
+
+  &[type="error"] {
+    background-color: var(--color-error);
+    color: var(--color-on-error);
+  }
+
+  &[type="success"] {
+    background-color: var(--color-success);
+    color: var(--color-on-success);
+  }
+
+  &:focus-visible {
+    background-color: var(--color-focus);
+    border-radius: 0;
+    box-shadow: none;
+    color: var(--color-on-focus);
+  }
+}
+
+.notification-banner__container {
+  padding-block: var(--space-m);
+}
+
+.notification-banner__title {
+  font: var(--font-subhead);
+}
+
+.notification-banner__text {
+  --prose-font: var(--font-caption);
+}
+
+.notification-banner__details {
+  --color-outline: currentcolor;
+  --font-label: var(--font-caption);
+  --prose-font: var(--font-code);
+  background-color: var(--color-shadow);
+  margin-block-start: var(--space-s);
+
+  & .details__main {
+    overflow: scroll;
+    white-space: nowrap;
+  }
+}

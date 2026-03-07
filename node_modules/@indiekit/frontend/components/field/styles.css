@@ -1,0 +1,14 @@
+.field {
+  & > * {
+    --fieldset-flow-space: var(--space-xs);
+  }
+
+  &:has(.input[type="hidden"]) {
+    display: none;
+  }
+}
+
+.field--error {
+  border-inline-start: var(--color-error) solid var(--border-width-thickest);
+  padding-inline-start: var(--space-m);
+}

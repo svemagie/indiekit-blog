@@ -1,0 +1,75 @@
+{
+  "webmention-io": {
+    "title": "Webmentions",
+    "webmentions": {
+      "none": "Geen webmentions gevonden. Probeer een synchronisatie uit te voeren."
+    },
+    "mention": {
+      "bookmark-of": "heeft %s gebookmarkt",
+      "in-reply-to": "heeft gereageerd op %s",
+      "like-of": "vindt %s leuk",
+      "mention-of": "heeft %s genoemd",
+      "repost-of": "heeft %s gedeeld",
+      "rsvp": "heeft gereageerd op %s"
+    },
+    "sync": {
+      "now": "Nu synchroniseren",
+      "full": "Volledige hersynchronisatie",
+      "lastSync": "Laatst gesynchroniseerd",
+      "never": "Nooit gesynchroniseerd",
+      "synced": "Synchronisatie voltooid",
+      "added": "nieuwe vermeldingen toegevoegd",
+      "inProgress": "Synchronisatie bezig…"
+    },
+    "filter": {
+      "all": "Alle",
+      "visible": "Zichtbaar",
+      "hidden": "Verborgen",
+      "show": "Toon",
+      "type": "Type",
+      "likes": "Vind-ik-leuks",
+      "replies": "Reacties",
+      "reposts": "Delingen",
+      "mentions": "Vermeldingen"
+    },
+    "actions": {
+      "hide": "Verbergen",
+      "unhide": "Tonen",
+      "block": "Blokkeren",
+      "hidden": "Verborgen",
+      "reasonManual": "handmatig",
+      "reasonBlocklist": "blokkeerlijst",
+      "reasonPrivacy": "privacy"
+    },
+    "blocklist": {
+      "title": "Webmention blokkeerlijst",
+      "description": "Geblokkeerde domeinen worden niet weergegeven in webmentions. Bestaande vermeldingen van geblokkeerde domeinen worden automatisch verborgen.",
+      "add": "Blokkeer een domein",
+      "domainLabel": "Domein",
+      "domainPlaceholder": "spam.example.com",
+      "reasonLabel": "Reden",
+      "reasonSpam": "Spam",
+      "reasonManual": "Handmatig",
+      "blockButton": "Blokkeer domein",
+      "unblock": "Deblokkeren",
+      "empty": "Geen domeinen geblokkeerd.",
+      "privacy": {
+        "title": "Privacyverwijdering",
+        "description": "Verwijder permanent alle webmentions van een domein en blokkeer toekomstige. Gebruik voor GDPR of persoonlijke verwijderingsverzoeken.",
+        "domainLabel": "Te verwijderen domein",
+        "removeButton": "Verwijderen & blokkeren"
+      },
+      "blocked": "Domein geblokkeerd",
+      "unblocked": "Domein gedeblokkeerd",
+      "removed": "vermeldingen permanent verwijderd",
+      "unhidden": "vermeldingen hersteld",
+      "mentionsHidden": "vermeldingen verborgen",
+      "blockedAt": "Geblokkeerd"
+    },
+    "counts": {
+      "total": "totaal",
+      "hidden": "verborgen",
+      "visible": "zichtbaar"
+    }
+  }
+}

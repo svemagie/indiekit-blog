@@ -1,0 +1,60 @@
+{
+  "addAnother": {
+    "add": "Tambahkan %s lainnya",
+    "delete": "Hapus"
+  },
+  "backLink": {
+    "text": "Kembali"
+  },
+  "characterCount": {
+    "char": {
+      "one": "%s huruf",
+      "other": "%s huruf"
+    },
+    "word": {
+      "one": "%s kata",
+      "other": "%s kata"
+    }
+  },
+  "error": "Kesalahan",
+  "errorSummary": {
+    "title": "Ada masalah"
+  },
+  "fileInput": {
+    "uploadFile": "Unggah berkas…",
+    "uploadingFile": "Mengunggah berkas"
+  },
+  "geoInput": {
+    "denied": "Tidak dapat memperoleh izin untuk menggunakan lokasi saat ini",
+    "failed": "Tidak bisa mendapatkan lokasi saat ini",
+    "getCurrentPosition": "Gunakan lokasi saat ini"
+  },
+  "important": "Penting",
+  "noValue": "Tidak ada",
+  "optionalValue": "(opsional)",
+  "pagination": {
+    "defaultType": "hasil",
+    "item": "Halaman %s",
+    "next": "Berikutnya %s",
+    "page": "halaman",
+    "previous": "Sebelumnya %s"
+  },
+  "skipLink": {
+    "text": "Langsung ke konten"
+  },
+  "success": "Keberhasilan",
+  "tagInput": {
+    "added": "{{tag}} {{name}} ditambahkan.",
+    "defaultTag": "menandai",
+    "defaultTags": "tag",
+    "delete": "Hapus {{tag}} {{name}}.",
+    "deleted": "{{tag}} {{name}} dihapus.",
+    "edit": "Edit {{tag}}.",
+    "instruction": "{{list}} {{tags}}. Gunakan tombol panah kiri dan kanan untuk menavigasi, masuk atau tab untuk membuat, menghapus untuk menghapus {{tags}}.",
+    "noneSelected": "Tidak ada {{tags}} yang dipilih.",
+    "placeholder": "Tambahkan {{tags}}",
+    "selected": "{{tag}} {{name}} dipilih. Tekan enter untuk mengedit, hapus untuk menghapus.",
+    "updated": "{{tag}} diperbarui ke {{name}}."
+  },
+  "warning": "Peringatan"
+}

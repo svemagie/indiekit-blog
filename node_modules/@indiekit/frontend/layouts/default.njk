@@ -1,0 +1,122 @@
+{% from "add-another/macro.njk" import addAnother with context %}
+{% from "avatar/macro.njk" import avatar with context %}
+{% from "back-link/macro.njk" import backLink with context %}
+{% from "badge/macro.njk" import badge with context %}
+{% from "bookmarklet/macro.njk" import bookmarklet with context %}
+{% from "button/macro.njk" import button with context %}
+{% from "card/macro.njk" import card with context %}
+{% from "card-grid/macro.njk" import cardGrid with context %}
+{% from "checkboxes/macro.njk" import checkboxes with context %}
+{% from "details/macro.njk" import details with context %}
+{% from "error-summary/macro.njk" import errorSummary with context %}
+{% from "fieldset/macro.njk" import fieldset with context %}
+{% from "file-input/macro.njk" import fileInput with context %}
+{% from "footer/macro.njk" import footer with context %}
+{% from "geo-input/macro.njk" import geoInput with context %}
+{% from "header/macro.njk" import header with context %}
+{% from "heading/macro.njk" import heading with context %}
+{% from "hint/macro.njk" import hint with context %}
+{% from "input/macro.njk" import input with context %}
+{% from "mention/macro.njk" import mention with context %}
+{% from "notification-banner/macro.njk" import notificationBanner with context %}
+{% from "pagination/macro.njk" import pagination with context %}
+{% from "prose/macro.njk" import prose with context %}
+{% from "radios/macro.njk" import radios with context %}
+{% from "section/macro.njk" import section with context %}
+{% from "select/macro.njk" import select with context %}
+{% from "skip-link/macro.njk" import skipLink with context %}
+{% from "summary/macro.njk" import summary with context %}
+{% from "tag/macro.njk" import tag with context %}
+{% from "tag-input/macro.njk" import tagInput with context %}
+{% from "textarea/macro.njk" import textarea with context %}
+{% from "user/macro.njk" import user with context %}
+{% from "warning-text/macro.njk" import warningText with context %}
+{% from "widget/macro.njk" import widget with context %}
+{% set appClasses = "app" + (" " + appClasses if appClasses) + (" app--minimalui" if minimalui) %}
+{% set mainClasses = "main" + (" " + mainClasses if mainClasses) %}
+<!DOCTYPE html>
+<html lang="{{ application.localeUsed }}" dir="ltr"{% if application.themeColorScheme !== "automatic" %} data-color-scheme="{{ application.themeColorScheme }}"{% endif %}>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  <title>{% if errors %}Error: {% endif %}{{ title + " - " if title }}{{ application.name }}</title>
+
+  <script async defer src="{{ application.url }}{{ application.jsPath }}" type="module"></script>
+
+  <style>
+    :root {
+      {{- themeCustomProperties(application.themeColor) | indent(6) }}
+    }
+  </style>
+
+  <link rel="stylesheet" href="{{ application.url }}{{ application.cssPath }}">
+  <link rel="alternate" href="{{ application.url }}/feed.jf2" type="application/jf2feed+json" title="JF2 Feed">
+  <link rel="apple-touch-icon" href="{{ application.url }}{{ assetPath | default("/assets") }}/app-icon-180-any.png">
+  <link rel="icon" href="{{ application.url }}{{ assetPath | default("/assets") }}/icon.svg">
+  <link rel="manifest" href="{{ application.url }}/app.webmanifest">
+
+  <meta name="supported-color-schemes" content="light dark">
+  <meta name="theme-color" content="{{ themeColor(application.themeColor) }}" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="{{ themeColor(application.themeColor, "dark") }}" media="(prefers-color-scheme: dark)">
+</head>
+
+<body class="{{ appClasses }}">
+  <script>document.body.classList.add("js-enabled")</script>
+{{ skipLink() }}
+
+{% block header %}
+{{ header({
+  url: application.url,
+  name: application.name,
+  navigation: {
+    items: application.navigation | rejectattr("secondary"),
+    label: "site"
+  }
+}) if not minimalui }}
+{% endblock %}
+
+<main class="{{ mainClasses }}" id="main">
+{{- notificationBanner({
+  type: ("error" if error) or ("success" if success),
+  text: (error if error) or (success if success) or notice,
+  details: error.stack if error
+}) if error or success or notice }}
+{{- backLink({
+  href: back.href or back,
+  text: back.text
+}) if back }}
+{% block main %}
+{% endblock %}
+</main>
+
+{% block footer %}
+{{ footer({
+  logo: {
+    classes: "h-x-app",
+    href: "https://getindiekit.com",
+    src: application.url + assetPath | default("/assets") + "/icon.svg",
+    alt: "Indiekit"
+  },
+  navigation: {
+    items: application.navigation | selectattr("secondary"),
+    label: "secondary"
+  }
+}) if not minimalui }}
+{% endblock %}
+<script type="module">
+  if (navigator.serviceWorker) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/serviceworker.js", {
+        scope: '/'
+      });
+      if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          command: "trimCaches"
+        });
+      }
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+.app {
+  background-color: var(--color-offset);
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-family-sans);
+  justify-content: space-between;
+}
+
+.app--minimalui {
+  --container-max-inline-size: 36rem;
+
+  & .header,
+  & .footer {
+    border: 0;
+  }
+
+  & .header__container,
+  & .footer__container {
+    align-items: center;
+    inline-size: auto;
+  }
+
+  & .main {
+    @media (width > 36rem) {
+      border-radius: var(--border-radius-large);
+      flex: 0;
+      margin: auto;
+      overflow: hidden;
+    }
+  }
+
+  & .main__container {
+    padding-block: var(--space-l);
+  }
+
+  & .notification {
+    border-start-end-radius: var(--border-radius-large);
+    border-start-start-radius: var(--border-radius-large);
+  }
+
+  & .notification + .main__container {
+    border-start-end-radius: 0;
+    border-start-start-radius: 0;
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "webmention-io": {
+    "title": "Webmentions",
+    "webmentions": {
+      "none": "Није пронађен ниједан webmention. Покушајте да покренете синхронизацију."
+    },
+    "mention": {
+      "bookmark-of": "обележио %s",
+      "in-reply-to": "одговорио на %s",
+      "like-of": "свиђа му се %s",
+      "mention-of": "поменуо %s",
+      "repost-of": "поделио %s",
+      "rsvp": "одговорио на %s"
+    },
+    "sync": {
+      "now": "Синхронизуј сада",
+      "full": "Потпуна ресинхронизација",
+      "lastSync": "Последња синхронизација",
+      "never": "Никада није синхронизовано",
+      "synced": "Синхронизација завршена",
+      "added": "нових помена додато",
+      "inProgress": "Синхронизација у току…"
+    },
+    "filter": {
+      "all": "Све",
+      "visible": "Видљиво",
+      "hidden": "Сакривено",
+      "show": "Прикажи",
+      "type": "Тип",
+      "likes": "Свиђања",
+      "replies": "Одговори",
+      "reposts": "Дељења",
+      "mentions": "Помени"
+    },
+    "actions": {
+      "hide": "Сакриј",
+      "unhide": "Прикажи",
+      "block": "Блокирај",
+      "hidden": "Сакривено",
+      "reasonManual": "ручно",
+      "reasonBlocklist": "листа блокирања",
+      "reasonPrivacy": "приватност"
+    },
+    "blocklist": {
+      "title": "Листа блокирања Webmention",
+      "description": "Блокирани домени неће се појављивати у webmention-има. Постојећи помени са блокираних домена аутоматски се сакривају.",
+      "add": "Блокирај домен",
+      "domainLabel": "Домен",
+      "domainPlaceholder": "spam.example.com",
+      "reasonLabel": "Разлог",
+      "reasonSpam": "Спам",
+      "reasonManual": "Ручно",
+      "blockButton": "Блокирај домен",
+      "unblock": "Деблокирај",
+      "empty": "Нема блокираних домена.",
+      "privacy": {
+        "title": "Уклањање приватности",
+        "description": "Трајно избришите све webmention-е са домена и блокирајте будуће. Користите за GDPR или личне захтеве за уклањање.",
+        "domainLabel": "Домен за уклањање",
+        "removeButton": "Уклони и блокирај"
+      },
+      "blocked": "Домен блокиран",
+      "unblocked": "Домен деблокиран",
+      "removed": "помена трајно избрисано",
+      "unhidden": "помена обновљено",
+      "mentionsHidden": "помена сакривено",
+      "blockedAt": "Блокирано"
+    },
+    "counts": {
+      "total": "укупно",
+      "hidden": "сакривено",
+      "visible": "видљиво"
+    }
+  }
+}

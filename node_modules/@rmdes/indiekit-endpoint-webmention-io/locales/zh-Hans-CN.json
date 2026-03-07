@@ -1,0 +1,75 @@
+{
+  "webmention-io": {
+    "title": "Webmentions",
+    "webmentions": {
+      "none": "未找到 webmention。请尝试运行同步。"
+    },
+    "mention": {
+      "bookmark-of": "收藏了 %s",
+      "in-reply-to": "回复了 %s",
+      "like-of": "喜欢了 %s",
+      "mention-of": "提到了 %s",
+      "repost-of": "转发了 %s",
+      "rsvp": "回应了 %s"
+    },
+    "sync": {
+      "now": "立即同步",
+      "full": "完全重新同步",
+      "lastSync": "上次同步",
+      "never": "从未同步",
+      "synced": "同步完成",
+      "added": "添加了新提及",
+      "inProgress": "同步中…"
+    },
+    "filter": {
+      "all": "全部",
+      "visible": "可见",
+      "hidden": "隐藏",
+      "show": "显示",
+      "type": "类型",
+      "likes": "喜欢",
+      "replies": "回复",
+      "reposts": "转发",
+      "mentions": "提及"
+    },
+    "actions": {
+      "hide": "隐藏",
+      "unhide": "取消隐藏",
+      "block": "屏蔽",
+      "hidden": "已隐藏",
+      "reasonManual": "手动",
+      "reasonBlocklist": "屏蔽列表",
+      "reasonPrivacy": "隐私"
+    },
+    "blocklist": {
+      "title": "Webmention 屏蔽列表",
+      "description": "已屏蔽的域名不会出现在 webmention 中。来自已屏蔽域名的现有提及将自动隐藏。",
+      "add": "屏蔽域名",
+      "domainLabel": "域名",
+      "domainPlaceholder": "spam.example.com",
+      "reasonLabel": "原因",
+      "reasonSpam": "垃圾信息",
+      "reasonManual": "手动",
+      "blockButton": "屏蔽域名",
+      "unblock": "取消屏蔽",
+      "empty": "没有屏蔽的域名。",
+      "privacy": {
+        "title": "隐私删除",
+        "description": "永久删除来自某个域名的所有 webmention 并屏蔽未来的提及。用于 GDPR 或个人删除请求。",
+        "domainLabel": "要删除的域名",
+        "removeButton": "删除并屏蔽"
+      },
+      "blocked": "域名已屏蔽",
+      "unblocked": "域名已取消屏蔽",
+      "removed": "提及已永久删除",
+      "unhidden": "提及已恢复",
+      "mentionsHidden": "提及已隐藏",
+      "blockedAt": "屏蔽时间"
+    },
+    "counts": {
+      "total": "总计",
+      "hidden": "已隐藏",
+      "visible": "可见"
+    }
+  }
+}

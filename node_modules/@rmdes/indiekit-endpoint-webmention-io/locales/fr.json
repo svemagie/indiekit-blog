@@ -1,0 +1,75 @@
+{
+  "webmention-io": {
+    "title": "Webmentions",
+    "webmentions": {
+      "none": "Aucun webmention trouvé. Essayez d'exécuter une synchronisation."
+    },
+    "mention": {
+      "bookmark-of": "a mis %s en signet",
+      "in-reply-to": "a répondu à %s",
+      "like-of": "a aimé %s",
+      "mention-of": "a mentionné %s",
+      "repost-of": "a repartagé %s",
+      "rsvp": "a répondu à %s"
+    },
+    "sync": {
+      "now": "Synchroniser maintenant",
+      "full": "Resynchronisation complète",
+      "lastSync": "Dernière synchronisation",
+      "never": "Jamais synchronisé",
+      "synced": "Synchronisation terminée",
+      "added": "nouvelles mentions ajoutées",
+      "inProgress": "Synchronisation en cours…"
+    },
+    "filter": {
+      "all": "Tous",
+      "visible": "Visible",
+      "hidden": "Masqué",
+      "show": "Afficher",
+      "type": "Type",
+      "likes": "J'aime",
+      "replies": "Réponses",
+      "reposts": "Repartages",
+      "mentions": "Mentions"
+    },
+    "actions": {
+      "hide": "Masquer",
+      "unhide": "Afficher",
+      "block": "Bloquer",
+      "hidden": "Masqué",
+      "reasonManual": "manuel",
+      "reasonBlocklist": "liste de blocage",
+      "reasonPrivacy": "confidentialité"
+    },
+    "blocklist": {
+      "title": "Liste de blocage Webmention",
+      "description": "Les domaines bloqués n'apparaîtront pas dans les webmentions. Les mentions existantes de domaines bloqués sont automatiquement masquées.",
+      "add": "Bloquer un domaine",
+      "domainLabel": "Domaine",
+      "domainPlaceholder": "spam.example.com",
+      "reasonLabel": "Raison",
+      "reasonSpam": "Spam",
+      "reasonManual": "Manuel",
+      "blockButton": "Bloquer le domaine",
+      "unblock": "Débloquer",
+      "empty": "Aucun domaine bloqué.",
+      "privacy": {
+        "title": "Suppression pour confidentialité",
+        "description": "Supprimer définitivement tous les webmentions d'un domaine et bloquer les futurs. À utiliser pour les demandes GDPR ou de suppression personnelle.",
+        "domainLabel": "Domaine à supprimer",
+        "removeButton": "Supprimer et bloquer"
+      },
+      "blocked": "Domaine bloqué",
+      "unblocked": "Domaine débloqué",
+      "removed": "mentions supprimées définitivement",
+      "unhidden": "mentions restaurées",
+      "mentionsHidden": "mentions masquées",
+      "blockedAt": "Bloqué"
+    },
+    "counts": {
+      "total": "total",
+      "hidden": "masqué",
+      "visible": "visible"
+    }
+  }
+}

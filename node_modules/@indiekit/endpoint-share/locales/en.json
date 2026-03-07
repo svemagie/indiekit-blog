@@ -1,0 +1,30 @@
+{
+  "share": {
+    "error": {
+      "bookmark-of": {
+        "empty": "Enter a web address like %s"
+      },
+      "name": {
+        "empty": "Enter a title"
+      }
+    },
+    "title": "Share",
+    "bookmark-of": {
+      "label": "URL"
+    },
+    "name": {
+      "label": "Title"
+    },
+    "content": {
+      "label": "Content"
+    },
+    "submit": "Publish"
+  },
+  "status": {
+    "bookmarklet": {
+      "title": "Share bookmarklet",
+      "label": "Share page",
+      "guidance": "Drag this link to your bookmarks bar: %s"
+    }
+  }
+}

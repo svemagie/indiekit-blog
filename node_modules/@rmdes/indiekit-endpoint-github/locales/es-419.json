@@ -1,0 +1,38 @@
+{
+  "github": {
+    "title": "GitHub",
+    "activity": "Actividad en GitHub",
+    "viewAll": "Ver todo",
+    "error": {
+      "noUsername": "No hay un nombre de usuario de GitHub configurado. Agrega un nombre de usuario en tu configuración de Indiekit."
+    },
+    "featured": {
+      "title": "Proyectos destacados",
+      "none": "No hay repositorios destacados configurados"
+    },
+    "commits": {
+      "title": "Commits recientes",
+      "none": "No hay commits recientes"
+    },
+    "stars": {
+      "title": "Destacados recientemente",
+      "none": "No hay repositorios destacados"
+    },
+    "contributions": {
+      "title": "PRs e Issues",
+      "none": "No hay contribuciones recientes"
+    },
+    "repos": {
+      "title": "Mis repositorios",
+      "none": "No se encontraron repositorios"
+    },
+    "activity": {
+      "title": "Actividad en mis repos",
+      "none": "No hay actividad reciente de otros"
+    },
+    "widget": {
+      "description": "Visualiza tu actividad en GitHub, commits, estrellas y contribuciones.",
+      "view": "Ver actividad"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+.authorize {
+  --authorize-client-icon-size: 4rem;
+  line-height: var(--line-height-tight);
+
+  &:has(.authorize__client-icon) {
+    min-block-size: var(--authorize-client-icon-size);
+  }
+
+  & a {
+    font-weight: 600;
+  }
+}
+
+.authorize__client-icon {
+  background-color: var(--color-neutral90); /* Ignore color-scheme */
+  block-size: var(--authorize-client-icon-size);
+  border-radius: var(--border-radius-small);
+  box-shadow: inset 0 0 0 1px var(--color-shadow);
+  float: inline-start;
+  inline-size: var(--authorize-client-icon-size);
+  margin-inline-end: var(--space-s);
+  padding: var(--space-2xs);
+}

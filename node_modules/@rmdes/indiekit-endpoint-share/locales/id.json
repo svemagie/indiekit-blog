@@ -1,0 +1,30 @@
+{
+  "share": {
+    "bookmark-of": {
+      "label": "Tautan (URL)"
+    },
+    "content": {
+      "label": "Konten"
+    },
+    "error": {
+      "bookmark-of": {
+        "empty": "Masukkan alamat web misalnya %s"
+      },
+      "name": {
+        "empty": "Masukkan judul"
+      }
+    },
+    "name": {
+      "label": "Judul"
+    },
+    "submit": "Terbitkan",
+    "title": "Bagikan"
+  },
+  "status": {
+    "bookmarklet": {
+      "guidance": "Seret tautan ini ke bar bookmark Anda: %s",
+      "label": "Bagikan halaman",
+      "title": "Bagikan penanda\n"
+    }
+  }
+}

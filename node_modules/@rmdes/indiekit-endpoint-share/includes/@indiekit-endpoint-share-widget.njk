@@ -1,0 +1,33 @@
+{%- set bookmarklet -%}
+  {%- set bookmarkletFunction -%}
+    (function() {
+      var title = document.getElementsByTagName('title')[0].innerHTML;
+      name = encodeURIComponent(title);
+
+      var selection = '';
+      if (window.getSelection) {
+        selection = window.getSelection().toString();
+      } else if (document.selection && document.selection.type != 'Control') {
+        selection = document.selection.createRange().text;
+      }
+      content = encodeURIComponent(selection);
+
+      new_window=window.open(
+        '{{ application.url }}{{ application.shareEndpoint }}/bookmarklet?name='+name+'&content='+content+'&url='+encodeURIComponent(document.location.href),
+        'Sharer',
+        'resizable,scrollbars,status=0,toolbar=0,menubar=0,titlebar=0,width=578,height=720,location=0'
+      );
+    })();
+  {%- endset -%}
+  {%- set bookmarkletHref = "javascript:" + bookmarkletFunction | replace("  ", "") | replace("\n", "") | replace("&", "&amp;") | trim -%}
+  {{ bookmarklet({
+    href: bookmarkletHref,
+    text: __("status.bookmarklet.label")
+  }) }}
+{%- endset -%}
+
+{{ widget({
+  image: "/assets/" + plugin.id + "/icon.svg",
+  title: __("status.bookmarklet.title"),
+  text: __("status.bookmarklet.guidance", bookmarklet)
+}) }}

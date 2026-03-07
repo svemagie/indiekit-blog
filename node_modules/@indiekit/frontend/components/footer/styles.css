@@ -1,0 +1,18 @@
+.footer {
+  --anchor-color: var(--color-on-offset);
+  --anchor-color-hover: var(--color-primary-on-background);
+  --anchor-decoration-color: transparent;
+  background-color: var(--color-offset);
+  border-block-start: var(--border-hairline);
+  color: var(--color-on-offset);
+  display: flex;
+  font: var(--font-caption);
+  justify-content: flex-end;
+}
+
+.footer__container {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  padding-block: var(--space-m);
+}

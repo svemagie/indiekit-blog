@@ -1,0 +1,20 @@
+{% from "../prose/macro.njk" import prose with context %}
+{% from "../details/macro.njk" import details with context %}
+<notification-banner class="{{ classes("notification-banner", opts) }}" type="{{ opts.type or "message" }}" aria-labelledby="notification-banner-title" role="{{ "alert" if opts.type === "success" else "region" }}"
+  {{- attributes(opts.attributes) }}>
+  <div class="notification-banner__container -!-container">
+    <h2 class="notification-banner__title" id="notification-banner-title">{{
+      (__("error") if opts.type === "error") or
+      (__("success") if opts.type === "success") or
+      __("important")
+    }}</h2>
+    {{ details({
+      classes: "notification-banner__details",
+      summary: opts.text,
+      text: opts.details
+    }) if opts.details else prose({
+      classes: "notification-banner__text",
+      text: opts.text | linkTo(opts.href)
+    }) | indent(4) }}
+  </div>
+</notification-banner>

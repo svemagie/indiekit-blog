@@ -1,0 +1,14 @@
+.main {
+  --anchor-color: var(--color-primary-on-background);
+  background-color: var(--color-background);
+  color: var(--color-on-background);
+  flex: 1;
+}
+
+.main__container {
+  padding-block: var(--space-xl);
+
+  & > * + * {
+    margin-block-start: var(--space-xl);
+  }
+}

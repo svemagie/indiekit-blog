@@ -1,0 +1,70 @@
+{% extends "form.njk" %}
+
+{% from "share-preview/macro.njk" import sharePreview %}
+
+{% block fieldset %}
+  {{ sharePreview({
+    title: {
+      for: "name",
+      value: name,
+      placeholder: __("share.name.label")
+    },
+    text: {
+      for: "content",
+      value: content,
+      placeholder: __("share.content.label")
+    },
+    url: {
+      for: "bookmark-of",
+      value: bookmarkOf or url,
+      placeholder: __("share.bookmark-of.label")
+    },
+    date: "now",
+    locale: application.locale
+  }) }}
+
+  {{ input({
+    name: "bookmark-of",
+    type: "url",
+    value: fieldData("bookmark-of").value or data.url,
+    label: __("share.bookmark-of.label"),
+    attributes: {
+      "placeholder": "https://"
+    },
+    errorMessage: fieldData("bookmark-of").errorMessage
+  }) }}
+
+  {{ input({
+    name: "name",
+    value: fieldData("name").value,
+    label: __("share.name.label"),
+    errorMessage: fieldData("name").errorMessage
+  }) }}
+
+  {{ textarea({
+    name: "content",
+    value: content,
+    optional: true,
+    label: __("share.content.label")
+  }) }}
+
+  {{ input({
+    name: "access_token",
+    type: "hidden",
+    value: token
+  }) }}
+
+  {{ input({
+    name: "h",
+    type: "hidden",
+    value: "entry"
+  }) }}
+{% endblock %}
+
+{% block buttons %}
+  {{ button({
+    text: __("share.submit")
+  }) if token else warningText({
+    text: __("scope.none.label")
+  }) }}
+{% endblock %}

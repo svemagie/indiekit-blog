@@ -1,0 +1,75 @@
+{
+  "webmention-io": {
+    "title": "Webmentions",
+    "webmentions": {
+      "none": "Inga webmentions hittades. Försök köra en synkronisering."
+    },
+    "mention": {
+      "bookmark-of": "bokmärkte %s",
+      "in-reply-to": "svarade på %s",
+      "like-of": "gillade %s",
+      "mention-of": "nämnde %s",
+      "repost-of": "delade %s",
+      "rsvp": "svarade på %s"
+    },
+    "sync": {
+      "now": "Synkronisera nu",
+      "full": "Fullständig omsynkronisering",
+      "lastSync": "Senast synkroniserad",
+      "never": "Aldrig synkroniserad",
+      "synced": "Synkronisering klar",
+      "added": "nya omnämnanden tillagda",
+      "inProgress": "Synkronisering pågår…"
+    },
+    "filter": {
+      "all": "Alla",
+      "visible": "Synlig",
+      "hidden": "Dold",
+      "show": "Visa",
+      "type": "Typ",
+      "likes": "Gillningar",
+      "replies": "Svar",
+      "reposts": "Delningar",
+      "mentions": "Omnämnanden"
+    },
+    "actions": {
+      "hide": "Dölj",
+      "unhide": "Visa",
+      "block": "Blockera",
+      "hidden": "Dold",
+      "reasonManual": "manuell",
+      "reasonBlocklist": "blockeringslista",
+      "reasonPrivacy": "integritet"
+    },
+    "blocklist": {
+      "title": "Webmention-blockeringslista",
+      "description": "Blockerade domäner kommer inte visas i webmentions. Befintliga omnämnanden från blockerade domäner döljs automatiskt.",
+      "add": "Blockera en domän",
+      "domainLabel": "Domän",
+      "domainPlaceholder": "spam.example.com",
+      "reasonLabel": "Anledning",
+      "reasonSpam": "Spam",
+      "reasonManual": "Manuell",
+      "blockButton": "Blockera domän",
+      "unblock": "Avblockera",
+      "empty": "Inga blockerade domäner.",
+      "privacy": {
+        "title": "Integritetsborttagning",
+        "description": "Ta bort alla webmentions från en domän permanent och blockera framtida. Använd för GDPR eller personliga borttagningsförfrågningar.",
+        "domainLabel": "Domän att ta bort",
+        "removeButton": "Ta bort & blockera"
+      },
+      "blocked": "Domän blockerad",
+      "unblocked": "Domän avblockerad",
+      "removed": "omnämnanden permanent borttagna",
+      "unhidden": "omnämnanden återställda",
+      "mentionsHidden": "omnämnanden dolda",
+      "blockedAt": "Blockerad"
+    },
+    "counts": {
+      "total": "totalt",
+      "hidden": "dold",
+      "visible": "synlig"
+    }
+  }
+}

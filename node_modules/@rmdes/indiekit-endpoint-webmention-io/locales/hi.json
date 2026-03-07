@@ -1,0 +1,75 @@
+{
+  "webmention-io": {
+    "title": "Webmentions",
+    "webmentions": {
+      "none": "कोई webmention नहीं मिला। सिंक चलाने का प्रयास करें।"
+    },
+    "mention": {
+      "bookmark-of": "%s को बुकमार्क किया",
+      "in-reply-to": "%s का जवाब दिया",
+      "like-of": "%s को पसंद किया",
+      "mention-of": "%s का उल्लेख किया",
+      "repost-of": "%s को रीपोस्ट किया",
+      "rsvp": "%s का जवाब दिया"
+    },
+    "sync": {
+      "now": "अभी सिंक करें",
+      "full": "पूर्ण पुनः सिंक",
+      "lastSync": "अंतिम सिंक",
+      "never": "कभी सिंक नहीं किया",
+      "synced": "सिंक पूरा हुआ",
+      "added": "नए उल्लेख जोड़े गए",
+      "inProgress": "सिंक प्रगति में है…"
+    },
+    "filter": {
+      "all": "सभी",
+      "visible": "दृश्यमान",
+      "hidden": "छिपा हुआ",
+      "show": "दिखाएं",
+      "type": "प्रकार",
+      "likes": "पसंद",
+      "replies": "जवाब",
+      "reposts": "रीपोस्ट",
+      "mentions": "उल्लेख"
+    },
+    "actions": {
+      "hide": "छिपाएं",
+      "unhide": "दिखाएं",
+      "block": "ब्लॉक करें",
+      "hidden": "छिपा हुआ",
+      "reasonManual": "मैनुअल",
+      "reasonBlocklist": "ब्लॉक सूची",
+      "reasonPrivacy": "गोपनीयता"
+    },
+    "blocklist": {
+      "title": "Webmention ब्लॉक सूची",
+      "description": "ब्लॉक किए गए डोमेन webmention में दिखाई नहीं देंगे। ब्लॉक किए गए डोमेन के मौजूदा उल्लेख स्वचालित रूप से छिपा दिए जाते हैं।",
+      "add": "एक डोमेन ब्लॉक करें",
+      "domainLabel": "डोमेन",
+      "domainPlaceholder": "spam.example.com",
+      "reasonLabel": "कारण",
+      "reasonSpam": "स्पैम",
+      "reasonManual": "मैनुअल",
+      "blockButton": "डोमेन ब्लॉक करें",
+      "unblock": "अनब्लॉक करें",
+      "empty": "कोई डोमेन ब्लॉक नहीं किया गया।",
+      "privacy": {
+        "title": "गोपनीयता हटाना",
+        "description": "किसी डोमेन से सभी webmention स्थायी रूप से हटाएं और भविष्य के को ब्लॉक करें। GDPR या व्यक्तिगत हटाने के अनुरोधों के लिए उपयोग करें।",
+        "domainLabel": "हटाने के लिए डोमेन",
+        "removeButton": "हटाएं और ब्लॉक करें"
+      },
+      "blocked": "डोमेन ब्लॉक किया गया",
+      "unblocked": "डोमेन अनब्लॉक किया गया",
+      "removed": "उल्लेख स्थायी रूप से हटा दिए गए",
+      "unhidden": "उल्लेख पुनर्स्थापित किए गए",
+      "mentionsHidden": "उल्लेख छिपाए गए",
+      "blockedAt": "ब्लॉक किया गया"
+    },
+    "counts": {
+      "total": "कुल",
+      "hidden": "छिपा हुआ",
+      "visible": "दृश्यमान"
+    }
+  }
+}

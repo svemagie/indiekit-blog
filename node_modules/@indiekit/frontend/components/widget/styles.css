@@ -1,0 +1,28 @@
+.widget-grid {
+  columns: 20rem auto;
+  gap: var(--space-l);
+}
+
+.widget {
+  --button-font: var(--font-caption);
+  background-color: var(--color-offset);
+  border-radius: var(--border-radius-small);
+  display: inline-block;
+  margin-block-end: var(--space-l);
+  min-inline-size: 100%;
+  padding: var(--space-s);
+}
+
+.widget__header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-s);
+  justify-content: space-between;
+  padding-block-end: var(--space-s);
+}
+
+.widget__title {
+  --icon-size: 1.25em;
+  font: var(--font-label);
+}

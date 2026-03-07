@@ -1,0 +1,75 @@
+{
+  "webmention-io": {
+    "title": "Webmentions",
+    "webmentions": {
+      "none": "Tidak ada webmention ditemukan. Coba jalankan sinkronisasi."
+    },
+    "mention": {
+      "bookmark-of": "menandai %s",
+      "in-reply-to": "membalas %s",
+      "like-of": "menyukai %s",
+      "mention-of": "menyebutkan %s",
+      "repost-of": "membagikan ulang %s",
+      "rsvp": "menanggapi %s"
+    },
+    "sync": {
+      "now": "Sinkronkan Sekarang",
+      "full": "Sinkronisasi Ulang Penuh",
+      "lastSync": "Terakhir disinkronkan",
+      "never": "Belum pernah disinkronkan",
+      "synced": "Sinkronisasi selesai",
+      "added": "sebutan baru ditambahkan",
+      "inProgress": "Sinkronisasi sedang berlangsung…"
+    },
+    "filter": {
+      "all": "Semua",
+      "visible": "Terlihat",
+      "hidden": "Tersembunyi",
+      "show": "Tampilkan",
+      "type": "Jenis",
+      "likes": "Suka",
+      "replies": "Balasan",
+      "reposts": "Bagikan Ulang",
+      "mentions": "Sebutan"
+    },
+    "actions": {
+      "hide": "Sembunyikan",
+      "unhide": "Tampilkan",
+      "block": "Blokir",
+      "hidden": "Tersembunyi",
+      "reasonManual": "manual",
+      "reasonBlocklist": "daftar blokir",
+      "reasonPrivacy": "privasi"
+    },
+    "blocklist": {
+      "title": "Daftar Blokir Webmention",
+      "description": "Domain yang diblokir tidak akan muncul di webmention. Sebutan yang ada dari domain yang diblokir akan otomatis disembunyikan.",
+      "add": "Blokir Domain",
+      "domainLabel": "Domain",
+      "domainPlaceholder": "spam.example.com",
+      "reasonLabel": "Alasan",
+      "reasonSpam": "Spam",
+      "reasonManual": "Manual",
+      "blockButton": "Blokir Domain",
+      "unblock": "Buka Blokir",
+      "empty": "Tidak ada domain yang diblokir.",
+      "privacy": {
+        "title": "Penghapusan Privasi",
+        "description": "Hapus secara permanen semua webmention dari domain dan blokir yang akan datang. Gunakan untuk permintaan penghapusan GDPR atau pribadi.",
+        "domainLabel": "Domain yang akan dihapus",
+        "removeButton": "Hapus & Blokir"
+      },
+      "blocked": "Domain diblokir",
+      "unblocked": "Domain dibuka blokirnya",
+      "removed": "sebutan dihapus secara permanen",
+      "unhidden": "sebutan dipulihkan",
+      "mentionsHidden": "sebutan disembunyikan",
+      "blockedAt": "Diblokir"
+    },
+    "counts": {
+      "total": "total",
+      "hidden": "tersembunyi",
+      "visible": "terlihat"
+    }
+  }
+}

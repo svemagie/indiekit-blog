@@ -1,0 +1,75 @@
+{
+  "webmention-io": {
+    "title": "Webmentions",
+    "webmentions": {
+      "none": "Keine Webmentions gefunden. Versuchen Sie eine Synchronisierung."
+    },
+    "mention": {
+      "bookmark-of": "hat %s mit einem Lesezeichen versehen",
+      "in-reply-to": "hat auf %s geantwortet",
+      "like-of": "gefällt %s",
+      "mention-of": "hat %s erwähnt",
+      "repost-of": "hat %s geteilt",
+      "rsvp": "hat auf %s geantwortet"
+    },
+    "sync": {
+      "now": "Jetzt synchronisieren",
+      "full": "Vollständige Neusynchronisierung",
+      "lastSync": "Zuletzt synchronisiert",
+      "never": "Nie synchronisiert",
+      "synced": "Synchronisierung abgeschlossen",
+      "added": "neue Erwähnungen hinzugefügt",
+      "inProgress": "Synchronisierung läuft…"
+    },
+    "filter": {
+      "all": "Alle",
+      "visible": "Sichtbar",
+      "hidden": "Versteckt",
+      "show": "Anzeigen",
+      "type": "Typ",
+      "likes": "Gefällt mir",
+      "replies": "Antworten",
+      "reposts": "Geteilte Beiträge",
+      "mentions": "Erwähnungen"
+    },
+    "actions": {
+      "hide": "Verstecken",
+      "unhide": "Einblenden",
+      "block": "Blockieren",
+      "hidden": "Versteckt",
+      "reasonManual": "manuell",
+      "reasonBlocklist": "Sperrliste",
+      "reasonPrivacy": "Datenschutz"
+    },
+    "blocklist": {
+      "title": "Webmention-Sperrliste",
+      "description": "Blockierte Domains werden nicht in Webmentions angezeigt. Vorhandene Erwähnungen von blockierten Domains werden automatisch ausgeblendet.",
+      "add": "Domain blockieren",
+      "domainLabel": "Domain",
+      "domainPlaceholder": "spam.example.com",
+      "reasonLabel": "Grund",
+      "reasonSpam": "Spam",
+      "reasonManual": "Manuell",
+      "blockButton": "Domain blockieren",
+      "unblock": "Entsperren",
+      "empty": "Keine Domains blockiert.",
+      "privacy": {
+        "title": "Datenschutzentfernung",
+        "description": "Alle Webmentions von einer Domain dauerhaft löschen und zukünftige blockieren. Verwenden Sie dies für GDPR- oder persönliche Entfernungsanfragen.",
+        "domainLabel": "Zu entfernende Domain",
+        "removeButton": "Entfernen & Blockieren"
+      },
+      "blocked": "Domain blockiert",
+      "unblocked": "Domain entsperrt",
+      "removed": "Erwähnungen dauerhaft gelöscht",
+      "unhidden": "Erwähnungen wiederhergestellt",
+      "mentionsHidden": "Erwähnungen ausgeblendet",
+      "blockedAt": "Blockiert"
+    },
+    "counts": {
+      "total": "gesamt",
+      "hidden": "versteckt",
+      "visible": "sichtbar"
+    }
+  }
+}

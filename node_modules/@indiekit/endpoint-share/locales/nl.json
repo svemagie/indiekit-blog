@@ -1,0 +1,30 @@
+{
+  "share": {
+    "bookmark-of": {
+      "label": "URL"
+    },
+    "content": {
+      "label": "Inhoud"
+    },
+    "error": {
+      "bookmark-of": {
+        "empty": "Voer een webadres in zoals %s"
+      },
+      "name": {
+        "empty": "Geef een titel in"
+      }
+    },
+    "name": {
+      "label": "Titel"
+    },
+    "submit": "Publiceer",
+    "title": "Delen"
+  },
+  "status": {
+    "bookmarklet": {
+      "guidance": "Sleep deze link naar je bladwijzerbalk: %s",
+      "label": "Pagina delen",
+      "title": "Bookmarklet delen"
+    }
+  }
+}

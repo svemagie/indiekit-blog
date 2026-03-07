@@ -1,0 +1,60 @@
+{
+  "addAnother": {
+    "add": "Ajouter un autre %s",
+    "delete": "Supprimer"
+  },
+  "backLink": {
+    "text": "Retour"
+  },
+  "characterCount": {
+    "char": {
+      "one": "%s caractère",
+      "other": "%s caractères"
+    },
+    "word": {
+      "one": "%s mot",
+      "other": "%s mots"
+    }
+  },
+  "error": "Erreur",
+  "errorSummary": {
+    "title": "Il y a un problème"
+  },
+  "fileInput": {
+    "uploadFile": "Téléverser un fichier…",
+    "uploadingFile": "Téléchargement de fichiers"
+  },
+  "geoInput": {
+    "denied": "Impossible d’obtenir l’autorisation d’utiliser la position actuelle",
+    "failed": "Impossible d’obtenir la position actuelle",
+    "getCurrentPosition": "Utiliser la position actuelle"
+  },
+  "important": "Important",
+  "noValue": "Non définie",
+  "optionalValue": "(facultatif)",
+  "pagination": {
+    "defaultType": "résultats",
+    "item": "Page %s",
+    "next": "%s suivant",
+    "page": "page",
+    "previous": "%s précédent"
+  },
+  "skipLink": {
+    "text": "Aller au contenu"
+  },
+  "success": "Réussite",
+  "tagInput": {
+    "added": "{{tag}} {{name}} ajouté.",
+    "defaultTag": "étiqueter",
+    "defaultTags": "étiquettes",
+    "delete": "Supprimer {{tag}} {{name}}.",
+    "deleted": "{{tag}} {{name}} supprimée.",
+    "edit": "Modifier {{tag}}.",
+    "instruction": "{{list}} {{tags}}. Utilisez les flèches gauche et droite pour naviguer, entrez ou tapez la touche de tabulation pour créer, supprimez pour supprimer {{tags}}.",
+    "noneSelected": "Aucun {{tags}} sélectionné.",
+    "placeholder": "Ajouter {{tags}}",
+    "selected": "{{tag}} {{name}} sélectionné. Appuyez sur Entrée pour modifier, sur Supprimer pour supprimer.",
+    "updated": "{{tag}} mise à jour à {{name}}."
+  },
+  "warning": "Avertissement"
+}

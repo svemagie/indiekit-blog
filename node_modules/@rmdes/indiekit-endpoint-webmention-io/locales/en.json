@@ -1,0 +1,75 @@
+{
+  "webmention-io": {
+    "title": "Webmentions",
+    "webmentions": {
+      "none": "No webmentions found. Try running a sync."
+    },
+    "mention": {
+      "bookmark-of": "bookmarked %s",
+      "in-reply-to": "replied to %s",
+      "like-of": "liked %s",
+      "mention-of": "mentioned %s",
+      "repost-of": "reposted %s",
+      "rsvp": "responded to %s"
+    },
+    "sync": {
+      "now": "Sync Now",
+      "full": "Full Re-sync",
+      "lastSync": "Last synced",
+      "never": "Never synced",
+      "synced": "Sync complete",
+      "added": "new mentions added",
+      "inProgress": "Sync in progress…"
+    },
+    "filter": {
+      "all": "All",
+      "visible": "Visible",
+      "hidden": "Hidden",
+      "show": "Show",
+      "type": "Type",
+      "likes": "Likes",
+      "replies": "Replies",
+      "reposts": "Reposts",
+      "mentions": "Mentions"
+    },
+    "actions": {
+      "hide": "Hide",
+      "unhide": "Unhide",
+      "block": "Block",
+      "hidden": "Hidden",
+      "reasonManual": "manual",
+      "reasonBlocklist": "blocklist",
+      "reasonPrivacy": "privacy"
+    },
+    "blocklist": {
+      "title": "Webmention Blocklist",
+      "description": "Blocked domains will not appear in webmentions. Existing mentions from blocked domains are automatically hidden.",
+      "add": "Block a Domain",
+      "domainLabel": "Domain",
+      "domainPlaceholder": "spam.example.com",
+      "reasonLabel": "Reason",
+      "reasonSpam": "Spam",
+      "reasonManual": "Manual",
+      "blockButton": "Block Domain",
+      "unblock": "Unblock",
+      "empty": "No domains blocked.",
+      "privacy": {
+        "title": "Privacy Removal",
+        "description": "Permanently delete all webmentions from a domain and block future ones. Use for GDPR or personal removal requests.",
+        "domainLabel": "Domain to remove",
+        "removeButton": "Remove & Block"
+      },
+      "blocked": "Domain blocked",
+      "unblocked": "Domain unblocked",
+      "removed": "mentions permanently deleted",
+      "unhidden": "mentions restored",
+      "mentionsHidden": "mentions hidden",
+      "blockedAt": "Blocked"
+    },
+    "counts": {
+      "total": "total",
+      "hidden": "hidden",
+      "visible": "visible"
+    }
+  }
+}

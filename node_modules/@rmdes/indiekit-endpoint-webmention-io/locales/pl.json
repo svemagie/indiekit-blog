@@ -1,0 +1,75 @@
+{
+  "webmention-io": {
+    "title": "Webmentions",
+    "webmentions": {
+      "none": "Nie znaleziono webmentions. Spróbuj uruchomić synchronizację."
+    },
+    "mention": {
+      "bookmark-of": "dodał zakładkę %s",
+      "in-reply-to": "odpowiedział na %s",
+      "like-of": "polubił %s",
+      "mention-of": "wspomniał %s",
+      "repost-of": "udostępnił %s",
+      "rsvp": "odpowiedział na %s"
+    },
+    "sync": {
+      "now": "Synchronizuj teraz",
+      "full": "Pełna resynchronizacja",
+      "lastSync": "Ostatnia synchronizacja",
+      "never": "Nigdy nie synchronizowano",
+      "synced": "Synchronizacja zakończona",
+      "added": "nowe wzmianki dodane",
+      "inProgress": "Synchronizacja w toku…"
+    },
+    "filter": {
+      "all": "Wszystkie",
+      "visible": "Widoczne",
+      "hidden": "Ukryte",
+      "show": "Pokaż",
+      "type": "Typ",
+      "likes": "Polubienia",
+      "replies": "Odpowiedzi",
+      "reposts": "Udostępnienia",
+      "mentions": "Wzmianki"
+    },
+    "actions": {
+      "hide": "Ukryj",
+      "unhide": "Pokaż",
+      "block": "Zablokuj",
+      "hidden": "Ukryte",
+      "reasonManual": "ręcznie",
+      "reasonBlocklist": "lista blokad",
+      "reasonPrivacy": "prywatność"
+    },
+    "blocklist": {
+      "title": "Lista blokad Webmention",
+      "description": "Zablokowane domeny nie będą wyświetlane w webmentions. Istniejące wzmianki z zablokowanych domen są automatycznie ukrywane.",
+      "add": "Zablokuj domenę",
+      "domainLabel": "Domena",
+      "domainPlaceholder": "spam.example.com",
+      "reasonLabel": "Powód",
+      "reasonSpam": "Spam",
+      "reasonManual": "Ręczne",
+      "blockButton": "Zablokuj domenę",
+      "unblock": "Odblokuj",
+      "empty": "Brak zablokowanych domen.",
+      "privacy": {
+        "title": "Usunięcie ze względu na prywatność",
+        "description": "Trwale usuń wszystkie webmentions z domeny i zablokuj przyszłe. Użyj dla żądań GDPR lub osobistych żądań usunięcia.",
+        "domainLabel": "Domena do usunięcia",
+        "removeButton": "Usuń i zablokuj"
+      },
+      "blocked": "Domena zablokowana",
+      "unblocked": "Domena odblokowana",
+      "removed": "wzmianki trwale usunięte",
+      "unhidden": "wzmianki przywrócone",
+      "mentionsHidden": "wzmianki ukryte",
+      "blockedAt": "Zablokowano"
+    },
+    "counts": {
+      "total": "łącznie",
+      "hidden": "ukryte",
+      "visible": "widoczne"
+    }
+  }
+}

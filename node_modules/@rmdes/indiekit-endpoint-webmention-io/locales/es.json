@@ -1,0 +1,75 @@
+{
+  "webmention-io": {
+    "title": "Webmentions",
+    "webmentions": {
+      "none": "No se han encontrado webmentions. Intente ejecutar una sincronización."
+    },
+    "mention": {
+      "bookmark-of": "marcó %s",
+      "in-reply-to": "respondió a %s",
+      "like-of": "le gustó %s",
+      "mention-of": "mencionó %s",
+      "repost-of": "reenvió %s",
+      "rsvp": "respondió a %s"
+    },
+    "sync": {
+      "now": "Sincronizar ahora",
+      "full": "Resincronización completa",
+      "lastSync": "Última sincronización",
+      "never": "Nunca sincronizado",
+      "synced": "Sincronización completada",
+      "added": "nuevas menciones añadidas",
+      "inProgress": "Sincronización en curso…"
+    },
+    "filter": {
+      "all": "Todos",
+      "visible": "Visible",
+      "hidden": "Oculto",
+      "show": "Mostrar",
+      "type": "Tipo",
+      "likes": "Me gusta",
+      "replies": "Respuestas",
+      "reposts": "Reenvíos",
+      "mentions": "Menciones"
+    },
+    "actions": {
+      "hide": "Ocultar",
+      "unhide": "Mostrar",
+      "block": "Bloquear",
+      "hidden": "Oculto",
+      "reasonManual": "manual",
+      "reasonBlocklist": "lista de bloqueo",
+      "reasonPrivacy": "privacidad"
+    },
+    "blocklist": {
+      "title": "Lista de bloqueo de Webmentions",
+      "description": "Los dominios bloqueados no aparecerán en webmentions. Las menciones existentes de dominios bloqueados se ocultan automáticamente.",
+      "add": "Bloquear un dominio",
+      "domainLabel": "Dominio",
+      "domainPlaceholder": "spam.example.com",
+      "reasonLabel": "Motivo",
+      "reasonSpam": "Spam",
+      "reasonManual": "Manual",
+      "blockButton": "Bloquear dominio",
+      "unblock": "Desbloquear",
+      "empty": "No hay dominios bloqueados.",
+      "privacy": {
+        "title": "Eliminación por privacidad",
+        "description": "Eliminar permanentemente todos los webmentions de un dominio y bloquear futuros. Usar para solicitudes GDPR o de eliminación personal.",
+        "domainLabel": "Dominio a eliminar",
+        "removeButton": "Eliminar y bloquear"
+      },
+      "blocked": "Dominio bloqueado",
+      "unblocked": "Dominio desbloqueado",
+      "removed": "menciones eliminadas permanentemente",
+      "unhidden": "menciones restauradas",
+      "mentionsHidden": "menciones ocultas",
+      "blockedAt": "Bloqueado"
+    },
+    "counts": {
+      "total": "total",
+      "hidden": "oculto",
+      "visible": "visible"
+    }
+  }
+}

@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 const rawAdminUrl =
   process.env.INDIEKIT_ADMIN_URL || "https://blog.giersig.eu/admin/";
 const adminUrl = new URL(
@@ -11,7 +13,7 @@ const mongoHost = process.env.MONGO_HOST || "10.100.0.20";
 const mongoPort = process.env.MONGO_PORT || "27017";
 const mongoDatabase =
   process.env.MONGO_DATABASE || process.env.MONGO_DB || "indiekit";
-const mongoAuthSource = process.env.MONGO_AUTH_SOURCE || "";
+const mongoAuthSource = process.env.MONGO_AUTH_SOURCE || "admin";
 const mongoCredentials =
   mongoUsername && mongoPassword
     ? `${encodeURIComponent(mongoUsername)}:${encodeURIComponent(

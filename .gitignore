@@ -2,3 +2,9 @@
 start.sh
 indiekit.config.mjs.orig
 node_modules/
+.cache/
+.lesshst
+.mongodb/
+.npm/
+.sh_history
+.ssh/

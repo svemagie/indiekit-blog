@@ -1,6 +1,7 @@
 import { access, readFile, writeFile } from "node:fs/promises";
 
 const candidates = [
+  "node_modules/@indiekit/frontend/lib/lightningcss.js",
   "node_modules/@indiekit/indiekit/node_modules/@indiekit/frontend/lib/lightningcss.js",
   "node_modules/@indiekit/endpoint-posts/node_modules/@indiekit/frontend/lib/lightningcss.js",
   "node_modules/@rmdes/indiekit-endpoint-conversations/node_modules/@indiekit/frontend/lib/lightningcss.js",

@@ -63,6 +63,7 @@ export default {
 
   plugins: [
     "@indiekit/store-github",
+    "@rmdes/indiekit-post-type-page",
     "@rmdes/indiekit-preset-eleventy",
     "@rmdes/indiekit-endpoint-github",
     "@rmdes/indiekit-endpoint-webmention-io",

@@ -6,6 +6,8 @@
 - Set `INDIEKIT_ADMIN_URL` to the public admin base URL, including trailing slash (example: `https://blog.giersig.eu/admin/`).
 - Login uses `PASSWORD_SECRET` (bcrypt hash), not `INDIEKIT_PASSWORD`.
 - If no `PASSWORD_SECRET` exists yet, open `/admin/auth/new-password` once to generate it.
+- Post management UI should use `/posts` (`@indiekit/endpoint-posts.mountPath`).
+- Do not set post-management `mountPath` to frontend routes like `/blog`, otherwise backend publishing can be shadowed by the public site.
 
 ## MongoDB
 

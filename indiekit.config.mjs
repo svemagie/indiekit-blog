@@ -105,7 +105,7 @@ export default {
     token: githubContentToken,
   },
   "@indiekit/endpoint-posts": {
-    mountPath: "/blog",
+    mountPath: "/posts",
   },
   "@rmdes/indiekit-endpoint-github": {
     token: githubActivityToken,

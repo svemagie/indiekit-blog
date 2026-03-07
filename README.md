@@ -62,6 +62,7 @@
 
 - `start.sh` is intentionally ignored by Git (`.gitignore`) so server secrets are not committed.
 - Use `start.example.sh` as the tracked template and keep real credentials in environment variables (or `.env` on the server).
+- Startup scripts parse `.env` with the `dotenv` parser (not shell `source`), so values containing spaces are handled safely.
 - Startup scripts run patch helpers before boot (`scripts/patch-lightningcss.mjs`, `scripts/patch-endpoint-media-scope.mjs`, `scripts/patch-endpoint-files-upload-route.mjs`).
 - The media scope patch fixes a known upstream issue where file uploads can fail if the token scope is `create update delete` without explicit `media`.
 - The files upload route patch fixes browser multi-upload by posting to `/files/upload` (session-authenticated) instead of direct `/media` calls without bearer token.

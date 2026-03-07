@@ -3,11 +3,18 @@ set -eu
 
 cd /usr/local/indiekit
 
-# Optional: load environment from local .env file.
+# Optional: load environment from local .env file
+# (dotenv syntax, supports spaces in values).
 if [ -f .env ]; then
-  set -a
-  . ./.env
-  set +a
+  eval "$(${NODE_BIN:-/usr/local/bin/node} -e '
+    const fs = require("node:fs");
+    const dotenv = require("dotenv");
+    const parsed = dotenv.parse(fs.readFileSync(".env"));
+    for (const [key, value] of Object.entries(parsed)) {
+      const safe = String(value).split("\x27").join("\x27\"\x27\"\x27");
+      process.stdout.write(`export ${key}=\x27${safe}\x27\\n`);
+    }
+  ')"
 fi
 
 : "${SECRET:?SECRET is required}"

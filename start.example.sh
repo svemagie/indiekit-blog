@@ -30,5 +30,6 @@ export NODE_ENV="${NODE_ENV:-production}"
 # Ensure runtime dependency patches are applied even if node_modules already exists.
 /usr/local/bin/node scripts/patch-lightningcss.mjs
 /usr/local/bin/node scripts/patch-endpoint-media-scope.mjs
+/usr/local/bin/node scripts/patch-endpoint-files-upload-route.mjs
 
 exec /usr/local/bin/node node_modules/@indiekit/indiekit/bin/cli.js serve --config indiekit.config.mjs

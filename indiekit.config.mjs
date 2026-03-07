@@ -79,13 +79,6 @@ export default {
           url: "https://blog.giersig.eu/replies/{slug}/",
         },
       },
-      repost: {
-        name: "Repost",
-        post: {
-          path: "content/reposts/{slug}.md",
-          url: "https://blog.giersig.eu/reposts/{slug}/",
-        },
-      },
       page: {
         name: "Seite",
         post: {

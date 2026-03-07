@@ -23,9 +23,9 @@
 - `content/likes/{slug}.md`
 - `content/photos/{slug}.md`
 - `content/replies/{slug}.md`
-- `content/reposts/{slug}.md`
 - `content/pages/{slug}.md`
 - If these paths do not match the content repo structure, edit/delete actions can fail with GitHub `Not Found`.
+- Reposts are handled as property-based posts (`repostOf` / `repost_of`) and rendered through the `reposts` collection in the Eleventy theme.
 
 ## Post URLs
 
@@ -36,7 +36,6 @@
 - `https://blog.giersig.eu/likes/{slug}/`
 - `https://blog.giersig.eu/photos/{slug}/`
 - `https://blog.giersig.eu/replies/{slug}/`
-- `https://blog.giersig.eu/reposts/{slug}/`
 - `https://blog.giersig.eu/{slug}/` (page post type)
 
 ## GitHub tokens

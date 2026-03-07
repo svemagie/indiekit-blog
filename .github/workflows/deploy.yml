@@ -1,0 +1,59 @@
+name: Deploy Indiekit Blog
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (if needed)
+        run: |
+          # Add build steps if your project requires them
+          echo "No build step required"
+
+      - name: Deploy to FreeBSD host and jail
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.FREEBSD_HOST }}
+          username: ${{ secrets.FREEBSD_DEPLOY_USER }}
+          key: ${{ secrets.FREEBSD_DEPLOY_SSH_KEY }}
+          port: 222
+          script: |
+            cd /usr/local/bastille/jails/node/root/usr/local/indiekit
+            git pull origin main
+            npm ci
+            sudo bastille cmd node "service indiekit restart"
+
+      # Optionally reload nginx on web jail
+      # - name: Reload nginx
+      #   uses: appleboy/ssh-action@v0.1.10
+      #   with:
+      #     host: ${{ secrets.FREEBSD_WEB_HOST }}
+      #     username: ${{ secrets.FREEBSD_WEB_USER }}
+      #     key: ${{ secrets.FREEBSD_WEB_SSH_KEY }}
+      #     port: ${{ secrets.FREEBSD_WEB_PORT }}
+      #     script: sudo service nginx reload
+
+# Set up the following GitHub secrets:
+# - FREEBSD_NODE_HOST: 10.100.0.20
+# - FREEBSD_NODE_USER: indiekit
+# - FREEBSD_NODE_SSH_KEY: (private key)
+# - FREEBSD_NODE_PORT: 22
+# - FREEBSD_WEB_HOST: 10.100.0.10 (optional)
+# - FREEBSD_WEB_USER: (optional)
+# - FREEBSD_WEB_SSH_KEY: (optional)
+# - FREEBSD_WEB_PORT: 22 (optional)

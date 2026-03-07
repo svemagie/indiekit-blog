@@ -22,6 +22,12 @@ const mongoUrl =
   process.env.MONGO_URL ||
   `mongodb://${mongoCredentials}${mongoHost}:${mongoPort}/${mongoDatabase}${mongoQuery}`;
 
+const githubUsername = process.env.GITHUB_USERNAME || "svemagie";
+const githubContentToken =
+  process.env.GH_CONTENT_TOKEN || process.env.GITHUB_TOKEN;
+const githubActivityToken =
+  process.env.GH_ACTIVITY_TOKEN || process.env.GITHUB_TOKEN;
+
 export default {
   debug: "indiekit:*",
   application: {
@@ -66,16 +72,17 @@ export default {
     //"@rmdes/indiekit-endpoint-activitypub",
   ],
   "@indiekit/store-github": {
-    user: "svemagie",
+    user: githubUsername,
     repo: "blog",
     branch: "main",
+    token: githubContentToken,
   },
   "@rmdes/indiekit-endpoint-posts": {
     mountPath: "/blog",
   },
   "@rmdes/indiekit-endpoint-github": {
-    token: process.env.GITHUB_TOKEN,
-    user: "svemagie",
+    token: githubActivityToken,
+    username: githubUsername,
   },
   "@rmdes/indiekit-endpoint-webmention-io": {
     token: process.env.WEBMENTION_IO_TOKEN,

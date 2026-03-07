@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "postinstall": "node scripts/patch-lightningcss.mjs",
-    "serve": "node node_modules/@indiekit/indiekit/bin/cli.js serve --config indiekit.config.mjs",
+    "postinstall": "node scripts/patch-lightningcss.mjs && node scripts/patch-endpoint-media-scope.mjs",
+    "serve": "node scripts/patch-lightningcss.mjs && node scripts/patch-endpoint-media-scope.mjs && node node_modules/@indiekit/indiekit/bin/cli.js serve --config indiekit.config.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

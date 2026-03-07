@@ -1,13 +1,5 @@
 import "dotenv/config";
 
-const rawApplicationUrl =
-  process.env.INDIEKIT_APPLICATION_URL ||
-  process.env.INDIEKIT_PUBLIC_URL ||
-  "https://blog.giersig.eu/";
-const applicationUrl = new URL(
-  rawApplicationUrl.endsWith("/") ? rawApplicationUrl : `${rawApplicationUrl}/`,
-).href;
-
 const mongoUsername =
   process.env.MONGO_USERNAME || process.env.MONGO_USER || "indiekit";
 const mongoPassword = process.env.MONGO_PASSWORD || "";
@@ -34,10 +26,6 @@ export default {
   debug: "indiekit:*",
   application: {
     name: "Indiekit",
-    url: applicationUrl,
-    authorizationEndpoint: new URL("auth", applicationUrl).href,
-    introspectionEndpoint: new URL("auth/introspect", applicationUrl).href,
-    tokenEndpoint: new URL("auth/token", applicationUrl).href,
     mongodbUrl: mongoUrl,
   },
   publication: {

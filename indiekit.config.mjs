@@ -1,9 +1,11 @@
 import "dotenv/config";
 
-const rawAdminUrl =
-  process.env.INDIEKIT_ADMIN_URL || "https://blog.giersig.eu/admin/";
-const adminUrl = new URL(
-  rawAdminUrl.endsWith("/") ? rawAdminUrl : `${rawAdminUrl}/`,
+const rawApplicationUrl =
+  process.env.INDIEKIT_APPLICATION_URL ||
+  process.env.INDIEKIT_PUBLIC_URL ||
+  "https://blog.giersig.eu/";
+const applicationUrl = new URL(
+  rawApplicationUrl.endsWith("/") ? rawApplicationUrl : `${rawApplicationUrl}/`,
 ).href;
 
 const mongoUsername =
@@ -32,10 +34,10 @@ export default {
   debug: "indiekit:*",
   application: {
     name: "Indiekit",
-    url: adminUrl,
-    authorizationEndpoint: new URL("auth", adminUrl).href,
-    introspectionEndpoint: new URL("auth/introspect", adminUrl).href,
-    tokenEndpoint: new URL("auth/token", adminUrl).href,
+    url: applicationUrl,
+    authorizationEndpoint: new URL("auth", applicationUrl).href,
+    introspectionEndpoint: new URL("auth/introspect", applicationUrl).href,
+    tokenEndpoint: new URL("auth/token", applicationUrl).href,
     mongodbUrl: mongoUrl,
   },
   publication: {

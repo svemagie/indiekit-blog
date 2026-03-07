@@ -40,21 +40,21 @@ export default {
       article: {
         name: "Artikel",
         post: {
-          path: "src/posts/{slug}.md",
+          path: "content/articles/{slug}.md",
           url: "https://blog.giersig.eu/posts/{slug}/",
         },
       },
       note: {
         name: "Notiz",
         post: {
-          path: "src/notes/{slug}.md",
+          path: "content/notes/{slug}.md",
           url: "https://blog.giersig.eu/notes/{slug}/",
         },
       },
       bookmark: {
         name: "Lesezeichen",
         post: {
-          path: "src/bookmarks/{slug}.md",
+          path: "content/bookmarks/{slug}.md",
           url: "https://blog.giersig.eu/bookmarks/{slug}/",
         },
       },

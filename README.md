@@ -13,6 +13,15 @@
 - If `MONGO_URL` is not set, config builds the URL from `MONGO_USERNAME`, `MONGO_PASSWORD`, `MONGO_HOST`, `MONGO_PORT`, `MONGO_DATABASE`, `MONGO_AUTH_SOURCE`.
 - For `MongoServerError: Authentication failed`, first verify `MONGO_PASSWORD`, then try `MONGO_AUTH_SOURCE=admin`.
 
+## Content paths
+
+- This setup writes post files to the content repo `blog` under `content/`.
+- Current paths in `publication.postTypes` are:
+- `content/articles/{slug}.md`
+- `content/notes/{slug}.md`
+- `content/bookmarks/{slug}.md`
+- If these paths do not match the content repo structure, edit/delete actions can fail with GitHub `Not Found`.
+
 ## GitHub tokens
 
 - Recommended for two-repo setups:

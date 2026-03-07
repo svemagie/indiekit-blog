@@ -9,6 +9,16 @@
 - Post management UI should use `/posts` (`@indiekit/endpoint-posts.mountPath`).
 - Do not set post-management `mountPath` to frontend routes like `/blog`, otherwise backend publishing can be shadowed by the public site.
 
+## Backend endpoints
+
+- Configured endpoint mount paths:
+- Posts management: `/posts`
+- Files: `/files`
+- Webmentions moderation + API: `/webmentions`
+- Conversations + API: `/conversations`
+- GitHub activity + API: `/github`
+- If IndieKit is reverse-proxied behind `/admin`, these become `/admin/posts`, `/admin/files`, etc.
+
 ## MongoDB
 
 - Preferred: set a full `MONGO_URL` (example: `mongodb://user:pass@host:27017/indiekit?authSource=admin`).
@@ -47,3 +57,8 @@
 - `GH_ACTIVITY_TOKEN`: token for GitHub dashboard/activity endpoint, used by `@rmdes/indiekit-endpoint-github`.
 - `GITHUB_USERNAME`: GitHub user/owner name.
 - Backward compatibility: if `GH_CONTENT_TOKEN` or `GH_ACTIVITY_TOKEN` are not set, config falls back to `GITHUB_TOKEN`.
+
+## Startup script
+
+- `start.sh` is intentionally ignored by Git (`.gitignore`) so server secrets are not committed.
+- Use `start.example.sh` as the tracked template and keep real credentials in environment variables (or `.env` on the server).

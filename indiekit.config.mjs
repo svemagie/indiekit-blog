@@ -27,6 +27,18 @@ const githubContentToken =
   process.env.GH_CONTENT_TOKEN || process.env.GITHUB_TOKEN;
 const githubActivityToken =
   process.env.GH_ACTIVITY_TOKEN || process.env.GITHUB_TOKEN;
+const publicationBaseUrl = (
+  process.env.PUBLICATION_URL || "https://blog.giersig.eu"
+).replace(/\/+$/, "");
+
+let webmentionDomain = process.env.WEBMENTION_IO_DOMAIN;
+if (!webmentionDomain) {
+  try {
+    webmentionDomain = new URL(publicationBaseUrl).hostname;
+  } catch {
+    webmentionDomain = "blog.giersig.eu";
+  }
+}
 
 export default {
   debug: "indiekit:*",
@@ -35,55 +47,55 @@ export default {
     mongodbUrl: mongoUrl,
   },
   publication: {
-    me: "https://blog.giersig.eu",
+    me: publicationBaseUrl,
     postTypes: {
       article: {
         name: "Artikel",
         post: {
           path: "content/articles/{slug}.md",
-          url: "https://blog.giersig.eu/articles/{slug}/",
+          url: `${publicationBaseUrl}/articles/{slug}/`,
         },
       },
       note: {
         name: "Notiz",
         post: {
           path: "content/notes/{slug}.md",
-          url: "https://blog.giersig.eu/notes/{slug}/",
+          url: `${publicationBaseUrl}/notes/{slug}/`,
         },
       },
       bookmark: {
         name: "Lesezeichen",
         post: {
           path: "content/bookmarks/{slug}.md",
-          url: "https://blog.giersig.eu/bookmarks/{slug}/",
+          url: `${publicationBaseUrl}/bookmarks/{slug}/`,
         },
       },
       like: {
         name: "Like",
         post: {
           path: "content/likes/{slug}.md",
-          url: "https://blog.giersig.eu/likes/{slug}/",
+          url: `${publicationBaseUrl}/likes/{slug}/`,
         },
       },
       photo: {
         name: "Foto",
         post: {
           path: "content/photos/{slug}.md",
-          url: "https://blog.giersig.eu/photos/{slug}/",
+          url: `${publicationBaseUrl}/photos/{slug}/`,
         },
       },
       reply: {
         name: "Antwort",
         post: {
           path: "content/replies/{slug}.md",
-          url: "https://blog.giersig.eu/replies/{slug}/",
+          url: `${publicationBaseUrl}/replies/{slug}/`,
         },
       },
       page: {
         name: "Seite",
         post: {
           path: "content/pages/{slug}.md",
-          url: "https://blog.giersig.eu/{slug}/",
+          url: `${publicationBaseUrl}/{slug}/`,
         },
       },
     },
@@ -113,6 +125,7 @@ export default {
   },
   "@rmdes/indiekit-endpoint-webmention-io": {
     token: process.env.WEBMENTION_IO_TOKEN,
+    domain: webmentionDomain,
   },
   "@rmdes/indiekit-endpoint-conversations": {
     mountPath: "/conversations",

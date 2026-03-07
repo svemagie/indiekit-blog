@@ -1,9 +1,0 @@
-{
-  "posts": {
-    "form": {
-      "in-reply-to": {
-        "label": "En réponse à"
-      }
-    }
-  }
-}

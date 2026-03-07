@@ -1,7 +1,0 @@
-event-duration {
-  --fieldset-flow-space: var(--space-s);
-  align-items: end;
-  column-gap: var(--space-xl);
-  display: flex;
-  flex-wrap: wrap;
-}

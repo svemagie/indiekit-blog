@@ -1,3 +1,4 @@
 .env
 start.sh
 indiekit.config.mjs.orig
+node_modules/

@@ -70,6 +70,9 @@ export default {
     repo: "blog",
     branch: "main",
   },
+  "@rmdes/indiekit-endpoint-posts": {
+    mountPath: "/blog",
+  },
   "@rmdes/indiekit-endpoint-github": {
     token: process.env.GITHUB_TOKEN,
     user: "svemagie",

@@ -32,8 +32,7 @@ jobs:
           username: ${{ secrets.FREEBSD_DEPLOY_USER }}
           key: ${{ secrets.FREEBSD_DEPLOY_SSH_KEY }}
           port: 222
-          script: |
-            sudo bastille cmd node "su -l indiekit -c 'git pull origin main && npm ci && sudo service indiekit restart'"
+          script: sudo bastille cmd node "cd /usr/local/indiekit && su -l indiekit -c 'git pull origin main && npm ci && sudo service indiekit restart'"
 
       # Optionally reload nginx on web jail
       # - name: Reload nginx

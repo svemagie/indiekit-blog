@@ -52,6 +52,7 @@ unset DEBUG
 /usr/local/bin/node scripts/patch-frontend-sharp-runtime.mjs
 /usr/local/bin/node scripts/patch-endpoint-files-upload-route.mjs
 /usr/local/bin/node scripts/patch-endpoint-files-upload-locales.mjs
+/usr/local/bin/node scripts/patch-endpoint-activitypub-locales.mjs
 /usr/local/bin/node scripts/patch-frontend-serviceworker-file.mjs
 /usr/local/bin/node scripts/patch-conversations-collection-guards.mjs
 /usr/local/bin/node scripts/patch-indiekit-routes-rate-limits.mjs

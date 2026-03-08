@@ -7,6 +7,9 @@ const mongoPort = process.env.MONGO_PORT || "27017";
 const mongoDatabase =
   process.env.MONGO_DATABASE || process.env.MONGO_DB || "indiekit";
 const mongoAuthSource = process.env.MONGO_AUTH_SOURCE || "admin";
+const hasMongoUrl = Boolean(process.env.MONGO_URL);
+const hasMongoCredentials = Boolean(mongoUsername && mongoPassword);
+const preferMongoUrl = process.env.MONGO_PREFER_URL === "1";
 const mongoCredentials =
   mongoUsername && mongoPassword
     ? `${encodeURIComponent(mongoUsername)}:${encodeURIComponent(
@@ -17,9 +20,11 @@ const mongoQuery =
   mongoCredentials && mongoAuthSource
     ? `?authSource=${encodeURIComponent(mongoAuthSource)}`
     : "";
+const mongoUrlFromParts = `mongodb://${mongoCredentials}${mongoHost}:${mongoPort}/${mongoDatabase}${mongoQuery}`;
 const mongoUrl =
-  process.env.MONGO_URL ||
-  `mongodb://${mongoCredentials}${mongoHost}:${mongoPort}/${mongoDatabase}${mongoQuery}`;
+  hasMongoUrl && (!hasMongoCredentials || preferMongoUrl)
+    ? process.env.MONGO_URL
+    : mongoUrlFromParts;
 
 const githubUsername = process.env.GITHUB_USERNAME || "svemagie";
 const githubContentToken =

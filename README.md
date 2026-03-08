@@ -20,8 +20,8 @@
 - Webmentions moderation + API: `/webmentions`
 - Conversations + API: `/conversations`
 - GitHub activity + API: `/github`
-- Funkwhale activity + API: `/funkwhale` (enabled when `FUNKWHALE_INSTANCE`, `FUNKWHALE_USERNAME`, `FUNKWHALE_TOKEN` are set)
-- Last.fm activity + API: `/lastfmapi` (enabled when `LASTFM_API_KEY`, `LASTFM_USERNAME` are set)
+- Funkwhale activity + API: `/funkwhale`
+- Last.fm activity + API: `/lastfmapi`
 
 ## MongoDB
 
@@ -75,7 +75,7 @@
 - Last.fm endpoint requirements:
 - `LASTFM_API_KEY`
 - `LASTFM_USERNAME`
-- If these variables are missing, the related endpoint plugin is not enabled and `/listening` will show no listening history.
+- If these variables are missing, the endpoints still exist but return empty activity until credentials are configured.
 
 ## Startup script
 

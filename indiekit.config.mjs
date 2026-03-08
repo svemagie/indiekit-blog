@@ -36,10 +36,6 @@ const funkwhaleUsername = process.env.FUNKWHALE_USERNAME;
 const funkwhaleToken = process.env.FUNKWHALE_TOKEN;
 const lastfmApiKey = process.env.LASTFM_API_KEY;
 const lastfmUsername = process.env.LASTFM_USERNAME;
-const enableFunkwhaleEndpoint = Boolean(
-  funkwhaleInstance && funkwhaleUsername && funkwhaleToken,
-);
-const enableLastfmEndpoint = Boolean(lastfmApiKey && lastfmUsername);
 const publicationBaseUrl = (
   process.env.PUBLICATION_URL || "https://blog.giersig.eu"
 ).replace(/\/+$/, "");
@@ -127,8 +123,8 @@ export default {
     "@rmdes/indiekit-endpoint-github",
     "@rmdes/indiekit-endpoint-webmention-io",
     "@rmdes/indiekit-endpoint-conversations",
-    ...(enableFunkwhaleEndpoint ? ["@rmdes/indiekit-endpoint-funkwhale"] : []),
-    ...(enableLastfmEndpoint ? ["@rmdes/indiekit-endpoint-lastfm"] : []),
+    "@rmdes/indiekit-endpoint-funkwhale",
+    "@rmdes/indiekit-endpoint-lastfm",
     //"@rmdes/indiekit-endpoint-activitypub",
   ],
   "@indiekit/store-github": {

@@ -34,6 +34,9 @@ fi
 
 export NODE_ENV="${NODE_ENV:-production}"
 
+# Verify MongoDB credentials/connectivity before launching server.
+/usr/local/bin/node scripts/preflight-mongo-connection.mjs
+
 # Ensure runtime dependency patches are applied even if node_modules already exists.
 /usr/local/bin/node scripts/patch-lightningcss.mjs
 /usr/local/bin/node scripts/patch-endpoint-media-scope.mjs

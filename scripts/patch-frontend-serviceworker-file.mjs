@@ -80,6 +80,10 @@ const activateNew = `      await clearOldCaches();
 const registrationScriptRegex =
   /<script type="module">\n\s*if \(navigator\.serviceWorker\) \{\n[\s\S]*?<\/script>/m;
 
+const sidebarConditionOld = "{% if not minimalui %}";
+const sidebarConditionNew =
+  "{% if not minimalui and ('app--minimalui' not in appClasses) %}";
+
 const registrationDisableMarker = "disable stale service-worker caches";
 const registrationDisableScript = `<script type="module">
   if ("serviceWorker" in navigator) {
@@ -136,6 +140,13 @@ function patchServiceworker(content) {
 
 function patchLayout(content) {
   let updated = content;
+
+  if (
+    updated.includes(sidebarConditionOld) &&
+    !updated.includes(sidebarConditionNew)
+  ) {
+    updated = updated.replace(sidebarConditionOld, sidebarConditionNew);
+  }
 
   if (
     !updated.includes(registrationDisableMarker) &&

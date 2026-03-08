@@ -77,6 +77,6 @@
 - The frontend sharp runtime patch makes icon generation non-fatal on FreeBSD when `sharp` cannot load, preventing startup crashes in asset controller imports.
 - The files upload route patch fixes browser multi-upload by posting to `/files/upload` (session-authenticated) instead of direct `/media` calls without bearer token.
 - The files upload locale patch adds missing `files.upload.dropText`/`files.upload.browse`/`files.upload.submitMultiple` labels in endpoint locale files so UI text does not render raw translation keys.
-- The frontend serviceworker patch ensures `@indiekit/frontend/lib/serviceworker.js` exists at runtime, forces network-only handling for `/auth` and `/session` pages, and patches frontend layout templates to unregister stale service workers and clear caches on load.
+- The frontend serviceworker patch ensures `@indiekit/frontend/lib/serviceworker.js` exists at runtime, forces network-only handling for `/auth` and `/session` pages, patches frontend layout templates to unregister stale service workers and clear caches on load, and suppresses sidebar rendering whenever `app--minimalui` is present.
 - The conversations guard patch prevents `Cannot read properties of undefined (reading 'find')` when the `conversation_items` collection is temporarily unavailable.
 - The indieauth dev-mode guard patch prevents accidental production auth bypass by requiring explicit `INDIEKIT_ALLOW_DEV_AUTH=1` to enable dev auto-login.

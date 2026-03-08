@@ -23,6 +23,51 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", () => {});
 `;
 
+const authBypassMarker = "Never cache auth/session pages";
+const oldFetchCacheLine = "  const retrieveFromCache = caches.match(request);";
+const newFetchCacheBlock = `  const requestUrl = new URL(request.url);
+
+  // Never cache auth/session pages; always go to network.
+  if (
+    requestUrl.origin === self.location.origin &&
+    /^\\/(auth|session)(?:\\/|$)/.test(requestUrl.pathname)
+  ) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  const retrieveFromCache = caches.match(request);`;
+
+const clearAuthSessionEntriesFn = `
+async function clearAuthSessionEntries() {
+  try {
+    const pagesCache = await caches.open(pagesCacheName);
+    const keys = await pagesCache.keys();
+
+    await Promise.all(
+      keys
+        .filter((request) => {
+          const requestUrl = new URL(request.url);
+          return (
+            requestUrl.origin === self.location.origin &&
+            /^\\/(auth|session)(?:\\/|$)/.test(requestUrl.pathname)
+          );
+        })
+        .map((request) => pagesCache.delete(request)),
+    );
+  } catch (error) {
+    console.error("Error clearing auth/session cache entries", error);
+  }
+}
+`;
+
+const activateOld = `      await clearOldCaches();
+      await clients.claim();`;
+
+const activateNew = `      await clearOldCaches();
+      await clearAuthSessionEntries();
+      await clients.claim();`;
+
 async function exists(filePath) {
   try {
     await access(filePath);
@@ -32,26 +77,61 @@ async function exists(filePath) {
   }
 }
 
-if (await exists(expected)) {
-  console.log("[postinstall] frontend serviceworker already present");
-  process.exit(0);
+function patchServiceworker(content) {
+  let updated = content;
+
+  if (!updated.includes(authBypassMarker) && updated.includes(oldFetchCacheLine)) {
+    updated = updated.replace(oldFetchCacheLine, newFetchCacheBlock);
+  }
+
+  if (
+    !updated.includes("async function clearAuthSessionEntries()") &&
+    updated.includes("async function trimCache(cacheName, maxItems)")
+  ) {
+    updated = updated.replace(
+      "async function trimCache(cacheName, maxItems)",
+      `${clearAuthSessionEntriesFn}\nasync function trimCache(cacheName, maxItems)`,
+    );
+  }
+
+  if (updated.includes(activateOld)) {
+    updated = updated.replace(activateOld, activateNew);
+  }
+
+  return updated;
 }
 
-let sourcePath = null;
-for (const candidate of candidates) {
-  if (await exists(candidate)) {
-    sourcePath = candidate;
-    break;
+let restored = false;
+
+if (!(await exists(expected))) {
+  let sourcePath = null;
+  for (const candidate of candidates) {
+    if (await exists(candidate)) {
+      sourcePath = candidate;
+      break;
+    }
+  }
+
+  await mkdir(path.dirname(expected), { recursive: true });
+
+  if (sourcePath) {
+    const content = await readFile(sourcePath, "utf8");
+    await writeFile(expected, content, "utf8");
+    restored = true;
+    console.log(`[postinstall] Restored frontend serviceworker from ${sourcePath}`);
+  } else {
+    await writeFile(expected, fallback, "utf8");
+    restored = true;
+    console.log("[postinstall] Created fallback frontend serviceworker");
   }
 }
 
-await mkdir(path.dirname(expected), { recursive: true });
+const source = await readFile(expected, "utf8");
+const updated = patchServiceworker(source);
 
-if (sourcePath) {
-  const content = await readFile(sourcePath, "utf8");
-  await writeFile(expected, content, "utf8");
-  console.log(`[postinstall] Restored frontend serviceworker from ${sourcePath}`);
-} else {
-  await writeFile(expected, fallback, "utf8");
-  console.log("[postinstall] Created fallback frontend serviceworker");
+if (updated !== source) {
+  await writeFile(expected, updated, "utf8");
+  console.log("[postinstall] Patched frontend serviceworker auth/session cache bypass");
+} else if (!restored) {
+  console.log("[postinstall] frontend serviceworker already present");
 }

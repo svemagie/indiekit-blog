@@ -10,6 +10,15 @@ const candidates = [
   "node_modules/@rmdes/indiekit-endpoint-webmention-io/node_modules/@indiekit/frontend/lib/serviceworker.js",
 ];
 
+const layoutCandidates = [
+  "node_modules/@indiekit/frontend/layouts/default.njk",
+  "node_modules/@rmdes/indiekit-frontend/layouts/default.njk",
+  "node_modules/@indiekit/indiekit/node_modules/@indiekit/frontend/layouts/default.njk",
+  "node_modules/@indiekit/endpoint-posts/node_modules/@indiekit/frontend/layouts/default.njk",
+  "node_modules/@rmdes/indiekit-endpoint-conversations/node_modules/@indiekit/frontend/layouts/default.njk",
+  "node_modules/@rmdes/indiekit-endpoint-webmention-io/node_modules/@indiekit/frontend/layouts/default.njk",
+];
+
 const fallback = `const APP_VERSION = "APP_VERSION";
 
 self.addEventListener("install", (event) => {
@@ -68,6 +77,30 @@ const activateNew = `      await clearOldCaches();
       await clearAuthSessionEntries();
       await clients.claim();`;
 
+const registrationScriptRegex =
+  /<script type="module">\n\s*if \(navigator\.serviceWorker\) \{\n[\s\S]*?<\/script>/m;
+
+const registrationDisableMarker = "disable stale service-worker caches";
+const registrationDisableScript = `<script type="module">
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", async () => {
+      try {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(
+          registrations.map((registration) => registration.unregister()),
+        );
+
+        if ("caches" in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((key) => caches.delete(key)));
+        }
+      } catch (error) {
+        console.error("Failed to disable stale service-worker caches", error);
+      }
+    });
+  }
+</script>`;
+
 async function exists(filePath) {
   try {
     await access(filePath);
@@ -101,6 +134,19 @@ function patchServiceworker(content) {
   return updated;
 }
 
+function patchLayout(content) {
+  let updated = content;
+
+  if (
+    !updated.includes(registrationDisableMarker) &&
+    registrationScriptRegex.test(updated)
+  ) {
+    updated = updated.replace(registrationScriptRegex, registrationDisableScript);
+  }
+
+  return updated;
+}
+
 let restored = false;
 
 if (!(await exists(expected))) {
@@ -129,9 +175,36 @@ if (!(await exists(expected))) {
 const source = await readFile(expected, "utf8");
 const updated = patchServiceworker(source);
 
+let serviceworkerPatched = false;
 if (updated !== source) {
   await writeFile(expected, updated, "utf8");
+  serviceworkerPatched = true;
+}
+
+let layoutPatched = 0;
+for (const layoutPath of layoutCandidates) {
+  if (!(await exists(layoutPath))) {
+    continue;
+  }
+
+  const layoutSource = await readFile(layoutPath, "utf8");
+  const layoutUpdated = patchLayout(layoutSource);
+  if (layoutUpdated !== layoutSource) {
+    await writeFile(layoutPath, layoutUpdated, "utf8");
+    layoutPatched += 1;
+  }
+}
+
+if (serviceworkerPatched) {
   console.log("[postinstall] Patched frontend serviceworker auth/session cache bypass");
-} else if (!restored) {
+}
+
+if (layoutPatched > 0) {
+  console.log(
+    `[postinstall] Patched frontend layout serviceworker unregister in ${layoutPatched} file(s)`,
+  );
+}
+
+if (!restored && !serviceworkerPatched && layoutPatched === 0) {
   console.log("[postinstall] frontend serviceworker already present");
 }

@@ -47,6 +47,34 @@ const patchSpecs = [
     ],
   },
   {
+    name: "funkwhale-latest-date-coercion",
+    marker: "Invalid listenedAt in latest record; falling back to full sync",
+    oldSnippet: `  const latest = await collection.findOne({}, { sort: { listenedAt: -1 } });
+  const latestDate = latest?.listenedAt || new Date(0);
+
+  console.log(
+    \`[Funkwhale] Syncing listenings since: \${latestDate.toISOString()}\`
+  );`,
+    newSnippet: `  const latest = await collection.findOne({}, { sort: { listenedAt: -1 } });
+  const latestRawDate = latest?.listenedAt;
+  let latestDate = latestRawDate ? new Date(latestRawDate) : new Date(0);
+
+  if (Number.isNaN(latestDate.getTime())) {
+    console.warn(
+      "[Funkwhale] Invalid listenedAt in latest record; falling back to full sync"
+    );
+    latestDate = new Date(0);
+  }
+
+  console.log(
+    \`[Funkwhale] Syncing listenings since: \${latestDate.toISOString()}\`
+  );`,
+    candidates: [
+      "node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/sync.js",
+      "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/sync.js",
+    ],
+  },
+  {
     name: "funkwhale-now-playing-fallback",
     marker: "degrade to empty now-playing response when upstream endpoint is missing",
     oldSnippet: `    } catch (error) {

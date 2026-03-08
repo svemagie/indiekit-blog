@@ -1,4 +1,4 @@
-# indiekit-blog
+# Indieweb/kit Blog Server
 
 ## Admin login
 

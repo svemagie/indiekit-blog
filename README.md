@@ -7,6 +7,9 @@
 - When `INDIEKIT_ADMIN_URL` is set, config wires absolute auth endpoints/callback base (`/auth`, `/auth/token`, `/auth/introspect`) to that URL to keep login redirects on `/admin/*`.
 - Login uses `PASSWORD_SECRET` (bcrypt hash), not `INDIEKIT_PASSWORD`.
 - If no `PASSWORD_SECRET` exists yet, open `/admin/auth/new-password` once to generate it.
+- If login appears passwordless, first check for an existing authenticated session cookie. Use `/session/logout` (or `/admin/session/logout` behind proxy) to force a fresh login challenge.
+- Upstream IndieKit auto-authenticates in dev mode (`NODE_ENV=development`). This repository patches that behavior so dev auto-auth only works when `INDIEKIT_ALLOW_DEV_AUTH=1` is explicitly set.
+- Production startup now fails closed when auth/session settings are unsafe (`NODE_ENV` not `production`, `INDIEKIT_ALLOW_DEV_AUTH=1`, weak `SECRET`, missing/invalid `PASSWORD_SECRET`, or empty-password hash).
 - Post management UI should use `/posts` (`@indiekit/endpoint-posts.mountPath`).
 - Do not set post-management `mountPath` to frontend routes like `/blog`, otherwise backend publishing can be shadowed by the public site.
 
@@ -68,7 +71,8 @@
 - `start.sh` is intentionally ignored by Git (`.gitignore`) so server secrets are not committed.
 - Use `start.example.sh` as the tracked template and keep real credentials in environment variables (or `.env` on the server).
 - Startup scripts parse `.env` with the `dotenv` parser (not shell `source`), so values containing spaces are handled safely.
-- Startup scripts run preflight + patch helpers before boot (`scripts/preflight-mongo-connection.mjs`, `scripts/patch-lightningcss.mjs`, `scripts/patch-endpoint-media-scope.mjs`, `scripts/patch-endpoint-media-sharp-runtime.mjs`, `scripts/patch-frontend-sharp-runtime.mjs`, `scripts/patch-endpoint-files-upload-route.mjs`, `scripts/patch-endpoint-files-upload-locales.mjs`, `scripts/patch-frontend-serviceworker-file.mjs`, `scripts/patch-conversations-collection-guards.mjs`).
+- Startup scripts run preflight + patch helpers before boot (`scripts/preflight-production-security.mjs`, `scripts/preflight-mongo-connection.mjs`, `scripts/patch-lightningcss.mjs`, `scripts/patch-endpoint-media-scope.mjs`, `scripts/patch-endpoint-media-sharp-runtime.mjs`, `scripts/patch-frontend-sharp-runtime.mjs`, `scripts/patch-endpoint-files-upload-route.mjs`, `scripts/patch-endpoint-files-upload-locales.mjs`, `scripts/patch-frontend-serviceworker-file.mjs`, `scripts/patch-conversations-collection-guards.mjs`, `scripts/patch-indieauth-devmode-guard.mjs`).
+- The production security preflight blocks startup on insecure auth/session configuration and catches empty-password bcrypt hashes.
 - The media scope patch fixes a known upstream issue where file uploads can fail if the token scope is `create update delete` without explicit `media`.
 - The media sharp runtime patch makes image transformation resilient on FreeBSD: if `sharp` cannot load, uploads continue without resize/rotation instead of crashing the server process.
 - The frontend sharp runtime patch makes icon generation non-fatal on FreeBSD when `sharp` cannot load, preventing startup crashes in asset controller imports.
@@ -76,3 +80,4 @@
 - The files upload locale patch adds missing `files.upload.dropText`/`files.upload.browse`/`files.upload.submitMultiple` labels in endpoint locale files so UI text does not render raw translation keys.
 - The frontend serviceworker patch ensures `@indiekit/frontend/lib/serviceworker.js` exists at runtime to avoid ENOENT in the offline/service worker route.
 - The conversations guard patch prevents `Cannot read properties of undefined (reading 'find')` when the `conversation_items` collection is temporarily unavailable.
+- The indieauth dev-mode guard patch prevents accidental production auth bypass by requiring explicit `INDIEKIT_ALLOW_DEV_AUTH=1` to enable dev auto-login.

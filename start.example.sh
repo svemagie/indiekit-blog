@@ -37,6 +37,9 @@ export NODE_ENV="production"
 export INDIEKIT_DEBUG="0"
 unset DEBUG
 
+# Verify production auth/session hardening before launching server.
+/usr/local/bin/node scripts/preflight-production-security.mjs
+
 # Verify MongoDB credentials/connectivity before launching server.
 /usr/local/bin/node scripts/preflight-mongo-connection.mjs
 
@@ -49,5 +52,6 @@ unset DEBUG
 /usr/local/bin/node scripts/patch-endpoint-files-upload-locales.mjs
 /usr/local/bin/node scripts/patch-frontend-serviceworker-file.mjs
 /usr/local/bin/node scripts/patch-conversations-collection-guards.mjs
+/usr/local/bin/node scripts/patch-indieauth-devmode-guard.mjs
 
 exec /usr/local/bin/node node_modules/@indiekit/indiekit/bin/cli.js serve --config indiekit.config.mjs

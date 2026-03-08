@@ -46,6 +46,7 @@ jobs:
             sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && if ! (grep -Eq \"^SECRET=.*\" .env && grep -Eq \"^PASSWORD_SECRET=.*\" .env); then echo \"Missing SECRET or PASSWORD_SECRET in /usr/local/indiekit/.env\"; exit 1; fi"'
 
             # Validate startup prerequisites before touching the running service.
+            sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && NODE_ENV=production node scripts/preflight-production-security.mjs"'
             sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && NODE_ENV=production node scripts/preflight-mongo-connection.mjs"'
 
             # Restart asynchronously to avoid hanging SSH sessions when rc scripts keep stdout open.
@@ -67,6 +68,7 @@ jobs:
             echo "Indiekit process not found after restart."
             sudo bastille cmd node sh -lc "tail -n 120 ${restart_log} || true"
             sudo bastille cmd node sh -lc 'service indiekit onestatus || true'
+            sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && NODE_ENV=production node scripts/preflight-production-security.mjs" || true'
             sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && NODE_ENV=production node scripts/preflight-mongo-connection.mjs" || true'
             exit 1
       # Optionally reload nginx on web jail

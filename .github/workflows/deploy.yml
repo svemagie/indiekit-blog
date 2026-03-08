@@ -37,10 +37,14 @@ jobs:
             restart_log=/tmp/indiekit-restart.log
 
             # Update code and dependencies as indiekit user inside the jail.
-            sudo bastille cmd node sh -lc 'cd /usr/local/indiekit && su -l indiekit -c "git pull origin main && npm ci"'
+            sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && git pull origin main && npm ci && install -m 755 start.example.sh start.sh"'
+
+            # Ensure env file exists and contains auth secrets required by start.sh.
+            sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && test -f .env"'
+            sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && if ! (grep -Eq \"^SECRET=.*\" .env && grep -Eq \"^PASSWORD_SECRET=.*\" .env); then echo \"Missing SECRET or PASSWORD_SECRET in /usr/local/indiekit/.env\"; exit 1; fi"'
 
             # Validate startup prerequisites before touching the running service.
-            sudo bastille cmd node sh -lc 'cd /usr/local/indiekit && su -l indiekit -c "NODE_ENV=production node scripts/preflight-mongo-connection.mjs"'
+            sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && NODE_ENV=production node scripts/preflight-mongo-connection.mjs"'
 
             # Restart asynchronously to avoid hanging SSH sessions when rc scripts keep stdout open.
             sudo bastille cmd node sh -lc "nohup service indiekit restart >${restart_log} 2>&1 </dev/null &"
@@ -61,7 +65,7 @@ jobs:
             echo "Indiekit process not found after restart."
             sudo bastille cmd node sh -lc "tail -n 120 ${restart_log} || true"
             sudo bastille cmd node sh -lc 'service indiekit onestatus || true'
-            sudo bastille cmd node sh -lc 'cd /usr/local/indiekit && su -l indiekit -c "NODE_ENV=production node scripts/preflight-mongo-connection.mjs" || true'
+            sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && NODE_ENV=production node scripts/preflight-mongo-connection.mjs" || true'
             exit 1
       # Optionally reload nginx on web jail
       # - name: Reload nginx

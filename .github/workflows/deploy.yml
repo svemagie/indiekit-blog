@@ -34,22 +34,35 @@ jobs:
           port: 222
           script: |
             set -eu
+            restart_log=/tmp/indiekit-restart.log
 
             # Update code and dependencies as indiekit user inside the jail.
             sudo bastille cmd node sh -lc 'cd /usr/local/indiekit && su -l indiekit -c "git pull origin main && npm ci"'
 
+            # Validate startup prerequisites before touching the running service.
+            sudo bastille cmd node sh -lc 'cd /usr/local/indiekit && su -l indiekit -c "NODE_ENV=production node scripts/preflight-mongo-connection.mjs"'
+
             # Restart asynchronously to avoid hanging SSH sessions when rc scripts keep stdout open.
-            sudo bastille cmd node sh -lc 'nohup service indiekit restart >/tmp/indiekit-restart.log 2>&1 </dev/null &'
+            sudo bastille cmd node sh -lc "nohup service indiekit restart >${restart_log} 2>&1 </dev/null &"
 
-            sleep 3
+            # Give the process time to boot and pass preflight checks.
+            attempts=0
+            max_attempts=30
+            while [ "$attempts" -lt "$max_attempts" ]; do
+              if sudo bastille cmd node pgrep -f "indiekit serve" >/dev/null 2>&1; then
+                echo "Indiekit restart triggered and process is running."
+                exit 0
+              fi
 
-            if sudo bastille cmd node pgrep -f "indiekit serve" >/dev/null 2>&1; then
-              echo "Indiekit restart triggered and process is running."
-            else
-              echo "Indiekit process not found after restart."
-              sudo bastille cmd node sh -lc 'tail -n 80 /tmp/indiekit-restart.log || true'
-              exit 1
-            fi
+              attempts=$((attempts + 1))
+              sleep 2
+            done
+
+            echo "Indiekit process not found after restart."
+            sudo bastille cmd node sh -lc "tail -n 120 ${restart_log} || true"
+            sudo bastille cmd node sh -lc 'service indiekit onestatus || true'
+            sudo bastille cmd node sh -lc 'cd /usr/local/indiekit && su -l indiekit -c "NODE_ENV=production node scripts/preflight-mongo-connection.mjs" || true'
+            exit 1
       # Optionally reload nginx on web jail
       # - name: Reload nginx
       #   uses: appleboy/ssh-action@v0.1.10

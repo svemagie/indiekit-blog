@@ -38,5 +38,7 @@ export NODE_ENV="${NODE_ENV:-production}"
 /usr/local/bin/node scripts/patch-lightningcss.mjs
 /usr/local/bin/node scripts/patch-endpoint-media-scope.mjs
 /usr/local/bin/node scripts/patch-endpoint-files-upload-route.mjs
+/usr/local/bin/node scripts/patch-frontend-serviceworker-file.mjs
+/usr/local/bin/node scripts/patch-conversations-collection-guards.mjs
 
 exec /usr/local/bin/node node_modules/@indiekit/indiekit/bin/cli.js serve --config indiekit.config.mjs

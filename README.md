@@ -45,7 +45,7 @@
 - `content/replies/{slug}.md`
 - `content/pages/{slug}.md`
 - If these paths do not match the content repo structure, edit/delete actions can fail with GitHub `Not Found`.
-- Reposts are handled as property-based posts (`repostOf` / `repost_of`) and rendered through the `reposts` collection in the Eleventy theme.
+- Reposts are configured as a dedicated post type (`repost`) and stored at `content/reposts/{slug}.md`.
 
 ## Post URLs
 

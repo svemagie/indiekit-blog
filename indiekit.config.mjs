@@ -88,6 +88,13 @@ export default {
           url: `${publicationBaseUrl}/likes/{slug}/`,
         },
       },
+      repost: {
+        name: "Repost",
+        post: {
+          path: "content/reposts/{slug}.md",
+          url: `${publicationBaseUrl}/reposts/{slug}/`,
+        },
+      },
       photo: {
         name: "Foto",
         post: {
@@ -118,6 +125,7 @@ export default {
 
   plugins: [
     "@indiekit/store-github",
+    "@indiekit/post-type-repost",
     "@rmdes/indiekit-post-type-page",
     "@rmdes/indiekit-preset-eleventy",
     "@rmdes/indiekit-endpoint-github",
@@ -135,6 +143,9 @@ export default {
   },
   "@indiekit/endpoint-posts": {
     mountPath: "/posts",
+  },
+  "@indiekit/post-type-repost": {
+    name: "Repost",
   },
   "@rmdes/indiekit-endpoint-github": {
     token: githubActivityToken,

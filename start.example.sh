@@ -57,5 +57,6 @@ unset DEBUG
 /usr/local/bin/node scripts/patch-indiekit-routes-rate-limits.mjs
 /usr/local/bin/node scripts/patch-indiekit-error-production-stack.mjs
 /usr/local/bin/node scripts/patch-indieauth-devmode-guard.mjs
+/usr/local/bin/node scripts/patch-listening-endpoint-runtime-guards.mjs
 
 exec /usr/local/bin/node node_modules/@indiekit/indiekit/bin/cli.js serve --config indiekit.config.mjs

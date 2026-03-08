@@ -71,12 +71,14 @@
 ## Listening tokens
 
 - Funkwhale endpoint requirements:
-- `FUNKWHALE_INSTANCE` (for example `https://your-funkwhale.example`)
+- `FUNKWHALE_INSTANCE` (for example `https://your-funkwhale.example`, root server URL only)
 - `FUNKWHALE_USERNAME`
 - `FUNKWHALE_TOKEN` (read API token)
 - Last.fm endpoint requirements:
 - `LASTFM_API_KEY`
 - `LASTFM_USERNAME`
+- Listening endpoint plugins target Node.js 20+; older runtimes can produce inconsistent fetch/JSON behavior.
+- If `FUNKWHALE_INSTANCE` points to a host that does not expose Funkwhale's API routes, API responses now degrade to empty data instead of repeated 500 errors.
 - If these variables are missing, the endpoints still exist but return empty activity until credentials are configured.
 
 ## ActivityPub
@@ -101,7 +103,7 @@
 - `start.sh` is intentionally ignored by Git (`.gitignore`) so server secrets are not committed.
 - Use `start.example.sh` as the tracked template and keep real credentials in environment variables (or `.env` on the server).
 - Startup scripts parse `.env` with the `dotenv` parser (not shell `source`), so values containing spaces are handled safely.
-- Startup scripts run preflight + patch helpers before boot (`scripts/preflight-production-security.mjs`, `scripts/preflight-mongo-connection.mjs`, `scripts/patch-lightningcss.mjs`, `scripts/patch-endpoint-media-scope.mjs`, `scripts/patch-endpoint-media-sharp-runtime.mjs`, `scripts/patch-frontend-sharp-runtime.mjs`, `scripts/patch-endpoint-files-upload-route.mjs`, `scripts/patch-endpoint-files-upload-locales.mjs`, `scripts/patch-frontend-serviceworker-file.mjs`, `scripts/patch-conversations-collection-guards.mjs`, `scripts/patch-indiekit-routes-rate-limits.mjs`, `scripts/patch-indiekit-error-production-stack.mjs`, `scripts/patch-indieauth-devmode-guard.mjs`).
+- Startup scripts run preflight + patch helpers before boot (`scripts/preflight-production-security.mjs`, `scripts/preflight-mongo-connection.mjs`, `scripts/patch-lightningcss.mjs`, `scripts/patch-endpoint-media-scope.mjs`, `scripts/patch-endpoint-media-sharp-runtime.mjs`, `scripts/patch-frontend-sharp-runtime.mjs`, `scripts/patch-endpoint-files-upload-route.mjs`, `scripts/patch-endpoint-files-upload-locales.mjs`, `scripts/patch-frontend-serviceworker-file.mjs`, `scripts/patch-conversations-collection-guards.mjs`, `scripts/patch-indiekit-routes-rate-limits.mjs`, `scripts/patch-indiekit-error-production-stack.mjs`, `scripts/patch-indieauth-devmode-guard.mjs`, `scripts/patch-listening-endpoint-runtime-guards.mjs`).
 - The production security preflight blocks startup on insecure auth/session configuration and catches empty-password bcrypt hashes.
 - One-time recovery mode is available with `INDIEKIT_ALLOW_PASSWORD_SETUP=1` to bootstrap/reset `PASSWORD_SECRET` when locked out. Remove this flag after setting a valid hash.
 - The media scope patch fixes a known upstream issue where file uploads can fail if the token scope is `create update delete` without explicit `media`.

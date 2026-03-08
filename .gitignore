@@ -9,3 +9,5 @@ node_modules/
 .sh_history
 .ssh/
 .claude/
+.copilot_tmp/
+.DS_Store

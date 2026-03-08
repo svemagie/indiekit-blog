@@ -14,6 +14,11 @@ const newDevModeCode = `if (devMode && process.env.INDIEKIT_ALLOW_DEV_AUTH === "
         request.session.scope = "create update delete media";
       } else if (!process.env.PASSWORD_SECRET) {`;
 
+const oldRedirectRegex =
+  "const validRedirect = redirect.match(/^\\/[\\w&/=?]*$/);";
+const newRedirectRegex =
+  "const validRedirect = redirect.match(/^\\/[\\w&/=?%.-]*$/);";
+
 async function exists(path) {
   try {
     await access(path);
@@ -40,6 +45,13 @@ for (const filePath of candidates) {
     updated = updated.replace(oldDevModeCode, newDevModeCode);
   }
 
+  if (
+    !updated.includes(newRedirectRegex) &&
+    updated.includes(oldRedirectRegex)
+  ) {
+    updated = updated.replace(oldRedirectRegex, newRedirectRegex);
+  }
+
   if (updated !== source) {
     await writeFile(filePath, updated, "utf8");
     patched += 1;
@@ -51,5 +63,5 @@ if (checked === 0) {
 } else if (patched === 0) {
   console.log("[postinstall] indieauth auth-guard patches already applied");
 } else {
-  console.log(`[postinstall] Patched indieauth auth guards in ${patched} file(s)`);
+  console.log(`[postinstall] Patched indieauth auth guards/redirect validation in ${patched} file(s)`);
 }

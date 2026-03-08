@@ -2,13 +2,11 @@
 
 ## Admin login
 
-- The IndieKit admin is expected to run behind `/admin`.
-- Set `INDIEKIT_ADMIN_URL` to the public admin base URL (example: `https://blog.giersig.eu/admin` or `https://blog.giersig.eu/admin/`).
-- When `INDIEKIT_ADMIN_URL` is set, config wires absolute auth endpoints/callback base (`/auth`, `/auth/token`, `/auth/introspect`) to that URL to keep login redirects on `/admin/*`.
+- The IndieKit admin uses root auth/session paths (for example: `/session/login`, `/auth`, `/auth/new-password`).
 - Login uses `PASSWORD_SECRET` (bcrypt hash), not `INDIEKIT_PASSWORD`.
-- If no `PASSWORD_SECRET` exists yet, open `/admin/auth/new-password` once to generate it.
-- If login is blocked because `PASSWORD_SECRET` is missing/invalid, set `INDIEKIT_ALLOW_PASSWORD_SETUP=1` temporarily, restart, generate a new hash via `/admin/auth/new-password`, set `PASSWORD_SECRET` to that hash, then remove `INDIEKIT_ALLOW_PASSWORD_SETUP`.
-- If login appears passwordless, first check for an existing authenticated session cookie. Use `/session/logout` (or `/admin/session/logout` behind proxy) to force a fresh login challenge.
+- If no `PASSWORD_SECRET` exists yet, open `/auth/new-password` once to generate it.
+- If login is blocked because `PASSWORD_SECRET` is missing/invalid, set `INDIEKIT_ALLOW_PASSWORD_SETUP=1` temporarily, restart, generate a new hash via `/auth/new-password`, set `PASSWORD_SECRET` to that hash, then remove `INDIEKIT_ALLOW_PASSWORD_SETUP`.
+- If login appears passwordless, first check for an existing authenticated session cookie. Use `/session/logout` to force a fresh login challenge.
 - Upstream IndieKit auto-authenticates in dev mode (`NODE_ENV=development`). This repository patches that behavior so dev auto-auth only works when `INDIEKIT_ALLOW_DEV_AUTH=1` is explicitly set.
 - Production startup now fails closed when auth/session settings are unsafe (`NODE_ENV` not `production`, `INDIEKIT_ALLOW_DEV_AUTH=1`, weak `SECRET`, missing/invalid `PASSWORD_SECRET`, or empty-password hash).
 - Post management UI should use `/posts` (`@indiekit/endpoint-posts.mountPath`).
@@ -22,7 +20,6 @@
 - Webmentions moderation + API: `/webmentions`
 - Conversations + API: `/conversations`
 - GitHub activity + API: `/github`
-- If IndieKit is reverse-proxied behind `/admin`, these become `/admin/posts`, `/admin/files`, etc.
 
 ## MongoDB
 

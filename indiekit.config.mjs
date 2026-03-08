@@ -37,6 +37,7 @@ const publicationBaseUrl = (
 const adminBaseUrl = (process.env.INDIEKIT_ADMIN_URL || "")
   .trim()
   .replace(/\/+$/, "");
+const adminAppUrl = adminBaseUrl ? `${adminBaseUrl}/` : "";
 const nodeEnv = (process.env.NODE_ENV || "production").toLowerCase();
 const debugEnabled = process.env.INDIEKIT_DEBUG === "1" || nodeEnv !== "production";
 
@@ -55,7 +56,7 @@ export default {
     name: "Indiekit",
     mongodbUrl: mongoUrl,
     ...(adminBaseUrl && {
-      url: adminBaseUrl,
+      url: adminAppUrl,
       authorizationEndpoint: `${adminBaseUrl}/auth`,
       introspectionEndpoint: `${adminBaseUrl}/auth/introspect`,
       tokenEndpoint: `${adminBaseUrl}/auth/token`,

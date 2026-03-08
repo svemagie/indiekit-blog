@@ -3,7 +3,7 @@
 ## Admin login
 
 - The IndieKit admin is expected to run behind `/admin`.
-- Set `INDIEKIT_ADMIN_URL` to the public admin base URL, including trailing slash (example: `https://blog.giersig.eu/admin/`).
+- Set `INDIEKIT_ADMIN_URL` to the public admin base URL (example: `https://blog.giersig.eu/admin` or `https://blog.giersig.eu/admin/`).
 - When `INDIEKIT_ADMIN_URL` is set, config wires absolute auth endpoints/callback base (`/auth`, `/auth/token`, `/auth/introspect`) to that URL to keep login redirects on `/admin/*`.
 - Login uses `PASSWORD_SECRET` (bcrypt hash), not `INDIEKIT_PASSWORD`.
 - If no `PASSWORD_SECRET` exists yet, open `/admin/auth/new-password` once to generate it.

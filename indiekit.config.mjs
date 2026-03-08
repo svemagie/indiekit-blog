@@ -37,7 +37,9 @@ const funkwhaleToken = process.env.FUNKWHALE_TOKEN;
 const lastfmApiKey = process.env.LASTFM_API_KEY;
 const lastfmUsername = process.env.LASTFM_USERNAME;
 const publicationBaseUrl = (
-  process.env.PUBLICATION_URL || "https://blog.giersig.eu"
+  process.env.PUBLICATION_URL ||
+  process.env.SITE_URL ||
+  "https://blog.giersig.eu"
 ).replace(/\/+$/, "");
 const publicationHostname = (() => {
   try {
@@ -51,7 +53,19 @@ const debugEnabled = process.env.INDIEKIT_DEBUG === "1" || nodeEnv !== "producti
 const siteName = process.env.SITE_NAME || "Indiekit";
 const authorName = process.env.AUTHOR_NAME || "";
 const authorBio = process.env.AUTHOR_BIO || "";
-const authorAvatar = process.env.AUTHOR_AVATAR || "";
+const authorAvatar = (() => {
+  const avatar = (process.env.AUTHOR_AVATAR || "").trim();
+
+  if (!avatar) {
+    return "";
+  }
+
+  try {
+    return new URL(avatar, publicationBaseUrl).href;
+  } catch {
+    return "";
+  }
+})();
 const activityPubHandle = (
   process.env.AP_HANDLE ||
   process.env.ACTIVITYPUB_HANDLE ||

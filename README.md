@@ -32,6 +32,7 @@
 ## Content paths
 
 - This setup writes post files to the content repo `blog` under `content/`.
+- Photo upload binaries are written to `images/{filename}` and published at `${PUBLICATION_URL}/images/{filename}`.
 - Current paths in `publication.postTypes` are:
 - `content/articles/{slug}.md`
 - `content/notes/{slug}.md`

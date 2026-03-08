@@ -96,6 +96,10 @@ export default {
           path: "content/photos/{slug}.md",
           url: `${publicationBaseUrl}/photos/{slug}/`,
         },
+        media: {
+          path: "images/{filename}",
+          url: `${publicationBaseUrl}/images/{filename}`,
+        },
       },
       reply: {
         name: "Antwort",

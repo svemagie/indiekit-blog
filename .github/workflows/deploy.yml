@@ -44,7 +44,7 @@ jobs:
             sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && git pull origin main && npm ci && install -m 755 start.example.sh start.sh"'
 
             # Build sharp against jail libraries and verify runtime load.
-            sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && npm rebuild sharp --build-from-source"'
+            sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && npm_config_build_from_source=true npm rebuild sharp"'
             sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && node -e \"require(\\\"sharp\\\"); console.log(\\\"sharp runtime OK\\\")\""'
 
             # Ensure env file exists and contains auth secrets required by start.sh.
@@ -61,8 +61,8 @@ jobs:
             attempts=0
             max_attempts=30
             while [ "$attempts" -lt "$max_attempts" ]; do
-              if sudo bastille cmd node pgrep -f "indiekit serve" >/dev/null 2>&1; then
-                echo "Indiekit restart triggered and process is running."
+              if sudo bastille cmd node sh -lc 'service indiekit onestatus >/dev/null 2>&1'; then
+                echo "Indiekit restart triggered and service is running."
                 exit 0
               fi
 

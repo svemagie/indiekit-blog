@@ -5,6 +5,7 @@
 - The IndieKit admin uses root auth/session paths (for example: `/session/login`, `/auth`, `/auth/new-password`).
 - Legacy `/admin` request paths are normalized to root login redirects (for example `/admin/posts` -> `/session/login?redirect=/posts`) to avoid post-login dead-end targets.
 - Legacy auth/session aliases are redirected directly (for example `/admin/auth/new-password` -> `/auth/new-password`, `/admin/session/login` -> `/session/login`).
+- Legacy redirect query targets are normalized as well (for example `/session/login?redirect=/admin/posts` becomes post-login redirect to `/posts`).
 - Login page now auto-continues to the password consent screen by default. Add `?noautocontinue=1` to `/session/login` if you want to keep the manual button step.
 - Login uses `PASSWORD_SECRET` (bcrypt hash), not `INDIEKIT_PASSWORD`.
 - If no `PASSWORD_SECRET` exists yet, open `/auth/new-password` once to generate it.

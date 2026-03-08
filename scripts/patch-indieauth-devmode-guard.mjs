@@ -14,6 +14,20 @@ const newDevModeCode = `if (devMode && process.env.INDIEKIT_ALLOW_DEV_AUTH === "
         request.session.scope = "create update delete media";
       } else if (!process.env.PASSWORD_SECRET) {`;
 
+const newCallbackRedirectCode = `        const { redirect } = request.query;
+        const requestedRedirect =
+          typeof redirect === "string" ? redirect : "";
+        const normalizedRedirect =
+          requestedRedirect === "/admin"
+            ? "/"
+            : requestedRedirect.replace(/^\\/admin(?=\\/)/, "");
+        this.redirectUri = normalizedRedirect
+          ? \`\${callbackUrl}?redirect=\${normalizedRedirect}\`
+          : \`\${callbackUrl}\`;`;
+
+const oldCallbackRedirectRegex =
+  /const \{ redirect \} = request\.query;\n\s+this\.redirectUri = redirect\n\s+\? `\$\{callbackUrl\}\?redirect=\$\{redirect\}`\n\s+: `\$\{callbackUrl\}`;/m;
+
 const newLoginRedirectCode = `        if (request.method === "GET") {
           const directAlias = request.originalUrl.replace(
             /^\\/admin\\/(auth|session)(?=\\/|$)/,
@@ -61,6 +75,13 @@ for (const filePath of candidates) {
 
   if (!updated.includes(newDevModeCode) && updated.includes(oldDevModeCode)) {
     updated = updated.replace(oldDevModeCode, newDevModeCode);
+  }
+
+  if (
+    !updated.includes("const normalizedRedirect =") &&
+    oldCallbackRedirectRegex.test(updated)
+  ) {
+    updated = updated.replace(oldCallbackRedirectRegex, newCallbackRedirectCode);
   }
 
   if (!updated.includes("const directAlias = request.originalUrl.replace(")) {

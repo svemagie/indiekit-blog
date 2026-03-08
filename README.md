@@ -3,10 +3,6 @@
 ## Admin login
 
 - The IndieKit admin uses root auth/session paths (for example: `/session/login`, `/auth`, `/auth/new-password`).
-- Legacy `/admin` request paths are normalized to root login redirects (for example `/admin/posts` -> `/session/login?redirect=/posts`) to avoid post-login dead-end targets.
-- Legacy auth/session aliases are redirected directly (for example `/admin/auth/new-password` -> `/auth/new-password`, `/admin/session/login` -> `/session/login`).
-- Legacy redirect query targets are normalized as well (for example `/session/login?redirect=/admin/posts` becomes post-login redirect to `/posts`).
-- Login page now auto-continues to the password consent screen by default. Add `?noautocontinue=1` to `/session/login` if you want to keep the manual button step.
 - Login uses `PASSWORD_SECRET` (bcrypt hash), not `INDIEKIT_PASSWORD`.
 - If no `PASSWORD_SECRET` exists yet, open `/auth/new-password` once to generate it.
 - If login is blocked because `PASSWORD_SECRET` is missing/invalid, set `INDIEKIT_ALLOW_PASSWORD_SETUP=1` temporarily, restart, generate a new hash via `/auth/new-password`, set `PASSWORD_SECRET` to that hash, then remove `INDIEKIT_ALLOW_PASSWORD_SETUP`.
@@ -73,7 +69,7 @@
 - `start.sh` is intentionally ignored by Git (`.gitignore`) so server secrets are not committed.
 - Use `start.example.sh` as the tracked template and keep real credentials in environment variables (or `.env` on the server).
 - Startup scripts parse `.env` with the `dotenv` parser (not shell `source`), so values containing spaces are handled safely.
-- Startup scripts run preflight + patch helpers before boot (`scripts/preflight-production-security.mjs`, `scripts/preflight-mongo-connection.mjs`, `scripts/patch-lightningcss.mjs`, `scripts/patch-endpoint-media-scope.mjs`, `scripts/patch-endpoint-media-sharp-runtime.mjs`, `scripts/patch-frontend-sharp-runtime.mjs`, `scripts/patch-endpoint-files-upload-route.mjs`, `scripts/patch-endpoint-files-upload-locales.mjs`, `scripts/patch-frontend-serviceworker-file.mjs`, `scripts/patch-conversations-collection-guards.mjs`, `scripts/patch-indieauth-devmode-guard.mjs`, `scripts/patch-session-login-autocontinue.mjs`).
+- Startup scripts run preflight + patch helpers before boot (`scripts/preflight-production-security.mjs`, `scripts/preflight-mongo-connection.mjs`, `scripts/patch-lightningcss.mjs`, `scripts/patch-endpoint-media-scope.mjs`, `scripts/patch-endpoint-media-sharp-runtime.mjs`, `scripts/patch-frontend-sharp-runtime.mjs`, `scripts/patch-endpoint-files-upload-route.mjs`, `scripts/patch-endpoint-files-upload-locales.mjs`, `scripts/patch-frontend-serviceworker-file.mjs`, `scripts/patch-conversations-collection-guards.mjs`, `scripts/patch-indieauth-devmode-guard.mjs`).
 - The production security preflight blocks startup on insecure auth/session configuration and catches empty-password bcrypt hashes.
 - One-time recovery mode is available with `INDIEKIT_ALLOW_PASSWORD_SETUP=1` to bootstrap/reset `PASSWORD_SECRET` when locked out. Remove this flag after setting a valid hash.
 - The media scope patch fixes a known upstream issue where file uploads can fail if the token scope is `create update delete` without explicit `media`.
@@ -84,4 +80,3 @@
 - The frontend serviceworker patch ensures `@indiekit/frontend/lib/serviceworker.js` exists at runtime to avoid ENOENT in the offline/service worker route.
 - The conversations guard patch prevents `Cannot read properties of undefined (reading 'find')` when the `conversation_items` collection is temporarily unavailable.
 - The indieauth dev-mode guard patch prevents accidental production auth bypass by requiring explicit `INDIEKIT_ALLOW_DEV_AUTH=1` to enable dev auto-login.
-- The session login auto-continue patch redirects from the intermediate `/session/login` screen to the password consent form automatically (with optional `?noautocontinue=1` override).

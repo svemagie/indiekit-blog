@@ -55,6 +55,5 @@ unset DEBUG
 /usr/local/bin/node scripts/patch-frontend-serviceworker-file.mjs
 /usr/local/bin/node scripts/patch-conversations-collection-guards.mjs
 /usr/local/bin/node scripts/patch-indieauth-devmode-guard.mjs
-/usr/local/bin/node scripts/patch-session-login-autocontinue.mjs
 
 exec /usr/local/bin/node node_modules/@indiekit/indiekit/bin/cli.js serve --config indiekit.config.mjs

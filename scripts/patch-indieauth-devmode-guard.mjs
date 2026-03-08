@@ -4,15 +4,31 @@ const candidates = [
   "node_modules/@indiekit/indiekit/lib/indieauth.js",
 ];
 
-const oldCode = `if (devMode) {
+const oldDevModeCode = `if (devMode) {
         request.session.access_token = process.env.NODE_ENV;
         request.session.scope = "create update delete media";
       } else if (!process.env.PASSWORD_SECRET) {`;
 
-const newCode = `if (devMode && process.env.INDIEKIT_ALLOW_DEV_AUTH === "1") {
+const newDevModeCode = `if (devMode && process.env.INDIEKIT_ALLOW_DEV_AUTH === "1") {
         request.session.access_token = process.env.NODE_ENV;
         request.session.scope = "create update delete media";
       } else if (!process.env.PASSWORD_SECRET) {`;
+
+const oldLoginRedirectCode = `        if (request.method === "GET") {
+          return response.redirect(
+            \`/session/login?redirect=\${request.originalUrl}\`,
+          );
+        }`;
+
+const newLoginRedirectCode = `        if (request.method === "GET") {
+          const loginRedirect =
+            request.originalUrl === "/admin"
+              ? "/"
+              : request.originalUrl.replace(/^\\/admin(?=\\/)/, "");
+          return response.redirect(
+            \`/session/login?redirect=\${loginRedirect}\`,
+          );
+        }`;
 
 async function exists(path) {
   try {
@@ -34,24 +50,29 @@ for (const filePath of candidates) {
   checked += 1;
 
   const source = await readFile(filePath, "utf8");
+  let updated = source;
 
-  if (source.includes(newCode)) {
-    continue;
+  if (!updated.includes(newDevModeCode) && updated.includes(oldDevModeCode)) {
+    updated = updated.replace(oldDevModeCode, newDevModeCode);
   }
 
-  if (!source.includes(oldCode)) {
-    continue;
+  if (
+    !updated.includes(newLoginRedirectCode) &&
+    updated.includes(oldLoginRedirectCode)
+  ) {
+    updated = updated.replace(oldLoginRedirectCode, newLoginRedirectCode);
   }
 
-  const updated = source.replace(oldCode, newCode);
-  await writeFile(filePath, updated, "utf8");
-  patched += 1;
+  if (updated !== source) {
+    await writeFile(filePath, updated, "utf8");
+    patched += 1;
+  }
 }
 
 if (checked === 0) {
   console.log("[postinstall] No indieauth middleware files found");
 } else if (patched === 0) {
-  console.log("[postinstall] indieauth dev-mode guard already patched");
+  console.log("[postinstall] indieauth auth-guard patches already applied");
 } else {
-  console.log(`[postinstall] Patched indieauth dev-mode guard in ${patched} file(s)`);
+  console.log(`[postinstall] Patched indieauth auth guards in ${patched} file(s)`);
 }

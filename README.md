@@ -3,6 +3,7 @@
 ## Admin login
 
 - The IndieKit admin uses root auth/session paths (for example: `/session/login`, `/auth`, `/auth/new-password`).
+- Legacy `/admin` request paths are normalized to root login redirects (for example `/admin/posts` -> `/session/login?redirect=/posts`) to avoid post-login dead-end targets.
 - Login uses `PASSWORD_SECRET` (bcrypt hash), not `INDIEKIT_PASSWORD`.
 - If no `PASSWORD_SECRET` exists yet, open `/auth/new-password` once to generate it.
 - If login is blocked because `PASSWORD_SECRET` is missing/invalid, set `INDIEKIT_ALLOW_PASSWORD_SETUP=1` temporarily, restart, generate a new hash via `/auth/new-password`, set `PASSWORD_SECRET` to that hash, then remove `INDIEKIT_ALLOW_PASSWORD_SETUP`.

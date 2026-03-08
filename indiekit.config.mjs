@@ -31,6 +31,15 @@ const githubContentToken =
   process.env.GH_CONTENT_TOKEN || process.env.GITHUB_TOKEN;
 const githubActivityToken =
   process.env.GH_ACTIVITY_TOKEN || process.env.GITHUB_TOKEN;
+const funkwhaleInstance = process.env.FUNKWHALE_INSTANCE;
+const funkwhaleUsername = process.env.FUNKWHALE_USERNAME;
+const funkwhaleToken = process.env.FUNKWHALE_TOKEN;
+const lastfmApiKey = process.env.LASTFM_API_KEY;
+const lastfmUsername = process.env.LASTFM_USERNAME;
+const enableFunkwhaleEndpoint = Boolean(
+  funkwhaleInstance && funkwhaleUsername && funkwhaleToken,
+);
+const enableLastfmEndpoint = Boolean(lastfmApiKey && lastfmUsername);
 const publicationBaseUrl = (
   process.env.PUBLICATION_URL || "https://blog.giersig.eu"
 ).replace(/\/+$/, "");
@@ -118,6 +127,8 @@ export default {
     "@rmdes/indiekit-endpoint-github",
     "@rmdes/indiekit-endpoint-webmention-io",
     "@rmdes/indiekit-endpoint-conversations",
+    ...(enableFunkwhaleEndpoint ? ["@rmdes/indiekit-endpoint-funkwhale"] : []),
+    ...(enableLastfmEndpoint ? ["@rmdes/indiekit-endpoint-lastfm"] : []),
     //"@rmdes/indiekit-endpoint-activitypub",
   ],
   "@indiekit/store-github": {
@@ -139,6 +150,17 @@ export default {
   },
   "@rmdes/indiekit-endpoint-conversations": {
     mountPath: "/conversations",
+  },
+  "@rmdes/indiekit-endpoint-funkwhale": {
+    mountPath: "/funkwhale",
+    instanceUrl: funkwhaleInstance,
+    username: funkwhaleUsername,
+    token: funkwhaleToken,
+  },
+  "@rmdes/indiekit-endpoint-lastfm": {
+    mountPath: "/lastfmapi",
+    apiKey: lastfmApiKey,
+    username: lastfmUsername,
   },
   "@rmdes/indiekit-endpoint-activitypub": {
     username: "blog.giersig.eu",

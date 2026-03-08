@@ -20,6 +20,8 @@
 - Webmentions moderation + API: `/webmentions`
 - Conversations + API: `/conversations`
 - GitHub activity + API: `/github`
+- Funkwhale activity + API: `/funkwhale` (enabled when `FUNKWHALE_INSTANCE`, `FUNKWHALE_USERNAME`, `FUNKWHALE_TOKEN` are set)
+- Last.fm activity + API: `/lastfmapi` (enabled when `LASTFM_API_KEY`, `LASTFM_USERNAME` are set)
 
 ## MongoDB
 
@@ -63,6 +65,17 @@
 - `GH_ACTIVITY_TOKEN`: token for GitHub dashboard/activity endpoint, used by `@rmdes/indiekit-endpoint-github`.
 - `GITHUB_USERNAME`: GitHub user/owner name.
 - Backward compatibility: if `GH_CONTENT_TOKEN` or `GH_ACTIVITY_TOKEN` are not set, config falls back to `GITHUB_TOKEN`.
+
+## Listening tokens
+
+- Funkwhale endpoint requirements:
+- `FUNKWHALE_INSTANCE` (for example `https://your-funkwhale.example`)
+- `FUNKWHALE_USERNAME`
+- `FUNKWHALE_TOKEN` (read API token)
+- Last.fm endpoint requirements:
+- `LASTFM_API_KEY`
+- `LASTFM_USERNAME`
+- If these variables are missing, the related endpoint plugin is not enabled and `/listening` will show no listening history.
 
 ## Startup script
 

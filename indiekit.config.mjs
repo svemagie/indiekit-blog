@@ -1,4 +1,6 @@
 import "dotenv/config";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const mongoUsername = process.env.MONGO_USERNAME || process.env.MONGO_USER || "";
 const mongoPassword = process.env.MONGO_PASSWORD || "";
@@ -82,6 +84,11 @@ const activityPubDebugDashboard =
 const activityPubDebugPassword = process.env.AP_DEBUG_PASSWORD || "";
 const activityPubAlsoKnownAs = process.env.AP_ALSO_KNOWN_AS || "";
 const redisUrl = process.env.REDIS_URL || "";
+const configDir = path.dirname(fileURLToPath(import.meta.url));
+const homepageContentDir =
+  process.env.HOMEPAGE_CONTENT_DIR ||
+  process.env.CONTENT_DIR ||
+  path.join(configDir, "content");
 
 let webmentionDomain = process.env.WEBMENTION_IO_DOMAIN;
 if (!webmentionDomain) {
@@ -199,6 +206,7 @@ export default {
   },
   "@rmdes/indiekit-endpoint-homepage": {
     mountPath: "/homepage",
+    contentDir: homepageContentDir,
   },
   "@rmdes/indiekit-endpoint-conversations": {
     mountPath: "/conversations",

@@ -22,6 +22,8 @@
 - GitHub activity + API: `/github`
 - Funkwhale activity + API: `/funkwhale`
 - Last.fm activity + API: `/lastfmapi`
+- ActivityPub federation + admin reader: `/activitypub`
+- ActivityPub discovery: `/.well-known/webfinger`, `/nodeinfo/2.1`
 
 ## MongoDB
 
@@ -76,6 +78,23 @@
 - `LASTFM_API_KEY`
 - `LASTFM_USERNAME`
 - If these variables are missing, the endpoints still exist but return empty activity until credentials are configured.
+
+## ActivityPub
+
+- ActivityPub federation is enabled via `@rmdes/indiekit-endpoint-activitypub`.
+- Actor handle resolution order is: `AP_HANDLE`, then `ACTIVITYPUB_HANDLE`, then `GITHUB_USERNAME`, then publication hostname first label.
+- Actor profile seed values come from `AUTHOR_NAME`, `AUTHOR_BIO`, `AUTHOR_AVATAR`, and `SITE_DESCRIPTION`.
+- Optional ActivityPub variables:
+- `AP_ALSO_KNOWN_AS` (Mastodon migration alias URL)
+- `AP_LOG_LEVEL` (`debug|info|warning|error|fatal`, default `info`)
+- `AP_DEBUG` (`1` or `true` enables debug dashboard)
+- `AP_DEBUG_PASSWORD` (required when debug dashboard is enabled)
+- `REDIS_URL` (recommended for production delivery queue durability)
+- Quick verification commands:
+- `curl -s "https://blog.giersig.eu/.well-known/webfinger?resource=acct:<handle>@blog.giersig.eu" | jq .`
+- `curl -s -H "Accept: application/activity+json" "https://blog.giersig.eu/" | jq .`
+- `curl -s "https://blog.giersig.eu/nodeinfo/2.1" | jq .`
+- If a reverse proxy serves static HTML, ensure AP requests are proxied to Indiekit for `/activitypub*`, `/.well-known/*`, `/nodeinfo/*`, and content-negotiated `Accept: application/activity+json` / `application/ld+json` requests on `/` and post URLs.
 
 ## Startup script
 

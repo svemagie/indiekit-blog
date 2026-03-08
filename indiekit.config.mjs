@@ -39,8 +39,35 @@ const lastfmUsername = process.env.LASTFM_USERNAME;
 const publicationBaseUrl = (
   process.env.PUBLICATION_URL || "https://blog.giersig.eu"
 ).replace(/\/+$/, "");
+const publicationHostname = (() => {
+  try {
+    return new URL(publicationBaseUrl).hostname;
+  } catch {
+    return "";
+  }
+})();
 const nodeEnv = (process.env.NODE_ENV || "production").toLowerCase();
 const debugEnabled = process.env.INDIEKIT_DEBUG === "1" || nodeEnv !== "production";
+const siteName = process.env.SITE_NAME || "Indiekit";
+const authorName = process.env.AUTHOR_NAME || "";
+const authorBio = process.env.AUTHOR_BIO || "";
+const authorAvatar = process.env.AUTHOR_AVATAR || "";
+const activityPubHandle = (
+  process.env.AP_HANDLE ||
+  process.env.ACTIVITYPUB_HANDLE ||
+  githubUsername ||
+  publicationHostname.split(".")[0] ||
+  "user"
+)
+  .trim()
+  .replace(/^@+/, "")
+  .split("@")[0];
+const activityPubLogLevel = (process.env.AP_LOG_LEVEL || "info").toLowerCase();
+const activityPubDebugDashboard =
+  process.env.AP_DEBUG === "1" || process.env.AP_DEBUG === "true";
+const activityPubDebugPassword = process.env.AP_DEBUG_PASSWORD || "";
+const activityPubAlsoKnownAs = process.env.AP_ALSO_KNOWN_AS || "";
+const redisUrl = process.env.REDIS_URL || "";
 
 let webmentionDomain = process.env.WEBMENTION_IO_DOMAIN;
 if (!webmentionDomain) {
@@ -133,7 +160,7 @@ export default {
     "@rmdes/indiekit-endpoint-conversations",
     "@rmdes/indiekit-endpoint-funkwhale",
     "@rmdes/indiekit-endpoint-lastfm",
-    //"@rmdes/indiekit-endpoint-activitypub",
+    "@rmdes/indiekit-endpoint-activitypub",
   ],
   "@indiekit/store-github": {
     user: githubUsername,
@@ -170,7 +197,23 @@ export default {
     username: lastfmUsername,
   },
   "@rmdes/indiekit-endpoint-activitypub": {
-    username: "blog.giersig.eu",
+    mountPath: "/activitypub",
+    actor: {
+      handle: activityPubHandle,
+      name: authorName || siteName,
+      summary: authorBio || process.env.SITE_DESCRIPTION || "",
+      icon: authorAvatar,
+    },
+    checked: true,
+    alsoKnownAs: activityPubAlsoKnownAs,
+    activityRetentionDays: 90,
+    storeRawActivities: false,
+    redisUrl,
+    parallelWorkers: 5,
+    actorType: "Person",
+    logLevel: activityPubLogLevel,
+    debugDashboard: activityPubDebugDashboard,
+    debugPassword: activityPubDebugPassword,
   },
 };
 

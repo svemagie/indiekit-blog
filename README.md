@@ -22,7 +22,6 @@
 - GitHub activity + API: `/github`
 - Funkwhale activity + API: `/funkwhale`
 - Last.fm activity + API: `/lastfmapi`
-- CV editor + API: `/cvapi`
 
 ## MongoDB
 
@@ -77,12 +76,6 @@
 - `LASTFM_API_KEY`
 - `LASTFM_USERNAME`
 - If these variables are missing, the endpoints still exist but return empty activity until credentials are configured.
-
-## CV endpoint
-
-- The CV endpoint is mounted at `/cvapi` to avoid conflicting with the public `/cv/` page on the frontend.
-- Public JSON endpoints are available at `/cvapi/data.json` and `/cvapi/page.json`.
-- No extra env vars are required for the plugin itself (it uses MongoDB + IndieKit auth).
 
 ## Startup script
 

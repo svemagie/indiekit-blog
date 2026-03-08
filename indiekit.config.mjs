@@ -125,7 +125,6 @@ export default {
     "@rmdes/indiekit-endpoint-conversations",
     "@rmdes/indiekit-endpoint-funkwhale",
     "@rmdes/indiekit-endpoint-lastfm",
-    "@rmdes/indiekit-endpoint-cv",
     //"@rmdes/indiekit-endpoint-activitypub",
   ],
   "@indiekit/store-github": {
@@ -158,9 +157,6 @@ export default {
     mountPath: "/lastfmapi",
     apiKey: lastfmApiKey,
     username: lastfmUsername,
-  },
-  "@rmdes/indiekit-endpoint-cv": {
-    mountPath: "/cvapi",
   },
   "@rmdes/indiekit-endpoint-activitypub": {
     username: "blog.giersig.eu",

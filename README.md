@@ -18,6 +18,7 @@
 - Posts management: `/posts`
 - Files: `/files`
 - Webmentions moderation + API: `/webmentions`
+- Homepage builder UI + API: `/homepage`
 - Conversations + API: `/conversations`
 - GitHub activity + API: `/github`
 - Funkwhale activity + API: `/funkwhale`

@@ -171,6 +171,7 @@ export default {
     "@rmdes/indiekit-preset-eleventy",
     "@rmdes/indiekit-endpoint-github",
     "@rmdes/indiekit-endpoint-webmention-io",
+    "@rmdes/indiekit-endpoint-homepage",
     "@rmdes/indiekit-endpoint-conversations",
     "@rmdes/indiekit-endpoint-funkwhale",
     "@rmdes/indiekit-endpoint-lastfm",
@@ -195,6 +196,9 @@ export default {
   "@rmdes/indiekit-endpoint-webmention-io": {
     token: process.env.WEBMENTION_IO_TOKEN,
     domain: webmentionDomain,
+  },
+  "@rmdes/indiekit-endpoint-homepage": {
+    mountPath: "/homepage",
   },
   "@rmdes/indiekit-endpoint-conversations": {
     mountPath: "/conversations",

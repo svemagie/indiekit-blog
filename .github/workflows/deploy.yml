@@ -36,16 +36,10 @@ jobs:
             set -eu
             restart_log=/tmp/indiekit-restart.log
 
-            # Ensure native sharp build prerequisites are present in the jail.
-            sudo bastille cmd node sh -lc 'env ASSUME_ALWAYS_YES=yes pkg update -f >/dev/null'
-            sudo bastille cmd node sh -lc 'env ASSUME_ALWAYS_YES=yes pkg install -y vips pkgconf python3 gmake'
-
             # Update code and dependencies as indiekit user inside the jail.
             sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && git pull origin main && npm ci && install -m 755 start.example.sh start.sh"'
 
-            # Build sharp against jail libraries and verify runtime load.
-            sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && npm_config_build_from_source=true npm rebuild sharp"'
-            sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && node -e \"require(\\\"sharp\\\"); console.log(\\\"sharp runtime OK\\\")\""'
+            # sharp/libvips are managed manually on the server.
 
             # Ensure env file exists and contains auth secrets required by start.sh.
             sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && test -f .env"'

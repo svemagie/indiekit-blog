@@ -68,8 +68,10 @@
 - `start.sh` is intentionally ignored by Git (`.gitignore`) so server secrets are not committed.
 - Use `start.example.sh` as the tracked template and keep real credentials in environment variables (or `.env` on the server).
 - Startup scripts parse `.env` with the `dotenv` parser (not shell `source`), so values containing spaces are handled safely.
-- Startup scripts run preflight + patch helpers before boot (`scripts/preflight-mongo-connection.mjs`, `scripts/patch-lightningcss.mjs`, `scripts/patch-endpoint-media-scope.mjs`, `scripts/patch-endpoint-files-upload-route.mjs`, `scripts/patch-endpoint-files-upload-locales.mjs`, `scripts/patch-frontend-serviceworker-file.mjs`, `scripts/patch-conversations-collection-guards.mjs`).
+- Startup scripts run preflight + patch helpers before boot (`scripts/preflight-mongo-connection.mjs`, `scripts/patch-lightningcss.mjs`, `scripts/patch-endpoint-media-scope.mjs`, `scripts/patch-endpoint-media-sharp-runtime.mjs`, `scripts/patch-frontend-sharp-runtime.mjs`, `scripts/patch-endpoint-files-upload-route.mjs`, `scripts/patch-endpoint-files-upload-locales.mjs`, `scripts/patch-frontend-serviceworker-file.mjs`, `scripts/patch-conversations-collection-guards.mjs`).
 - The media scope patch fixes a known upstream issue where file uploads can fail if the token scope is `create update delete` without explicit `media`.
+- The media sharp runtime patch makes image transformation resilient on FreeBSD: if `sharp` cannot load, uploads continue without resize/rotation instead of crashing the server process.
+- The frontend sharp runtime patch makes icon generation non-fatal on FreeBSD when `sharp` cannot load, preventing startup crashes in asset controller imports.
 - The files upload route patch fixes browser multi-upload by posting to `/files/upload` (session-authenticated) instead of direct `/media` calls without bearer token.
 - The files upload locale patch adds missing `files.upload.dropText`/`files.upload.browse`/`files.upload.submitMultiple` labels in endpoint locale files so UI text does not render raw translation keys.
 - The frontend serviceworker patch ensures `@indiekit/frontend/lib/serviceworker.js` exists at runtime to avoid ENOENT in the offline/service worker route.

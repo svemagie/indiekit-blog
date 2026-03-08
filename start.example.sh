@@ -40,6 +40,8 @@ export NODE_ENV="${NODE_ENV:-production}"
 # Ensure runtime dependency patches are applied even if node_modules already exists.
 /usr/local/bin/node scripts/patch-lightningcss.mjs
 /usr/local/bin/node scripts/patch-endpoint-media-scope.mjs
+/usr/local/bin/node scripts/patch-endpoint-media-sharp-runtime.mjs
+/usr/local/bin/node scripts/patch-frontend-sharp-runtime.mjs
 /usr/local/bin/node scripts/patch-endpoint-files-upload-route.mjs
 /usr/local/bin/node scripts/patch-endpoint-files-upload-locales.mjs
 /usr/local/bin/node scripts/patch-frontend-serviceworker-file.mjs

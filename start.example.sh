@@ -22,8 +22,8 @@ fi
 
 # Allow either full Mongo URL or decomposed credentials.
 if [ -z "${MONGO_URL:-}" ]; then
+  : "${MONGO_USERNAME:?MONGO_USERNAME is required when MONGO_URL is not set}"
   : "${MONGO_PASSWORD:?MONGO_PASSWORD is required when MONGO_URL is not set}"
-  export MONGO_USERNAME="${MONGO_USERNAME:-indiekit}"
   export MONGO_AUTH_SOURCE="${MONGO_AUTH_SOURCE:-admin}"
 fi
 

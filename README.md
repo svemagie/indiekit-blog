@@ -23,7 +23,8 @@
 ## MongoDB
 
 - Preferred: set a full `MONGO_URL` (example: `mongodb://user:pass@host:27017/indiekit?authSource=admin`).
-- If `MONGO_URL` is not set, config builds the URL from `MONGO_USERNAME`, `MONGO_PASSWORD`, `MONGO_HOST`, `MONGO_PORT`, `MONGO_DATABASE`, `MONGO_AUTH_SOURCE`.
+- If `MONGO_URL` is not set, set `MONGO_USERNAME` and `MONGO_PASSWORD` explicitly; config builds the URL from `MONGO_USERNAME`, `MONGO_PASSWORD`, `MONGO_HOST`, `MONGO_PORT`, `MONGO_DATABASE`, `MONGO_AUTH_SOURCE`.
+- Startup scripts now fail fast when `MONGO_URL` is absent and `MONGO_USERNAME` is missing, to avoid silent auth mismatches.
 - For `MongoServerError: Authentication failed`, first verify `MONGO_PASSWORD`, then try `MONGO_AUTH_SOURCE=admin`.
 
 ## Content paths

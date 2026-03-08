@@ -1,7 +1,6 @@
 import "dotenv/config";
 
-const mongoUsername =
-  process.env.MONGO_USERNAME || process.env.MONGO_USER || "indiekit";
+const mongoUsername = process.env.MONGO_USERNAME || process.env.MONGO_USER || "";
 const mongoPassword = process.env.MONGO_PASSWORD || "";
 const mongoHost = process.env.MONGO_HOST || "10.100.0.20";
 const mongoPort = process.env.MONGO_PORT || "27017";

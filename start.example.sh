@@ -45,6 +45,9 @@ unset DEBUG
 # Verify MongoDB credentials/connectivity before launching server.
 /usr/local/bin/node scripts/preflight-mongo-connection.mjs
 
+# Ensure ActivityPub has an RSA keypair for HTTP Signature delivery.
+/usr/local/bin/node scripts/preflight-activitypub-rsa-key.mjs
+
 # Normalize ActivityPub profile URL fields (icon/image/aliases) in MongoDB.
 /usr/local/bin/node scripts/preflight-activitypub-profile-urls.mjs
 

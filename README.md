@@ -93,6 +93,7 @@
 - `AP_DEBUG` (`1` or `true` enables debug dashboard)
 - `AP_DEBUG_PASSWORD` (required when debug dashboard is enabled)
 - `REDIS_URL` (recommended for production delivery queue durability)
+- Startup preflight `scripts/preflight-activitypub-rsa-key.mjs` ensures `ap_keys` contains a usable RSA key pair (`publicKeyPem` + `privateKeyPem`) so outgoing inbox deliveries are HTTP-signed and not rejected with `Request not signed`.
 - Startup preflight `scripts/preflight-activitypub-profile-urls.mjs` normalizes existing ActivityPub profile URL fields in MongoDB (`url`, `icon`, `image`, `alsoKnownAs`) so WebFinger/actor responses do not fail on invalid URL values.
 - The ActivityPub locale patch creates/repairs `locales/de.json` from `locales/en.json` so backend UI keys do not render as raw `activitypub.*` translation strings when `SITE_LOCALE=de`.
 - Quick verification commands:
@@ -106,10 +107,11 @@
 - `start.sh` is intentionally ignored by Git (`.gitignore`) so server secrets are not committed.
 - Use `start.example.sh` as the tracked template and keep real credentials in environment variables (or `.env` on the server).
 - Startup scripts parse `.env` with the `dotenv` parser (not shell `source`), so values containing spaces are handled safely.
-- Startup scripts run preflight + patch helpers before boot (`scripts/preflight-production-security.mjs`, `scripts/preflight-mongo-connection.mjs`, `scripts/preflight-activitypub-profile-urls.mjs`, `scripts/patch-lightningcss.mjs`, `scripts/patch-endpoint-media-scope.mjs`, `scripts/patch-endpoint-media-sharp-runtime.mjs`, `scripts/patch-frontend-sharp-runtime.mjs`, `scripts/patch-endpoint-files-upload-route.mjs`, `scripts/patch-endpoint-files-upload-locales.mjs`, `scripts/patch-endpoint-activitypub-locales.mjs`, `scripts/patch-frontend-serviceworker-file.mjs`, `scripts/patch-conversations-collection-guards.mjs`, `scripts/patch-indiekit-routes-rate-limits.mjs`, `scripts/patch-indiekit-error-production-stack.mjs`, `scripts/patch-indieauth-devmode-guard.mjs`, `scripts/patch-listening-endpoint-runtime-guards.mjs`).
+- Startup scripts run preflight + patch helpers before boot (`scripts/preflight-production-security.mjs`, `scripts/preflight-mongo-connection.mjs`, `scripts/preflight-activitypub-rsa-key.mjs`, `scripts/preflight-activitypub-profile-urls.mjs`, `scripts/patch-lightningcss.mjs`, `scripts/patch-endpoint-media-scope.mjs`, `scripts/patch-endpoint-media-sharp-runtime.mjs`, `scripts/patch-frontend-sharp-runtime.mjs`, `scripts/patch-endpoint-files-upload-route.mjs`, `scripts/patch-endpoint-files-upload-locales.mjs`, `scripts/patch-endpoint-activitypub-locales.mjs`, `scripts/patch-frontend-serviceworker-file.mjs`, `scripts/patch-conversations-collection-guards.mjs`, `scripts/patch-indiekit-routes-rate-limits.mjs`, `scripts/patch-indiekit-error-production-stack.mjs`, `scripts/patch-indieauth-devmode-guard.mjs`, `scripts/patch-listening-endpoint-runtime-guards.mjs`).
 - The production security preflight blocks startup on insecure auth/session configuration and catches empty-password bcrypt hashes.
 - One-time recovery mode is available with `INDIEKIT_ALLOW_PASSWORD_SETUP=1` to bootstrap/reset `PASSWORD_SECRET` when locked out. Remove this flag after setting a valid hash.
 - The media scope patch fixes a known upstream issue where file uploads can fail if the token scope is `create update delete` without explicit `media`.
+- The ActivityPub RSA key preflight repairs or creates a usable `type="rsa"` key document in `ap_keys`, so outgoing federation requests can be signed and accepted by stricter inboxes.
 - The ActivityPub profile URL preflight repairs invalid URL fields in the `ap_profile` document (for example relative `icon` paths), preventing `/.well-known/webfinger` and actor responses from failing with `TypeError: Invalid URL`.
 - The media sharp runtime patch makes image transformation resilient on FreeBSD: if `sharp` cannot load, uploads continue without resize/rotation instead of crashing the server process.
 - The frontend sharp runtime patch makes icon generation non-fatal on FreeBSD when `sharp` cannot load, preventing startup crashes in asset controller imports.

@@ -37,6 +37,8 @@ const publicationBaseUrl = (
 const adminBaseUrl = (process.env.INDIEKIT_ADMIN_URL || "")
   .trim()
   .replace(/\/+$/, "");
+const nodeEnv = (process.env.NODE_ENV || "production").toLowerCase();
+const debugEnabled = process.env.INDIEKIT_DEBUG === "1" || nodeEnv !== "production";
 
 let webmentionDomain = process.env.WEBMENTION_IO_DOMAIN;
 if (!webmentionDomain) {
@@ -48,7 +50,7 @@ if (!webmentionDomain) {
 }
 
 export default {
-  debug: "indiekit:*",
+  ...(debugEnabled && { debug: process.env.DEBUG || "indiekit:*" }),
   application: {
     name: "Indiekit",
     mongodbUrl: mongoUrl,

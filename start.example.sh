@@ -32,7 +32,10 @@ if [ -z "${GH_CONTENT_TOKEN:-}" ] && [ -z "${GITHUB_TOKEN:-}" ]; then
   exit 1
 fi
 
-export NODE_ENV="${NODE_ENV:-production}"
+# Force production runtime and keep debug logging disabled.
+export NODE_ENV="production"
+export INDIEKIT_DEBUG="0"
+unset DEBUG
 
 # Verify MongoDB credentials/connectivity before launching server.
 /usr/local/bin/node scripts/preflight-mongo-connection.mjs

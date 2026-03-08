@@ -43,7 +43,7 @@ jobs:
 
             # Ensure env file exists and contains auth secrets required by start.sh.
             sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && test -f .env"'
-            sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && if ! (grep -Eq \"^SECRET=.*\" .env && grep -Eq \"^PASSWORD_SECRET=.*\" .env); then echo \"Missing SECRET or PASSWORD_SECRET in /usr/local/indiekit/.env\"; exit 1; fi"'
+            sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && if ! grep -Eq \"^SECRET=.*\" .env; then echo \"Missing SECRET in /usr/local/indiekit/.env\"; exit 1; fi; if ! (grep -Eq \"^PASSWORD_SECRET=.*\" .env || grep -Eq \"^INDIEKIT_ALLOW_PASSWORD_SETUP=1\" .env); then echo \"Missing PASSWORD_SECRET (or set INDIEKIT_ALLOW_PASSWORD_SETUP=1 for one-time recovery) in /usr/local/indiekit/.env\"; exit 1; fi"'
 
             # Validate startup prerequisites before touching the running service.
             sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && NODE_ENV=production node scripts/preflight-production-security.mjs"'

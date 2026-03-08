@@ -18,7 +18,9 @@ if [ -f .env ]; then
 fi
 
 : "${SECRET:?SECRET is required}"
-: "${PASSWORD_SECRET:?PASSWORD_SECRET is required}"
+if [ "${INDIEKIT_ALLOW_PASSWORD_SETUP:-0}" != "1" ]; then
+  : "${PASSWORD_SECRET:?PASSWORD_SECRET is required}"
+fi
 
 # Allow either full Mongo URL or decomposed credentials.
 if [ -z "${MONGO_URL:-}" ]; then

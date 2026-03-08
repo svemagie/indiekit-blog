@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 
 const strictMode = process.env.REQUIRE_SECURITY !== "0";
 const nodeEnv = (process.env.NODE_ENV || "").toLowerCase();
+const allowPasswordSetup = process.env.INDIEKIT_ALLOW_PASSWORD_SETUP === "1";
 
 function failOrWarn(message) {
   if (strictMode) {
@@ -35,21 +36,29 @@ if (secret.length < 32) {
 
 const passwordSecret = process.env.PASSWORD_SECRET || "";
 if (!passwordSecret) {
-  failOrWarn("[preflight] PASSWORD_SECRET is required.");
+  if (allowPasswordSetup) {
+    console.warn(
+      "[preflight] PASSWORD setup recovery mode enabled. Start app, generate a hash at /auth/new-password, then disable INDIEKIT_ALLOW_PASSWORD_SETUP.",
+    );
+  } else {
+    failOrWarn("[preflight] PASSWORD_SECRET is required.");
+  }
 }
 
-if (!/^\$2[aby]\$\d{2}\$/.test(passwordSecret)) {
+if (passwordSecret && !/^\$2[aby]\$\d{2}\$/.test(passwordSecret)) {
   failOrWarn(
     "[preflight] PASSWORD_SECRET must be a bcrypt hash (starts with $2a$, $2b$, or $2y$).",
   );
 }
 
 try {
-  const emptyPasswordValid = await bcrypt.compare("", passwordSecret);
-  if (emptyPasswordValid) {
-    failOrWarn(
-      "[preflight] PASSWORD_SECRET matches an empty password. Generate a non-empty password hash via /auth/new-password.",
-    );
+  if (passwordSecret) {
+    const emptyPasswordValid = await bcrypt.compare("", passwordSecret);
+    if (emptyPasswordValid) {
+      failOrWarn(
+        "[preflight] PASSWORD_SECRET matches an empty password. Generate a non-empty password hash via /auth/new-password.",
+      );
+    }
   }
 } catch (error) {
   failOrWarn(

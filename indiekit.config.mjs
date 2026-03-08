@@ -30,6 +30,9 @@ const githubActivityToken =
 const publicationBaseUrl = (
   process.env.PUBLICATION_URL || "https://blog.giersig.eu"
 ).replace(/\/+$/, "");
+const adminBaseUrl = (process.env.INDIEKIT_ADMIN_URL || "")
+  .trim()
+  .replace(/\/+$/, "");
 
 let webmentionDomain = process.env.WEBMENTION_IO_DOMAIN;
 if (!webmentionDomain) {
@@ -45,6 +48,12 @@ export default {
   application: {
     name: "Indiekit",
     mongodbUrl: mongoUrl,
+    ...(adminBaseUrl && {
+      url: adminBaseUrl,
+      authorizationEndpoint: `${adminBaseUrl}/auth`,
+      introspectionEndpoint: `${adminBaseUrl}/auth/introspect`,
+      tokenEndpoint: `${adminBaseUrl}/auth/token`,
+    }),
   },
   publication: {
     me: publicationBaseUrl,

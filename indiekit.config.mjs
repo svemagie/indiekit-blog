@@ -38,6 +38,20 @@ const funkwhaleUsername = process.env.FUNKWHALE_USERNAME;
 const funkwhaleToken = process.env.FUNKWHALE_TOKEN;
 const lastfmApiKey = process.env.LASTFM_API_KEY;
 const lastfmUsername = process.env.LASTFM_USERNAME;
+const blueskyHandle = (process.env.BLUESKY_HANDLE || "")
+  .trim()
+  .replace(/^@+/, "");
+const blueskyPassword = process.env.BLUESKY_PASSWORD || "";
+const mastodonUrl = process.env.MASTODON_URL || "https://mastodon.social";
+const mastodonUser = (
+  process.env.MASTODON_USER || process.env.MASTODON_USERNAME || ""
+)
+  .trim()
+  .replace(/^@+/, "");
+const mastodonAccessToken =
+  process.env.MASTODON_ACCESS_TOKEN || process.env.MASTODON_TOKEN || "";
+const syndicateMountPath =
+  process.env.SYNDICATE_MOUNT_PATH || "/syndicate";
 const publicationBaseUrl = (
   process.env.PUBLICATION_URL ||
   process.env.SITE_URL ||
@@ -189,6 +203,8 @@ export default {
     "@indiekit/store-github",
     "@indiekit/post-type-repost",
     "@rmdes/indiekit-post-type-page",
+    "@rmdes/indiekit-syndicator-bluesky",
+    "@rmdes/indiekit-syndicator-mastodon",
     "@rmdes/indiekit-preset-eleventy",
     "@rmdes/indiekit-endpoint-github",
     "@rmdes/indiekit-endpoint-webmention-io",
@@ -211,6 +227,18 @@ export default {
   },
   "@indiekit/post-type-repost": {
     name: "Repost",
+  },
+  "@rmdes/indiekit-syndicator-bluesky": {
+    handle: blueskyHandle,
+    password: blueskyPassword,
+  },
+  "@rmdes/indiekit-syndicator-mastodon": {
+    url: mastodonUrl,
+    user: mastodonUser,
+    accessToken: mastodonAccessToken,
+  },
+  "@indiekit/endpoint-syndicate": {
+    mountPath: syndicateMountPath,
   },
   "@rmdes/indiekit-endpoint-github": {
     token: githubActivityToken,

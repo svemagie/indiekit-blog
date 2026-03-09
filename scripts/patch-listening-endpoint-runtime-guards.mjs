@@ -2,6 +2,25 @@ import { access, readFile, writeFile } from "node:fs/promises";
 
 const patchSpecs = [
   {
+    name: "funkwhale-client-scope-me",
+    marker: "prefer user-scoped history to avoid instance-wide sync volume",
+    oldSnippet: `    return this.fetch("/api/v2/history/listenings", {
+      page,
+      page_size: pageSize,
+      scope: "all",
+    });`,
+    newSnippet: `    return this.fetch("/api/v2/history/listenings", {
+      page,
+      page_size: pageSize,
+      // prefer user-scoped history to avoid instance-wide sync volume
+      scope: this.username ? "me" : "all",
+    });`,
+    candidates: [
+      "node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/funkwhale-client.js",
+      "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/funkwhale-client.js",
+    ],
+  },
+  {
     name: "lastfm-invalid-json-guard",
     marker: "Invalid JSON response preview",
     oldSnippet: "    const data = await response.json();",

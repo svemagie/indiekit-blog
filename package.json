@@ -41,6 +41,7 @@
     "@rmdes/indiekit-post-type-page": "^1.0.4",
     "@rmdes/indiekit-preset-eleventy": "^1.0.0-beta.33",
     "@rmdes/indiekit-syndicator-bluesky": "^1.0.19",
+    "@rmdes/indiekit-syndicator-indienews": "^1.0.1",
     "@rmdes/indiekit-syndicator-mastodon": "^1.0.8",
     "dotenv": "^17.3.1",
     "mongodb": "^7.1.0",

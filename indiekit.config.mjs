@@ -78,6 +78,15 @@ const webmentionSenderTimeout = Number.isFinite(webmentionSenderTimeoutRaw)
   : 10000;
 const webmentionSenderUserAgent =
   process.env.WEBMENTION_SENDER_USER_AGENT || `${siteName} Webmention Sender`;
+const webmentionsProxyMountPath =
+  process.env.WEBMENTIONS_PROXY_MOUNT_PATH || "/webmentions-api";
+const webmentionsProxyCacheTtlRaw = Number.parseInt(
+  process.env.WEBMENTIONS_PROXY_CACHE_TTL || "60",
+  10,
+);
+const webmentionsProxyCacheTtl = Number.isFinite(webmentionsProxyCacheTtlRaw)
+  ? webmentionsProxyCacheTtlRaw
+  : 60;
 const authorName = process.env.AUTHOR_NAME || "";
 const authorBio = process.env.AUTHOR_BIO || "";
 const authorAvatar = (() => {
@@ -208,6 +217,7 @@ export default {
     "@rmdes/indiekit-preset-eleventy",
     "@rmdes/indiekit-endpoint-github",
     "@rmdes/indiekit-endpoint-webmention-io",
+    "@rmdes/indiekit-endpoint-webmentions-proxy",
     "@rmdes/indiekit-endpoint-webmention-sender",
     "@rmdes/indiekit-endpoint-homepage",
     "@rmdes/indiekit-endpoint-conversations",
@@ -247,6 +257,12 @@ export default {
   "@rmdes/indiekit-endpoint-webmention-io": {
     token: process.env.WEBMENTION_IO_TOKEN,
     domain: webmentionDomain,
+  },
+  "@rmdes/indiekit-endpoint-webmentions-proxy": {
+    mountPath: webmentionsProxyMountPath,
+    token: process.env.WEBMENTION_IO_TOKEN,
+    domain: webmentionDomain,
+    cacheTtl: webmentionsProxyCacheTtl,
   },
   "@rmdes/indiekit-endpoint-webmention-sender": {
     mountPath: webmentionSenderMountPath,

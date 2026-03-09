@@ -35,6 +35,7 @@
     "@rmdes/indiekit-endpoint-posts": "^1.0.0-beta.25",
     "@rmdes/indiekit-endpoint-webmention-io": "^1.0.7",
     "@rmdes/indiekit-endpoint-webmention-sender": "^1.0.6",
+    "@rmdes/indiekit-endpoint-webmentions-proxy": "^1.0.3",
     "@rmdes/indiekit-post-type-page": "^1.0.4",
     "@rmdes/indiekit-preset-eleventy": "^1.0.0-beta.33",
     "@rmdes/indiekit-syndicator-bluesky": "^1.0.19",

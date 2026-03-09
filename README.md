@@ -18,6 +18,7 @@
 - Posts management: `/posts`
 - Files: `/files`
 - Webmentions moderation + API: `/webmentions`
+- Webmentions proxy API: `/webmentions-api`
 - Webmention sender + API: `/webmention-sender`
 - Homepage builder UI + API: `/homepage`
 - Conversations + API: `/conversations`
@@ -101,6 +102,15 @@
 - `WEBMENTION_SENDER_TIMEOUT` (default `10000`, endpoint discovery timeout in milliseconds)
 - `WEBMENTION_SENDER_USER_AGENT` (default `${SITE_NAME} Webmention Sender`)
 - `POST /webmention-sender` requires authentication (`update` scope) and sends pending webmentions for unpublished targets.
+
+## Webmentions proxy
+
+- Webmentions proxy endpoint is enabled via `@rmdes/indiekit-endpoint-webmentions-proxy` and mounted at `/webmentions-api` by default.
+- Optional environment variables:
+- `WEBMENTIONS_PROXY_MOUNT_PATH` (default `/webmentions-api`)
+- `WEBMENTIONS_PROXY_CACHE_TTL` (default `60`, cache TTL in seconds)
+- Uses existing `WEBMENTION_IO_TOKEN` and `WEBMENTION_IO_DOMAIN` configuration for upstream webmention.io requests.
+- Public JSON API route: `GET /webmentions-api/api/mentions` (supports `page`, `per-page`, `target`, `wm-property` query parameters).
 
 ## ActivityPub
 

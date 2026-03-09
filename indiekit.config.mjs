@@ -193,6 +193,12 @@ export default {
           path: "content/articles/{slug}.md",
           url: `${publicationBaseUrl}/articles/{slug}/`,
         },
+        fields: {
+          aiTextLevel: {},
+          aiCodeLevel: {},
+          aiTools: {},
+          aiDescription: {},
+        },
       },
       note: {
         name: "Notiz",

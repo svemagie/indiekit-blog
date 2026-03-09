@@ -291,6 +291,7 @@ unset DEBUG
 "${NODE_BIN}" scripts/patch-endpoint-activitypub-private-url-docloader.mjs
 "${NODE_BIN}" scripts/patch-endpoint-activitypub-migrate-alias-clear.mjs
 "${NODE_BIN}" scripts/patch-endpoint-homepage-locales.mjs
+"${NODE_BIN}" scripts/patch-endpoint-homepage-identity-defaults.mjs
 "${NODE_BIN}" scripts/patch-frontend-serviceworker-file.mjs
 "${NODE_BIN}" scripts/patch-conversations-collection-guards.mjs
 "${NODE_BIN}" scripts/patch-indiekit-routes-rate-limits.mjs

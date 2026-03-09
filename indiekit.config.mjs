@@ -129,6 +129,28 @@ const webmentionsProxyCacheTtlRaw = Number.parseInt(
 const webmentionsProxyCacheTtl = Number.isFinite(webmentionsProxyCacheTtlRaw)
   ? webmentionsProxyCacheTtlRaw
   : 60;
+const commentsMountPath = process.env.COMMENTS_MOUNT_PATH || "/comments";
+const commentsRateLimitPerHourRaw = Number.parseInt(
+  process.env.COMMENTS_RATE_LIMIT_PER_HOUR || "5",
+  10,
+);
+const commentsRateLimitPerHour = Number.isFinite(commentsRateLimitPerHourRaw)
+  ? commentsRateLimitPerHourRaw
+  : 5;
+const commentsRateLimitPerDayRaw = Number.parseInt(
+  process.env.COMMENTS_RATE_LIMIT_PER_DAY || "20",
+  10,
+);
+const commentsRateLimitPerDay = Number.isFinite(commentsRateLimitPerDayRaw)
+  ? commentsRateLimitPerDayRaw
+  : 20;
+const commentsMaxLengthRaw = Number.parseInt(
+  process.env.COMMENTS_MAX_LENGTH || "2000",
+  10,
+);
+const commentsMaxLength = Number.isFinite(commentsMaxLengthRaw)
+  ? commentsMaxLengthRaw
+  : 2000;
 const authorName = process.env.AUTHOR_NAME || "";
 const authorBio = process.env.AUTHOR_BIO || "";
 const authorAvatar = (() => {
@@ -269,6 +291,7 @@ export default {
     "@rmdes/indiekit-endpoint-webmention-sender",
     "@rmdes/indiekit-endpoint-homepage",
     "@rmdes/indiekit-endpoint-conversations",
+    "@rmdes/indiekit-endpoint-comments",
     "@rmdes/indiekit-endpoint-funkwhale",
     "@rmdes/indiekit-endpoint-lastfm",
     "@rmdes/indiekit-endpoint-podroll",
@@ -323,6 +346,14 @@ export default {
   },
   "@rmdes/indiekit-endpoint-conversations": {
     mountPath: "/conversations",
+  },
+  "@rmdes/indiekit-endpoint-comments": {
+    mountPath: commentsMountPath,
+    rateLimit: {
+      perHour: commentsRateLimitPerHour,
+      perDay: commentsRateLimitPerDay,
+    },
+    maxLength: commentsMaxLength,
   },
   "@rmdes/indiekit-endpoint-funkwhale": {
     mountPath: "/funkwhale",

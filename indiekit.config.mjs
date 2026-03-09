@@ -308,7 +308,7 @@ export default {
     "@rmdes/indiekit-endpoint-lastfm",
     "@rmdes/indiekit-endpoint-podroll",
     "@rmdes/indiekit-endpoint-activitypub",
-      "indiekit-endpoint-youtube",
+    "@rmdes/indiekit-endpoint-youtube",
   ],
   "@indiekit/store-github": {
     user: githubUsername,

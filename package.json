@@ -34,6 +34,7 @@
     "@rmdes/indiekit-endpoint-podroll": "^1.0.11",
     "@rmdes/indiekit-endpoint-posts": "^1.0.0-beta.25",
     "@rmdes/indiekit-endpoint-webmention-io": "^1.0.7",
+    "@rmdes/indiekit-endpoint-webmention-sender": "^1.0.6",
     "@rmdes/indiekit-post-type-page": "^1.0.4",
     "@rmdes/indiekit-preset-eleventy": "^1.0.0-beta.33",
     "dotenv": "^17.3.1",

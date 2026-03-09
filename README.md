@@ -18,6 +18,7 @@
 - Posts management: `/posts`
 - Files: `/files`
 - Webmentions moderation + API: `/webmentions`
+- Webmention sender + API: `/webmention-sender`
 - Homepage builder UI + API: `/homepage`
 - Conversations + API: `/conversations`
 - GitHub activity + API: `/github`
@@ -91,6 +92,15 @@
 - `PODROLL_EPISODES_URL` (FreshRSS greader endpoint URL used for episode sync)
 - `PODROLL_OPML_URL` (FreshRSS OPML export URL used for podcast source sync)
 - If `PODROLL_EPISODES_URL` and `PODROLL_OPML_URL` are not set, the endpoint still loads and can be configured from its admin dashboard.
+
+## Webmention sender
+
+- Webmention sender endpoint is enabled via `@rmdes/indiekit-endpoint-webmention-sender` and mounted at `/webmention-sender` by default.
+- Optional environment variables:
+- `WEBMENTION_SENDER_MOUNT_PATH` (default `/webmention-sender`)
+- `WEBMENTION_SENDER_TIMEOUT` (default `10000`, endpoint discovery timeout in milliseconds)
+- `WEBMENTION_SENDER_USER_AGENT` (default `${SITE_NAME} Webmention Sender`)
+- `POST /webmention-sender` requires authentication (`update` scope) and sends pending webmentions for unpublished targets.
 
 ## ActivityPub
 

@@ -54,6 +54,17 @@ const publicationHostname = (() => {
 const nodeEnv = (process.env.NODE_ENV || "production").toLowerCase();
 const debugEnabled = process.env.INDIEKIT_DEBUG === "1" || nodeEnv !== "production";
 const siteName = process.env.SITE_NAME || "Indiekit";
+const webmentionSenderMountPath =
+  process.env.WEBMENTION_SENDER_MOUNT_PATH || "/webmention-sender";
+const webmentionSenderTimeoutRaw = Number.parseInt(
+  process.env.WEBMENTION_SENDER_TIMEOUT || "10000",
+  10,
+);
+const webmentionSenderTimeout = Number.isFinite(webmentionSenderTimeoutRaw)
+  ? webmentionSenderTimeoutRaw
+  : 10000;
+const webmentionSenderUserAgent =
+  process.env.WEBMENTION_SENDER_USER_AGENT || `${siteName} Webmention Sender`;
 const authorName = process.env.AUTHOR_NAME || "";
 const authorBio = process.env.AUTHOR_BIO || "";
 const authorAvatar = (() => {
@@ -182,6 +193,7 @@ export default {
     "@rmdes/indiekit-preset-eleventy",
     "@rmdes/indiekit-endpoint-github",
     "@rmdes/indiekit-endpoint-webmention-io",
+    "@rmdes/indiekit-endpoint-webmention-sender",
     "@rmdes/indiekit-endpoint-homepage",
     "@rmdes/indiekit-endpoint-conversations",
     "@rmdes/indiekit-endpoint-funkwhale",
@@ -212,6 +224,11 @@ export default {
   "@rmdes/indiekit-endpoint-webmention-io": {
     token: process.env.WEBMENTION_IO_TOKEN,
     domain: webmentionDomain,
+  },
+  "@rmdes/indiekit-endpoint-webmention-sender": {
+    mountPath: webmentionSenderMountPath,
+    timeout: webmentionSenderTimeout,
+    userAgent: webmentionSenderUserAgent,
   },
   "@rmdes/indiekit-endpoint-homepage": {
     mountPath: "/homepage",

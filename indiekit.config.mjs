@@ -296,6 +296,7 @@ export default {
     "@rmdes/indiekit-post-type-page",
     "@rmdes/indiekit-syndicator-bluesky",
     "@rmdes/indiekit-syndicator-mastodon",
+    "@rmdes/indiekit-syndicator-indienews",
     "@rmdes/indiekit-preset-eleventy",
     "@rmdes/indiekit-endpoint-github",
     "@rmdes/indiekit-endpoint-webmention-io",
@@ -407,8 +408,21 @@ export default {
     debugDashboard: activityPubDebugDashboard,
     debugPassword: activityPubDebugPassword,
   },
-    "indiekit-endpoint-youtube": {
+    "@rmdes/indiekit-endpoint-youtube": {
       mountPath: "/youtube",
+      apiKey: process.env.YOUTUBE_API_KEY,
+      channelId: process.env.YOUTUBE_CHANNEL_ID,
+      // OR use channel handle instead:
+      // channelHandle: "@YourChannel",
+      cacheTtl: 300_000,      // 5 minutes
+      liveCacheTtl: 60_000,   // 1 minute for live status
+      limits: {
+        videos: 10,
+      },
+    },
+    "@rmdes/indiekit-syndicator-indienews": {
+      languages: ["en", "de"],
+      checked: false
     },
 };
 

@@ -18,7 +18,7 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Build (if needed)
         run: |
@@ -37,7 +37,7 @@ jobs:
             restart_log=/tmp/indiekit-restart.log
 
             # Update code and dependencies as indiekit user inside the jail.
-            sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && git pull origin main && npm ci && install -m 755 start.example.sh start.sh"'
+            sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && git pull origin main && npm ci --legacy-peer-deps && install -m 755 start.example.sh start.sh"'
 
             # sharp/libvips are managed manually on the server.
 

@@ -1,7 +1,6 @@
 import "dotenv/config";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import PodrollEndpoint from "@rmdes/indiekit-endpoint-podroll";
 
 const mongoUsername = process.env.MONGO_USERNAME || process.env.MONGO_USER || "";
 const mongoPassword = process.env.MONGO_PASSWORD || "";
@@ -198,11 +197,7 @@ export default {
     "@rmdes/indiekit-endpoint-conversations",
     "@rmdes/indiekit-endpoint-funkwhale",
     "@rmdes/indiekit-endpoint-lastfm",
-    new PodrollEndpoint({
-      mountPath: podrollMountPath,
-      episodesUrl: podrollEpisodesUrl,
-      opmlUrl: podrollOpmlUrl,
-    }),
+    "@rmdes/indiekit-endpoint-podroll",
     "@rmdes/indiekit-endpoint-activitypub",
   ],
   "@indiekit/store-github": {
@@ -247,6 +242,11 @@ export default {
     mountPath: "/lastfmapi",
     apiKey: lastfmApiKey,
     username: lastfmUsername,
+  },
+  "@rmdes/indiekit-endpoint-podroll": {
+    mountPath: podrollMountPath,
+    episodesUrl: podrollEpisodesUrl,
+    opmlUrl: podrollOpmlUrl,
   },
   "@rmdes/indiekit-endpoint-activitypub": {
     mountPath: "/activitypub",

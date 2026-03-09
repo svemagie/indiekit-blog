@@ -13,12 +13,33 @@ const patchSpecs = [
       page,
       page_size: pageSize,
       // prefer user-scoped history to avoid instance-wide sync volume
+      scope: this.username && this.token ? "me" : "all",
+    });`,
+    candidates: [
+      "node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/funkwhale-client.js",
+      "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/funkwhale-client.js",
+    ],
+  },
+  {
+    name: "funkwhale-client-scope-me-token-guard",
+    marker: "require token for user-scoped history",
+    oldSnippet: `    return this.fetch("/api/v2/history/listenings", {
+      page,
+      page_size: pageSize,
+      // prefer user-scoped history to avoid instance-wide sync volume
       scope: this.username ? "me" : "all",
     });`,
     candidates: [
       "node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/funkwhale-client.js",
       "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/funkwhale-client.js",
     ],
+    newSnippet: `    return this.fetch("/api/v2/history/listenings", {
+      page,
+      page_size: pageSize,
+      // prefer user-scoped history to avoid instance-wide sync volume
+      // require token for user-scoped history
+      scope: this.username && this.token ? "me" : "all",
+    });`,
   },
   {
     name: "lastfm-invalid-json-guard",

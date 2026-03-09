@@ -60,6 +60,7 @@ unset DEBUG
 /usr/local/bin/node scripts/patch-endpoint-files-upload-locales.mjs
 /usr/local/bin/node scripts/patch-endpoint-activitypub-locales.mjs
 /usr/local/bin/node scripts/patch-endpoint-activitypub-docloader-loglevel.mjs
+/usr/local/bin/node scripts/patch-endpoint-activitypub-migrate-alias-clear.mjs
 /usr/local/bin/node scripts/patch-endpoint-homepage-locales.mjs
 /usr/local/bin/node scripts/patch-frontend-serviceworker-file.mjs
 /usr/local/bin/node scripts/patch-conversations-collection-guards.mjs

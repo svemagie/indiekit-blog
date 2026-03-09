@@ -129,6 +129,77 @@ const patchSpecs = [
       "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/controllers/listenings.js",
     ],
   },
+  {
+    name: "funkwhale-stats-cache-fallback",
+    marker: "degrade to empty stats when cache is unavailable on public routes",
+    oldSnippet: `        if (!stats) {
+          return response.status(503).json({
+            error: "Stats not available yet",
+            message: "Stats are computed during background sync. Please try again shortly.",
+          });
+        }`,
+    newSnippet: `        if (!stats) {
+          // degrade to empty stats when cache is unavailable on public routes
+          stats = {
+            summary: {
+              all: {
+                totalPlays: 0,
+                totalDuration: 0,
+                uniqueTracks: 0,
+                uniqueArtists: 0,
+                uniqueAlbums: 0,
+              },
+              month: {
+                totalPlays: 0,
+                totalDuration: 0,
+                uniqueTracks: 0,
+                uniqueArtists: 0,
+                uniqueAlbums: 0,
+              },
+              week: {
+                totalPlays: 0,
+                totalDuration: 0,
+                uniqueTracks: 0,
+                uniqueArtists: 0,
+                uniqueAlbums: 0,
+              },
+            },
+            topArtists: { all: [], month: [], week: [] },
+            topAlbums: { all: [], month: [], week: [] },
+            trends: [],
+          };
+        }`,
+    candidates: [
+      "node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/controllers/stats.js",
+      "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/controllers/stats.js",
+    ],
+  },
+  {
+    name: "funkwhale-trends-cache-fallback",
+    marker: "degrade to empty trends when cache is unavailable on public routes",
+    oldSnippet: `      // Fall back to cached stats for public routes
+      const cachedStats = getCachedStats();
+      if (cachedStats?.trends) {
+        return response.json({ trends: cachedStats.trends, days: 30 });
+      }
+
+      return response.status(503).json({
+        error: "Trends not available yet",
+        message: "Trends are computed during background sync. Please try again shortly.",
+      });`,
+    newSnippet: `      // Fall back to cached stats for public routes
+      const cachedStats = getCachedStats();
+      if (cachedStats?.trends) {
+        return response.json({ trends: cachedStats.trends, days: 30 });
+      }
+
+      // degrade to empty trends when cache is unavailable on public routes
+      return response.json({ trends: [], days });`,
+    candidates: [
+      "node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/controllers/stats.js",
+      "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/controllers/stats.js",
+    ],
+  },
 ];
 
 async function exists(filePath) {

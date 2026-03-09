@@ -147,6 +147,17 @@
 - Use `start.example.sh` as the tracked template and keep real credentials in environment variables (or `.env` on the server).
 - Startup scripts parse `.env` with the `dotenv` parser (not shell `source`), so values containing spaces are handled safely.
 - `start.example.sh` includes an optional background webmention sender polling loop for bare-metal deployments (including FreeBSD jails).
+- For FreeBSD service management, use `indiekit.rcd.example` as a template for `/usr/local/etc/rc.d/indiekit`.
+- Important: do not use `daemon -r` in the rc.d command args. Let `service indiekit restart` control restart behavior; `-r` can keep the supervisor alive during stop/restart.
+- The rc.d template uses daemon supervisor pidfile `-P` (and child pidfile `-p`) and supports `indiekit_stop_timeout` in `rc.conf` (default `20` seconds).
+- FreeBSD rc.d install example:
+
+```sh
+install -m 0555 /usr/local/indiekit/indiekit.rcd.example /usr/local/etc/rc.d/indiekit
+sysrc indiekit_enable=YES
+service indiekit restart
+```
+
 - FreeBSD jail env example for auto-send polling:
 
 ```sh

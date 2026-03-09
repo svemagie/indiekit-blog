@@ -1,0 +1,73 @@
+#!/bin/sh
+#
+# PROVIDE: indiekit
+# REQUIRE: NETWORKING LOGIN
+# KEYWORD: shutdown
+
+. /etc/rc.subr
+
+name="indiekit"
+rcvar="${name}_enable"
+
+pidfile="/var/run/${name}.pid"
+child_pidfile="/var/run/${name}.child.pid"
+logfile="/var/log/${name}.log"
+
+command="/usr/sbin/daemon"
+procname="/usr/sbin/daemon"
+required_files="/usr/local/indiekit/start.sh"
+
+# Important: do not use daemon -r here. rc.d should own restart behavior.
+command_args="-P ${pidfile} -p ${child_pidfile} -o ${logfile} -u indiekit /usr/local/indiekit/start.sh"
+
+extra_commands="reload"
+sig_reload="HUP"
+
+start_precmd="${name}_prestart"
+stop_cmd="${name}_stop"
+
+indiekit_prestart()
+{
+  touch "${logfile}"
+  chown indiekit:indiekit "${logfile}" 2>/dev/null || true
+}
+
+indiekit_stop()
+{
+  if [ ! -r "${pidfile}" ]; then
+    echo "${name} not running?"
+    return 0
+  fi
+
+  _pid="$(cat "${pidfile}" 2>/dev/null || true)"
+  if [ -z "${_pid}" ] || ! kill -0 "${_pid}" 2>/dev/null; then
+    rm -f "${pidfile}" "${child_pidfile}"
+    return 0
+  fi
+
+  _timeout="${indiekit_stop_timeout:-20}"
+  case "${_timeout}" in
+    ''|*[!0-9]*) _timeout=20 ;;
+  esac
+
+  echo "Stopping ${name}."
+  kill -TERM "${_pid}" 2>/dev/null || true
+
+  while kill -0 "${_pid}" 2>/dev/null; do
+    if [ "${_timeout}" -le 0 ]; then
+      echo "${name} stop timeout; forcing kill" >&2
+      kill -KILL "${_pid}" 2>/dev/null || true
+      break
+    fi
+
+    sleep 1
+    _timeout=$((_timeout - 1))
+  done
+
+  rm -f "${pidfile}" "${child_pidfile}"
+}
+
+load_rc_config "${name}"
+: ${indiekit_enable:="NO"}
+
+run_rc_command "$1"

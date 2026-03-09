@@ -101,6 +101,13 @@
 - `WEBMENTION_SENDER_MOUNT_PATH` (default `/webmention-sender`)
 - `WEBMENTION_SENDER_TIMEOUT` (default `10000`, endpoint discovery timeout in milliseconds)
 - `WEBMENTION_SENDER_USER_AGENT` (default `${SITE_NAME} Webmention Sender`)
+- Startup polling loop variables (used by `start.example.sh`):
+- `WEBMENTION_SENDER_AUTO_POLL` (default `1`, set `0` to disable)
+- `WEBMENTION_SENDER_POLL_INTERVAL` (default `300`, seconds)
+- `WEBMENTION_SENDER_HOST` (default `127.0.0.1`)
+- `WEBMENTION_SENDER_PORT` (default `${PORT}` or `3000`)
+- `WEBMENTION_SENDER_ORIGIN` (optional JWT `me` claim override, defaults `PUBLICATION_URL` -> `SITE_URL`)
+- `WEBMENTION_SENDER_ENDPOINT` (optional full URL override)
 - `POST /webmention-sender` requires authentication (`update` scope) and sends pending webmentions for unpublished targets.
 
 ## Webmentions proxy
@@ -139,6 +146,24 @@
 - `start.sh` is intentionally ignored by Git (`.gitignore`) so server secrets are not committed.
 - Use `start.example.sh` as the tracked template and keep real credentials in environment variables (or `.env` on the server).
 - Startup scripts parse `.env` with the `dotenv` parser (not shell `source`), so values containing spaces are handled safely.
+- `start.example.sh` includes an optional background webmention sender polling loop for bare-metal deployments (including FreeBSD jails).
+- FreeBSD jail env example for auto-send polling:
+
+```sh
+SITE_URL=https://blog.example.net
+PORT=3000
+
+WEBMENTION_SENDER_AUTO_POLL=1
+WEBMENTION_SENDER_POLL_INTERVAL=300
+WEBMENTION_SENDER_HOST=127.0.0.1
+WEBMENTION_SENDER_PORT=3000
+WEBMENTION_SENDER_MOUNT_PATH=/webmention-sender
+
+# Optional overrides
+# WEBMENTION_SENDER_ORIGIN=https://blog.example.net
+# WEBMENTION_SENDER_ENDPOINT=http://127.0.0.1:3000/webmention-sender
+```
+
 - Startup scripts run preflight + patch helpers before boot (`scripts/preflight-production-security.mjs`, `scripts/preflight-mongo-connection.mjs`, `scripts/preflight-activitypub-rsa-key.mjs`, `scripts/preflight-activitypub-profile-urls.mjs`, `scripts/patch-lightningcss.mjs`, `scripts/patch-endpoint-media-scope.mjs`, `scripts/patch-endpoint-media-sharp-runtime.mjs`, `scripts/patch-frontend-sharp-runtime.mjs`, `scripts/patch-endpoint-files-upload-route.mjs`, `scripts/patch-endpoint-files-upload-locales.mjs`, `scripts/patch-endpoint-activitypub-locales.mjs`, `scripts/patch-endpoint-activitypub-docloader-loglevel.mjs`, `scripts/patch-endpoint-activitypub-private-url-docloader.mjs`, `scripts/patch-endpoint-activitypub-migrate-alias-clear.mjs`, `scripts/patch-endpoint-homepage-locales.mjs`, `scripts/patch-frontend-serviceworker-file.mjs`, `scripts/patch-conversations-collection-guards.mjs`, `scripts/patch-indiekit-routes-rate-limits.mjs`, `scripts/patch-indiekit-error-production-stack.mjs`, `scripts/patch-indieauth-devmode-guard.mjs`, `scripts/patch-listening-endpoint-runtime-guards.mjs`).
 - The production security preflight blocks startup on insecure auth/session configuration and catches empty-password bcrypt hashes.
 - One-time recovery mode is available with `INDIEKIT_ALLOW_PASSWORD_SETUP=1` to bootstrap/reset `PASSWORD_SECRET` when locked out. Remove this flag after setting a valid hash.

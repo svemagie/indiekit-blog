@@ -2,11 +2,12 @@
 set -eu
 
 cd /usr/local/indiekit
+NODE_BIN="${NODE_BIN:-/usr/local/bin/node}"
 
 # Optional: load environment from local .env file
 # (dotenv syntax, supports spaces in values).
 if [ -f .env ]; then
-  eval "$(${NODE_BIN:-/usr/local/bin/node} -e '
+  eval "$("${NODE_BIN}" -e '
     const fs = require("node:fs");
     const dotenv = require("dotenv");
     const parsed = dotenv.parse(fs.readFileSync(".env"));
@@ -40,34 +41,96 @@ export INDIEKIT_DEBUG="0"
 unset DEBUG
 
 # Verify production auth/session hardening before launching server.
-/usr/local/bin/node scripts/preflight-production-security.mjs
+"${NODE_BIN}" scripts/preflight-production-security.mjs
 
 # Verify MongoDB credentials/connectivity before launching server.
-/usr/local/bin/node scripts/preflight-mongo-connection.mjs
+"${NODE_BIN}" scripts/preflight-mongo-connection.mjs
 
 # Ensure ActivityPub has an RSA keypair for HTTP Signature delivery.
-/usr/local/bin/node scripts/preflight-activitypub-rsa-key.mjs
+"${NODE_BIN}" scripts/preflight-activitypub-rsa-key.mjs
 
 # Normalize ActivityPub profile URL fields (icon/image/aliases) in MongoDB.
-/usr/local/bin/node scripts/preflight-activitypub-profile-urls.mjs
+"${NODE_BIN}" scripts/preflight-activitypub-profile-urls.mjs
 
 # Ensure runtime dependency patches are applied even if node_modules already exists.
-/usr/local/bin/node scripts/patch-lightningcss.mjs
-/usr/local/bin/node scripts/patch-endpoint-media-scope.mjs
-/usr/local/bin/node scripts/patch-endpoint-media-sharp-runtime.mjs
-/usr/local/bin/node scripts/patch-frontend-sharp-runtime.mjs
-/usr/local/bin/node scripts/patch-endpoint-files-upload-route.mjs
-/usr/local/bin/node scripts/patch-endpoint-files-upload-locales.mjs
-/usr/local/bin/node scripts/patch-endpoint-activitypub-locales.mjs
-/usr/local/bin/node scripts/patch-endpoint-activitypub-docloader-loglevel.mjs
-/usr/local/bin/node scripts/patch-endpoint-activitypub-private-url-docloader.mjs
-/usr/local/bin/node scripts/patch-endpoint-activitypub-migrate-alias-clear.mjs
-/usr/local/bin/node scripts/patch-endpoint-homepage-locales.mjs
-/usr/local/bin/node scripts/patch-frontend-serviceworker-file.mjs
-/usr/local/bin/node scripts/patch-conversations-collection-guards.mjs
-/usr/local/bin/node scripts/patch-indiekit-routes-rate-limits.mjs
-/usr/local/bin/node scripts/patch-indiekit-error-production-stack.mjs
-/usr/local/bin/node scripts/patch-indieauth-devmode-guard.mjs
-/usr/local/bin/node scripts/patch-listening-endpoint-runtime-guards.mjs
+"${NODE_BIN}" scripts/patch-lightningcss.mjs
+"${NODE_BIN}" scripts/patch-endpoint-media-scope.mjs
+"${NODE_BIN}" scripts/patch-endpoint-media-sharp-runtime.mjs
+"${NODE_BIN}" scripts/patch-frontend-sharp-runtime.mjs
+"${NODE_BIN}" scripts/patch-endpoint-files-upload-route.mjs
+"${NODE_BIN}" scripts/patch-endpoint-files-upload-locales.mjs
+"${NODE_BIN}" scripts/patch-endpoint-activitypub-locales.mjs
+"${NODE_BIN}" scripts/patch-endpoint-activitypub-docloader-loglevel.mjs
+"${NODE_BIN}" scripts/patch-endpoint-activitypub-private-url-docloader.mjs
+"${NODE_BIN}" scripts/patch-endpoint-activitypub-migrate-alias-clear.mjs
+"${NODE_BIN}" scripts/patch-endpoint-homepage-locales.mjs
+"${NODE_BIN}" scripts/patch-frontend-serviceworker-file.mjs
+"${NODE_BIN}" scripts/patch-conversations-collection-guards.mjs
+"${NODE_BIN}" scripts/patch-indiekit-routes-rate-limits.mjs
+"${NODE_BIN}" scripts/patch-indiekit-error-production-stack.mjs
+"${NODE_BIN}" scripts/patch-indieauth-devmode-guard.mjs
+"${NODE_BIN}" scripts/patch-listening-endpoint-runtime-guards.mjs
 
-exec /usr/local/bin/node node_modules/@indiekit/indiekit/bin/cli.js serve --config indiekit.config.mjs
+# Optional: poll the webmention sender endpoint in the background.
+if [ "${WEBMENTION_SENDER_AUTO_POLL:-1}" = "1" ]; then
+  WEBMENTION_SENDER_HOST="${WEBMENTION_SENDER_HOST:-127.0.0.1}"
+  WEBMENTION_SENDER_PORT="${WEBMENTION_SENDER_PORT:-${PORT:-3000}}"
+  WEBMENTION_SENDER_PATH="${WEBMENTION_SENDER_MOUNT_PATH:-/webmention-sender}"
+  WEBMENTION_SENDER_ORIGIN="${WEBMENTION_SENDER_ORIGIN:-${PUBLICATION_URL:-${SITE_URL:-}}}"
+  WEBMENTION_SENDER_INTERVAL="${WEBMENTION_SENDER_POLL_INTERVAL:-300}"
+
+  case "$WEBMENTION_SENDER_PATH" in
+    /*) ;;
+    *) WEBMENTION_SENDER_PATH="/$WEBMENTION_SENDER_PATH" ;;
+  esac
+
+  case "$WEBMENTION_SENDER_INTERVAL" in
+    ''|*[!0-9]*) WEBMENTION_SENDER_INTERVAL=300 ;;
+  esac
+
+  WEBMENTION_SENDER_ORIGIN="${WEBMENTION_SENDER_ORIGIN%/}"
+
+  if ! command -v curl >/dev/null 2>&1; then
+    echo "[webmention] curl not found; skipping auto-send polling" >&2
+  elif [ -z "$WEBMENTION_SENDER_ORIGIN" ]; then
+    echo "[webmention] SITE_URL/PUBLICATION_URL missing; skipping auto-send polling" >&2
+  else
+    WEBMENTION_SENDER_ENDPOINT="${WEBMENTION_SENDER_ENDPOINT:-http://${WEBMENTION_SENDER_HOST}:${WEBMENTION_SENDER_PORT}${WEBMENTION_SENDER_PATH}}"
+
+    (
+      echo "[webmention] Starting auto-send polling every ${WEBMENTION_SENDER_INTERVAL}s (${WEBMENTION_SENDER_ENDPOINT})"
+
+      while true; do
+        TOKEN="$({
+          WEBMENTION_ORIGIN="$WEBMENTION_SENDER_ORIGIN" \
+          WEBMENTION_SECRET="$SECRET" \
+          "$NODE_BIN" -e '
+            const jwt = require("jsonwebtoken");
+            const me = process.env.WEBMENTION_ORIGIN;
+            const secret = process.env.WEBMENTION_SECRET;
+            if (!me || !secret) process.exit(1);
+            process.stdout.write(
+              jwt.sign({ me, scope: "update" }, secret, { expiresIn: "5m" }),
+            );
+          ' 2>/dev/null;
+        } || true)"
+
+        if [ -n "$TOKEN" ]; then
+          RESULT="$(curl -sS -X POST "${WEBMENTION_SENDER_ENDPOINT}?token=${TOKEN}" 2>&1 || true)"
+
+          if [ -n "$RESULT" ]; then
+            echo "[webmention] $(date '+%Y-%m-%d %H:%M:%S') - $RESULT"
+          else
+            echo "[webmention] $(date '+%Y-%m-%d %H:%M:%S') - ok"
+          fi
+        else
+          echo "[webmention] $(date '+%Y-%m-%d %H:%M:%S') - token generation failed"
+        fi
+
+        sleep "$WEBMENTION_SENDER_INTERVAL"
+      done
+    ) &
+  fi
+fi
+
+exec "${NODE_BIN}" node_modules/@indiekit/indiekit/bin/cli.js serve --config indiekit.config.mjs

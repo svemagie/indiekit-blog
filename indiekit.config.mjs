@@ -99,6 +99,11 @@ const publicationBaseUrl = (
   process.env.SITE_URL ||
   "https://blog.giersig.eu"
 ).replace(/\/+$/, "");
+const applicationBaseUrl = (
+  process.env.INDIEKIT_URL ||
+  process.env.APPLICATION_URL ||
+  publicationBaseUrl
+).replace(/\/+$/, "");
 const publicationHostname = (() => {
   try {
     return new URL(publicationBaseUrl).hostname;
@@ -205,6 +210,7 @@ export default {
   application: {
     name: "Indiekit",
     mongodbUrl: mongoUrl,
+    url: applicationBaseUrl,
   },
   publication: {
     me: publicationBaseUrl,

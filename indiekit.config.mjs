@@ -308,6 +308,7 @@ export default {
     "@rmdes/indiekit-endpoint-lastfm",
     "@rmdes/indiekit-endpoint-podroll",
     "@rmdes/indiekit-endpoint-activitypub",
+      "indiekit-endpoint-youtube",
   ],
   "@indiekit/store-github": {
     user: githubUsername,
@@ -406,5 +407,8 @@ export default {
     debugDashboard: activityPubDebugDashboard,
     debugPassword: activityPubDebugPassword,
   },
+    "indiekit-endpoint-youtube": {
+      mountPath: "/youtube",
+    },
 };
 

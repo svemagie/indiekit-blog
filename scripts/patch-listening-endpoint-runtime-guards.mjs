@@ -316,6 +316,50 @@ const patchSpecs = [
     ],
   },
   {
+    name: "funkwhale-sync-safe-transform-loop",
+    marker: "skip malformed listenings instead of aborting full sync",
+    oldSnippet: `  // Transform to our schema
+  const docs = newListenings.map((l) => transformListening(l));
+
+  // Upsert each document (in case of duplicates)`,
+    newSnippet: `  // Transform to our schema
+  const docs = [];
+  for (const listening of newListenings) {
+    try {
+      docs.push(transformListening(listening));
+    } catch (error) {
+      // skip malformed listenings instead of aborting full sync
+      console.warn(
+        "[Funkwhale] Skipping malformed listening during sync:",
+        error.message,
+      );
+    }
+  }
+
+  // Upsert each document (in case of duplicates)`,
+    candidates: [
+      "node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/sync.js",
+      "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/sync.js",
+    ],
+  },
+  {
+    name: "funkwhale-sync-track-null-guard",
+    marker: "allow sync of listenings with missing track payload",
+    oldSnippet: `  const track = listening.track;
+  const artist = track.artist_credit?.[0]?.artist;
+  const album = track.album;
+  const upload = track.uploads?.[0];`,
+    newSnippet: `  // allow sync of listenings with missing track payload
+  const track = listening.track || {};
+  const artist = track.artist_credit?.[0]?.artist;
+  const album = track.album || null;
+  const upload = Array.isArray(track.uploads) ? track.uploads[0] : null;`,
+    candidates: [
+      "node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/sync.js",
+      "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/sync.js",
+    ],
+  },
+  {
     name: "funkwhale-stats-date-coercion",
     marker: "support string and Date listenedAt values in period filters",
     oldSnippet: `function getDateMatch(period) {

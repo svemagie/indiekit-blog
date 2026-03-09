@@ -246,6 +246,76 @@ const patchSpecs = [
     ],
   },
   {
+    name: "funkwhale-sync-legacy-backfill",
+    marker: "detect legacy sync keys and force one-time full backfill",
+    oldSnippet: `  if (Number.isNaN(latestDate.getTime())) {
+    console.warn(
+      "[Funkwhale] Invalid listenedAt in latest record; falling back to full sync"
+    );
+    latestDate = new Date(0);
+  }
+
+  console.log(
+    \`[Funkwhale] Syncing listenings since: \${latestDate.toISOString()}\`
+  );`,
+    newSnippet: `  if (Number.isNaN(latestDate.getTime())) {
+    console.warn(
+      "[Funkwhale] Invalid listenedAt in latest record; falling back to full sync"
+    );
+    latestDate = new Date(0);
+  }
+
+  const totalDocs = await collection.countDocuments();
+  const needsLegacyBackfill = totalDocs <= 1 || !latest?.funkwhaleId;
+  if (needsLegacyBackfill && totalDocs > 0) {
+    // detect legacy sync keys and force one-time full backfill
+    console.warn(
+      "[Funkwhale] Detected legacy sync keys; forcing full resync for accurate statistics"
+    );
+    latestDate = new Date(0);
+    await collection.deleteMany({
+      $or: [{ funkwhaleId: { $exists: false } }, { funkwhaleId: null }],
+    });
+  }
+
+  console.log(
+    \`[Funkwhale] Syncing listenings since: \${latestDate.toISOString()}\`
+  );`,
+    candidates: [
+      "node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/sync.js",
+      "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/sync.js",
+    ],
+  },
+  {
+    name: "funkwhale-sync-stable-listening-id",
+    marker: "use stable listening event key (fid) for sync upserts",
+    oldSnippet: `  return {
+    funkwhaleId: listening.id,
+    trackId: track.id,
+    trackTitle: track.title,
+    trackFid: track.fid,
+    artistName: artist?.name || getArtistName(track),`,
+    newSnippet: `  const stableListeningId =
+    listening.fid ||
+    [
+      track?.fid || track?.id || "unknown-track",
+      listening.creation_date || "unknown-date",
+    ].join(":");
+
+  return {
+    // use stable listening event key (fid) for sync upserts
+    funkwhaleId: stableListeningId,
+    listeningFid: listening.fid || null,
+    trackId: track.id,
+    trackTitle: track.title,
+    trackFid: track.fid,
+    artistName: artist?.name || getArtistName(track),`,
+    candidates: [
+      "node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/sync.js",
+      "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/sync.js",
+    ],
+  },
+  {
     name: "funkwhale-stats-date-coercion",
     marker: "support string and Date listenedAt values in period filters",
     oldSnippet: `function getDateMatch(period) {

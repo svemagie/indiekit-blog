@@ -1,6 +1,7 @@
 import "dotenv/config";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import PodrollEndpoint from "@rmdes/indiekit-endpoint-podroll";
 
 const mongoUsername = process.env.MONGO_USERNAME || process.env.MONGO_USER || "";
 const mongoPassword = process.env.MONGO_PASSWORD || "";
@@ -84,6 +85,9 @@ const activityPubDebugDashboard =
 const activityPubDebugPassword = process.env.AP_DEBUG_PASSWORD || "";
 const activityPubAlsoKnownAs = process.env.AP_ALSO_KNOWN_AS || "";
 const redisUrl = process.env.REDIS_URL || "";
+const podrollMountPath = process.env.PODROLL_MOUNT_PATH || "/podrollapi";
+const podrollEpisodesUrl = process.env.PODROLL_EPISODES_URL || "";
+const podrollOpmlUrl = process.env.PODROLL_OPML_URL || "";
 const configDir = path.dirname(fileURLToPath(import.meta.url));
 const homepageContentDir =
   process.env.HOMEPAGE_CONTENT_DIR ||
@@ -182,6 +186,11 @@ export default {
     "@rmdes/indiekit-endpoint-conversations",
     "@rmdes/indiekit-endpoint-funkwhale",
     "@rmdes/indiekit-endpoint-lastfm",
+    new PodrollEndpoint({
+      mountPath: podrollMountPath,
+      episodesUrl: podrollEpisodesUrl,
+      opmlUrl: podrollOpmlUrl,
+    }),
     "@rmdes/indiekit-endpoint-activitypub",
   ],
   "@indiekit/store-github": {

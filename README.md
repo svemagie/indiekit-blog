@@ -23,6 +23,7 @@
 - GitHub activity + API: `/github`
 - Funkwhale activity + API: `/funkwhale`
 - Last.fm activity + API: `/lastfmapi`
+- Podroll dashboard + API: `/podrollapi`
 - ActivityPub federation + admin reader: `/activitypub`
 - ActivityPub discovery: `/.well-known/webfinger`, `/nodeinfo/2.1`
 
@@ -81,6 +82,15 @@
 - Listening endpoint plugins target Node.js 20+; older runtimes can produce inconsistent fetch/JSON behavior.
 - If `FUNKWHALE_INSTANCE` points to a host that does not expose Funkwhale's API routes, API responses now degrade to empty data instead of repeated 500 errors.
 - If these variables are missing, the endpoints still exist but return empty activity until credentials are configured.
+
+## Podroll endpoint
+
+- Podroll endpoint is enabled via `@rmdes/indiekit-endpoint-podroll` and mounted at `/podrollapi` by default.
+- Optional environment variables:
+- `PODROLL_MOUNT_PATH` (default `/podrollapi`)
+- `PODROLL_EPISODES_URL` (FreshRSS greader endpoint URL used for episode sync)
+- `PODROLL_OPML_URL` (FreshRSS OPML export URL used for podcast source sync)
+- If `PODROLL_EPISODES_URL` and `PODROLL_OPML_URL` are not set, the endpoint still loads and can be configured from its admin dashboard.
 
 ## ActivityPub
 

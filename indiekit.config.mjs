@@ -228,6 +228,12 @@ export default {
           path: "content/notes/{slug}.md",
           url: `${publicationBaseUrl}/notes/{slug}/`,
         },
+        fields: {
+          aiTextLevel: {},
+          aiCodeLevel: {},
+          aiTools: {},
+          aiDescription: {},
+        },
       },
       bookmark: {
         name: "Lesezeichen",

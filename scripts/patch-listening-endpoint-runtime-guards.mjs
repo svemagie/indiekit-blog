@@ -200,6 +200,206 @@ const patchSpecs = [
       "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/controllers/stats.js",
     ],
   },
+  {
+    name: "funkwhale-stats-db-getter",
+    marker: "use application database getter for public stats routes",
+    oldSnippet: `      // Try database first, fall back to cache for public routes
+      const db = request.app.locals.database;
+      let stats;`,
+    newSnippet: `      // Try database first, fall back to cache for public routes
+      // use application database getter for public stats routes
+      const db =
+        request.app.locals.application.getFunkwhaleDb?.() ||
+        request.app.locals.database;
+      let stats;`,
+    candidates: [
+      "node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/controllers/stats.js",
+      "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/controllers/stats.js",
+    ],
+  },
+  {
+    name: "funkwhale-trends-db-getter",
+    marker: "use application database getter for public trends routes",
+    oldSnippet: `      const db = request.app.locals.database;
+      const days = Math.min(parseInt(request.query.days) || 30, 90);`,
+    newSnippet: `      // use application database getter for public trends routes
+      const db =
+        request.app.locals.application.getFunkwhaleDb?.() ||
+        request.app.locals.database;
+      const days = Math.min(parseInt(request.query.days) || 30, 90);`,
+    candidates: [
+      "node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/controllers/stats.js",
+      "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/controllers/stats.js",
+    ],
+  },
+  {
+    name: "funkwhale-sync-date-storage",
+    marker: "store listenedAt/syncedAt as Date objects",
+    oldSnippet: `    listenedAt: new Date(listening.creation_date).toISOString(),
+    syncedAt: new Date().toISOString(),`,
+    newSnippet: `    // store listenedAt/syncedAt as Date objects
+    listenedAt: new Date(listening.creation_date),
+    syncedAt: new Date(),`,
+    candidates: [
+      "node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/sync.js",
+      "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/sync.js",
+    ],
+  },
+  {
+    name: "funkwhale-stats-date-coercion",
+    marker: "support string and Date listenedAt values in period filters",
+    oldSnippet: `function getDateMatch(period) {
+  const now = new Date();
+  switch (period) {
+    case "week":
+      return { listenedAt: { $gte: new Date(now - 7 * 24 * 60 * 60 * 1000) } };
+    case "month":
+      return { listenedAt: { $gte: new Date(now - 30 * 24 * 60 * 60 * 1000) } };
+    default:
+      return {};
+  }
+}`,
+    newSnippet: `function getDateMatch(period) {
+  const now = new Date();
+  let threshold = null;
+
+  switch (period) {
+    case "week":
+      threshold = new Date(now - 7 * 24 * 60 * 60 * 1000);
+      break;
+    case "month":
+      threshold = new Date(now - 30 * 24 * 60 * 60 * 1000);
+      break;
+    default:
+      return {};
+  }
+
+  // support string and Date listenedAt values in period filters
+  return {
+    $expr: {
+      $gte: [{ $toDate: "$listenedAt" }, threshold],
+    },
+  };
+}`,
+    candidates: [
+      "node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/stats.js",
+      "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/stats.js",
+    ],
+  },
+  {
+    name: "funkwhale-trends-date-coercion",
+    marker: "support string and Date listenedAt values in trends aggregation",
+    oldSnippet: `  return collection
+    .aggregate([
+      { $match: { listenedAt: { $gte: startDate } } },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$listenedAt" },
+          },`,
+    newSnippet: `  return collection
+    .aggregate([
+      {
+        // support string and Date listenedAt values in trends aggregation
+        $addFields: {
+          listenedAtDate: { $toDate: "$listenedAt" },
+        },
+      },
+      { $match: { listenedAtDate: { $gte: startDate } } },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$listenedAtDate" },
+          },`,
+    candidates: [
+      "node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/stats.js",
+      "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-funkwhale/lib/stats.js",
+    ],
+  },
+  {
+    name: "lastfm-sync-date-storage",
+    marker: "store scrobbledAt/syncedAt as Date objects",
+    oldSnippet: `    scrobbledAt: scrobbledAtDate.toISOString(),
+    syncedAt: new Date().toISOString(),`,
+    newSnippet: `    // store scrobbledAt/syncedAt as Date objects
+    scrobbledAt: scrobbledAtDate,
+    syncedAt: new Date(),`,
+    candidates: [
+      "node_modules/@rmdes/indiekit-endpoint-lastfm/lib/sync.js",
+      "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-lastfm/lib/sync.js",
+    ],
+  },
+  {
+    name: "lastfm-stats-date-coercion",
+    marker: "support string and Date scrobbledAt values in period filters",
+    oldSnippet: `function getDateMatch(period) {
+  const now = new Date();
+  switch (period) {
+    case "week":
+      return { scrobbledAt: { $gte: new Date(now - 7 * 24 * 60 * 60 * 1000) } };
+    case "month":
+      return { scrobbledAt: { $gte: new Date(now - 30 * 24 * 60 * 60 * 1000) } };
+    default:
+      return {};
+  }
+}`,
+    newSnippet: `function getDateMatch(period) {
+  const now = new Date();
+  let threshold = null;
+
+  switch (period) {
+    case "week":
+      threshold = new Date(now - 7 * 24 * 60 * 60 * 1000);
+      break;
+    case "month":
+      threshold = new Date(now - 30 * 24 * 60 * 60 * 1000);
+      break;
+    default:
+      return {};
+  }
+
+  // support string and Date scrobbledAt values in period filters
+  return {
+    $expr: {
+      $gte: [{ $toDate: "$scrobbledAt" }, threshold],
+    },
+  };
+}`,
+    candidates: [
+      "node_modules/@rmdes/indiekit-endpoint-lastfm/lib/stats.js",
+      "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-lastfm/lib/stats.js",
+    ],
+  },
+  {
+    name: "lastfm-trends-date-coercion",
+    marker: "support string and Date scrobbledAt values in trends aggregation",
+    oldSnippet: `  return collection
+    .aggregate([
+      { $match: { scrobbledAt: { $gte: startDate } } },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$scrobbledAt" },
+          },`,
+    newSnippet: `  return collection
+    .aggregate([
+      {
+        // support string and Date scrobbledAt values in trends aggregation
+        $addFields: {
+          scrobbledAtDate: { $toDate: "$scrobbledAt" },
+        },
+      },
+      { $match: { scrobbledAtDate: { $gte: startDate } } },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$scrobbledAtDate" },
+          },`,
+    candidates: [
+      "node_modules/@rmdes/indiekit-endpoint-lastfm/lib/stats.js",
+      "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-lastfm/lib/stats.js",
+    ],
+  },
 ];
 
 async function exists(filePath) {

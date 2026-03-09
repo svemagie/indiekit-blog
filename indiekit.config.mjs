@@ -38,6 +38,48 @@ const funkwhaleUsername = process.env.FUNKWHALE_USERNAME;
 const funkwhaleToken = process.env.FUNKWHALE_TOKEN;
 const lastfmApiKey = process.env.LASTFM_API_KEY;
 const lastfmUsername = process.env.LASTFM_USERNAME;
+const listeningCacheTtlRaw = Number.parseInt(
+  process.env.LISTENING_CACHE_TTL || "120000",
+  10,
+);
+const listeningCacheTtl = Number.isFinite(listeningCacheTtlRaw)
+  ? Math.max(30000, listeningCacheTtlRaw)
+  : 120000;
+const listeningSyncIntervalRaw = Number.parseInt(
+  process.env.LISTENING_SYNC_INTERVAL || "180000",
+  10,
+);
+const listeningSyncInterval = Number.isFinite(listeningSyncIntervalRaw)
+  ? Math.max(60000, listeningSyncIntervalRaw)
+  : 180000;
+const funkwhaleCacheTtlRaw = Number.parseInt(
+  process.env.FUNKWHALE_CACHE_TTL || String(listeningCacheTtl),
+  10,
+);
+const funkwhaleCacheTtl = Number.isFinite(funkwhaleCacheTtlRaw)
+  ? Math.max(30000, funkwhaleCacheTtlRaw)
+  : listeningCacheTtl;
+const funkwhaleSyncIntervalRaw = Number.parseInt(
+  process.env.FUNKWHALE_SYNC_INTERVAL || String(listeningSyncInterval),
+  10,
+);
+const funkwhaleSyncInterval = Number.isFinite(funkwhaleSyncIntervalRaw)
+  ? Math.max(60000, funkwhaleSyncIntervalRaw)
+  : listeningSyncInterval;
+const lastfmCacheTtlRaw = Number.parseInt(
+  process.env.LASTFM_CACHE_TTL || String(listeningCacheTtl),
+  10,
+);
+const lastfmCacheTtl = Number.isFinite(lastfmCacheTtlRaw)
+  ? Math.max(30000, lastfmCacheTtlRaw)
+  : listeningCacheTtl;
+const lastfmSyncIntervalRaw = Number.parseInt(
+  process.env.LASTFM_SYNC_INTERVAL || String(listeningSyncInterval),
+  10,
+);
+const lastfmSyncInterval = Number.isFinite(lastfmSyncIntervalRaw)
+  ? Math.max(60000, lastfmSyncIntervalRaw)
+  : listeningSyncInterval;
 const blueskyHandle = (process.env.BLUESKY_HANDLE || "")
   .trim()
   .replace(/^@+/, "");
@@ -281,11 +323,15 @@ export default {
     instanceUrl: funkwhaleInstance,
     username: funkwhaleUsername,
     token: funkwhaleToken,
+    cacheTtl: funkwhaleCacheTtl,
+    syncInterval: funkwhaleSyncInterval,
   },
   "@rmdes/indiekit-endpoint-lastfm": {
     mountPath: "/lastfmapi",
     apiKey: lastfmApiKey,
     username: lastfmUsername,
+    cacheTtl: lastfmCacheTtl,
+    syncInterval: lastfmSyncInterval,
   },
   "@rmdes/indiekit-endpoint-podroll": {
     mountPath: podrollMountPath,

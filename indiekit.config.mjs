@@ -291,6 +291,7 @@ export default {
   },
 
   plugins: [
+    "@indiekit/endpoint-micropub",
     "@indiekit/store-github",
     "@indiekit/post-type-repost",
     "@rmdes/indiekit-post-type-page",
@@ -313,6 +314,9 @@ export default {
     "@rmdes/indiekit-endpoint-blogroll",
     "@rmdes/indiekit-endpoint-microsub",
   ],
+  "@indiekit/endpoint-micropub": {
+    mountPath: "/micropub",
+  },
   "@indiekit/store-github": {
     user: githubUsername,
     repo: "blog",

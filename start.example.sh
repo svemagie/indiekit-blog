@@ -279,25 +279,10 @@ unset DEBUG
 # Normalize ActivityPub profile URL fields (icon/image/aliases) in MongoDB.
 "${NODE_BIN}" scripts/preflight-activitypub-profile-urls.mjs
 
-# Ensure runtime dependency patches are applied even if node_modules already exists.
-"${NODE_BIN}" scripts/patch-lightningcss.mjs
-"${NODE_BIN}" scripts/patch-endpoint-media-scope.mjs
-"${NODE_BIN}" scripts/patch-endpoint-media-sharp-runtime.mjs
-"${NODE_BIN}" scripts/patch-frontend-sharp-runtime.mjs
-"${NODE_BIN}" scripts/patch-endpoint-files-upload-route.mjs
-"${NODE_BIN}" scripts/patch-endpoint-files-upload-locales.mjs
-"${NODE_BIN}" scripts/patch-endpoint-activitypub-locales.mjs
-"${NODE_BIN}" scripts/patch-endpoint-activitypub-docloader-loglevel.mjs
-"${NODE_BIN}" scripts/patch-endpoint-activitypub-private-url-docloader.mjs
-"${NODE_BIN}" scripts/patch-endpoint-activitypub-migrate-alias-clear.mjs
-"${NODE_BIN}" scripts/patch-endpoint-homepage-locales.mjs
-"${NODE_BIN}" scripts/patch-endpoint-homepage-identity-defaults.mjs
-"${NODE_BIN}" scripts/patch-frontend-serviceworker-file.mjs
-"${NODE_BIN}" scripts/patch-conversations-collection-guards.mjs
-"${NODE_BIN}" scripts/patch-indiekit-routes-rate-limits.mjs
-"${NODE_BIN}" scripts/patch-indiekit-error-production-stack.mjs
-"${NODE_BIN}" scripts/patch-indieauth-devmode-guard.mjs
-"${NODE_BIN}" scripts/patch-listening-endpoint-runtime-guards.mjs
+for patch in scripts/patch-*.mjs; do
+  echo "[startup] Applying patch: $patch"
+  "${NODE_BIN}" "$patch"
+done
 
 "${NODE_BIN}" node_modules/@indiekit/indiekit/bin/cli.js serve --config indiekit.config.mjs &
 INDIEKIT_PID="$!"

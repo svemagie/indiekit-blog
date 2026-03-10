@@ -34,13 +34,19 @@ const CATEGORY_LABELS = {
 
 const newCategorize = `function categorizeCommit(title) {
   if (/^feat[:(]/i.test(title)) return "features";
-  if (/^fix\\b/i.test(title)) return "fixes";
+  if (/^fix[:(]/i.test(title)) return "fixes";
+  if (/^perf[:(]/i.test(title)) return "performance";
+  if (/^a11y[:(]/i.test(title)) return "accessibility";
+  if (/^docs[:(]/i.test(title)) return "documentation";
   return "other";
 }
 
 const CATEGORY_LABELS = {
   features: "Features",
   fixes: "Fixes",
+  performance: "Performance",
+  accessibility: "Accessibility",
+  documentation: "Documentation",
   other: "Other",
 };`;
 

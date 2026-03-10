@@ -299,10 +299,6 @@ export default {
     "@rmdes/indiekit-syndicator-mastodon",
     "@rmdes/indiekit-syndicator-indienews",
     "@rmdes/indiekit-preset-eleventy",
-    "@rmdes/indiekit-endpoint-auth",
-      "@rmdes/indiekit-endpoint-auth": {
-        mountPath: "/auth",
-      },
     "@rmdes/indiekit-endpoint-github",
     "@rmdes/indiekit-endpoint-webmention-io",
     "@rmdes/indiekit-endpoint-webmentions-proxy",
@@ -318,6 +314,10 @@ export default {
     "@rmdes/indiekit-endpoint-blogroll",
     "@rmdes/indiekit-endpoint-microsub",
   ],
+  
+  "@rmdes/indiekit-endpoint-auth": {
+      mountPath: "/auth",
+  },
   "@indiekit/endpoint-micropub": {
     mountPath: "/micropub",
   },

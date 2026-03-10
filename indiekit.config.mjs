@@ -311,6 +311,7 @@ export default {
     "@rmdes/indiekit-endpoint-activitypub",
     "@rmdes/indiekit-endpoint-youtube",
     "@rmdes/indiekit-endpoint-blogroll",
+    "@rmdes/indiekit-endpoint-microsub",
   ],
   "@indiekit/store-github": {
     user: githubUsername,
@@ -431,6 +432,9 @@ export default {
       maxItemsPerBlog: 50,
       maxItemAge: 7,
       fetchTimeout: 15000,
+    },
+    "@rmdes/indiekit-endpoint-microsub": {
+      mountPath: "/microsub",
     },
 };
 

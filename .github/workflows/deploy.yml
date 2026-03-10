@@ -37,7 +37,7 @@ jobs:
             restart_log=/tmp/indiekit-restart.log
 
             # Update code and dependencies as indiekit user inside the jail.
-            sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && git pull origin main && npm ci --legacy-peer-deps && install -m 755 start.example.sh start.sh"'
+            sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && git fetch origin && git reset --hard origin/main && npm ci --legacy-peer-deps && install -m 755 start.example.sh start.sh"'
 
             # sharp/libvips are managed manually on the server.
 

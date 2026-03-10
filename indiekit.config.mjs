@@ -299,6 +299,10 @@ export default {
     "@rmdes/indiekit-syndicator-mastodon",
     "@rmdes/indiekit-syndicator-indienews",
     "@rmdes/indiekit-preset-eleventy",
+    "@rmdes/indiekit-endpoint-auth",
+      "@rmdes/indiekit-endpoint-auth": {
+        mountPath: "/auth",
+      },
     "@rmdes/indiekit-endpoint-github",
     "@rmdes/indiekit-endpoint-webmention-io",
     "@rmdes/indiekit-endpoint-webmentions-proxy",

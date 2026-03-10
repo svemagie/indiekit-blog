@@ -310,6 +310,7 @@ export default {
     "@rmdes/indiekit-endpoint-podroll",
     "@rmdes/indiekit-endpoint-activitypub",
     "@rmdes/indiekit-endpoint-youtube",
+    "@rmdes/indiekit-endpoint-blogroll",
   ],
   "@indiekit/store-github": {
     user: githubUsername,
@@ -423,6 +424,13 @@ export default {
     "@rmdes/indiekit-syndicator-indienews": {
       languages: ["en", "de"],
       checked: false
+    },
+    "@rmdes/indiekit-endpoint-blogroll": {
+      mountPath: "/blogrollapi",
+      syncInterval: 3600000,
+      maxItemsPerBlog: 50,
+      maxItemAge: 7,
+      fetchTimeout: 15000,
     },
 };
 

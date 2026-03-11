@@ -9,7 +9,7 @@
 import { MongoClient } from "mongodb";
 import config from "../indiekit.config.mjs";
 
-const MIGRATION_ID = "webmention-sender-reset-stale-v1";
+const MIGRATION_ID = "webmention-sender-reset-stale-v2";
 
 const mongodbUrl = config.application?.mongodbUrl;
 if (!mongodbUrl) {

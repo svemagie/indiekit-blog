@@ -125,8 +125,6 @@ const webmentionSenderTimeout = Number.isFinite(webmentionSenderTimeoutRaw)
   : 10000;
 const webmentionSenderUserAgent =
   process.env.WEBMENTION_SENDER_USER_AGENT || `${siteName} Webmention Sender`;
-const webmentionIoMountPath =
-  process.env.WEBMENTION_IO_MOUNT_PATH || "/webmentions";
 const commentsMountPath = process.env.COMMENTS_MOUNT_PATH || "/comments";
 const commentsRateLimitPerHourRaw = Number.parseInt(
   process.env.COMMENTS_RATE_LIMIT_PER_HOUR || "5",
@@ -342,7 +340,6 @@ export default {
     username: githubUsername,
   },
   "@rmdes/indiekit-endpoint-webmention-io": {
-    mountPath: webmentionIoMountPath,
     token: process.env.WEBMENTION_IO_TOKEN,
     domain: webmentionDomain,
   },

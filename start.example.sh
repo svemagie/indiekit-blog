@@ -67,7 +67,14 @@ WEBMENTION_ORIGIN="${PUBLICATION_URL:-${SITE_URL:-}}"
 
 (
   echo "[webmention] Starting auto-send polling every ${WEBMENTION_POLL_INTERVAL}s (${WEBMENTION_ENDPOINT})"
-  sleep 30  # Wait for indiekit to fully initialize before first poll
+  # Wait for indiekit to be ready before first poll (up to 2 minutes)
+  _i=0
+  until curl -sf "http://127.0.0.1:${PORT:-3000}/status" -o /dev/null 2>&1; do
+    _i=$((_i + 1))
+    [ $_i -lt 60 ] || { echo "[webmention] Warning: indiekit not ready after 120s, proceeding anyway"; break; }
+    sleep 2
+  done
+  echo "[webmention] Indiekit ready"
   while true; do
     TOKEN="$(
       WEBMENTION_ORIGIN="$WEBMENTION_ORIGIN" WEBMENTION_SECRET="$SECRET" \

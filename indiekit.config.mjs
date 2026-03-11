@@ -115,7 +115,7 @@ const nodeEnv = (process.env.NODE_ENV || "production").toLowerCase();
 const debugEnabled = process.env.INDIEKIT_DEBUG === "1" || nodeEnv !== "production";
 const siteName = process.env.SITE_NAME || "Indiekit";
 const webmentionSenderMountPath =
-  process.env.WEBMENTION_SENDER_MOUNT_PATH || "/webmentions-sender";
+  process.env.WEBMENTION_SENDER_MOUNT_PATH || "/webmention-sender";
 const webmentionSenderTimeoutRaw = Number.parseInt(
   process.env.WEBMENTION_SENDER_TIMEOUT || "10000",
   10,

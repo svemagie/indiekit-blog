@@ -67,6 +67,7 @@ WEBMENTION_ORIGIN="${PUBLICATION_URL:-${SITE_URL:-}}"
 
 (
   echo "[webmention] Starting auto-send polling every ${WEBMENTION_POLL_INTERVAL}s (${WEBMENTION_ENDPOINT})"
+  sleep 30  # Wait for indiekit to fully initialize before first poll
   while true; do
     TOKEN="$(
       WEBMENTION_ORIGIN="$WEBMENTION_ORIGIN" WEBMENTION_SECRET="$SECRET" \

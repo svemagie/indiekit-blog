@@ -118,6 +118,7 @@ start_webmention_poller() {
     return
   fi
 
+
   WEBMENTION_SENDER_HOST="${WEBMENTION_SENDER_HOST:-127.0.0.1}"
   WEBMENTION_SENDER_PORT="${WEBMENTION_SENDER_PORT:-${PORT:-3000}}"
   WEBMENTION_SENDER_PATH="${WEBMENTION_SENDER_MOUNT_PATH:-/webmention-sender}"
@@ -145,7 +146,11 @@ start_webmention_poller() {
     return
   fi
 
-  WEBMENTION_SENDER_ENDPOINT="${WEBMENTION_SENDER_ENDPOINT:-http://${WEBMENTION_SENDER_HOST}:${WEBMENTION_SENDER_PORT}${WEBMENTION_SENDER_PATH}}"
+  # If host includes protocol (http/https), use as-is, else prepend http://
+  case "$WEBMENTION_SENDER_HOST" in
+    http*://*) WEBMENTION_SENDER_ENDPOINT="${WEBMENTION_SENDER_HOST}${WEBMENTION_SENDER_PATH}" ;;
+    *) WEBMENTION_SENDER_ENDPOINT="http://${WEBMENTION_SENDER_HOST}:${WEBMENTION_SENDER_PORT}${WEBMENTION_SENDER_PATH}" ;;
+  esac
 
   # Wait for the local endpoint to answer (any HTTP status) before polling.
   WEBMENTION_READY_ELAPSED=0

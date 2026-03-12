@@ -8,7 +8,7 @@ const candidates = [
 ];
 
 const patchMarker =
-  "Normalize and sanitize AI disclosure metadata for articles and notes only.";
+  "Indiekit removes post-type before calling postTemplate; fall back to permalink-based detection.";
 
 const upstreamBlock = [
   "  // Convert url to Eleventy permalink so generated URL matches Indiekit's stored URL",
@@ -252,6 +252,119 @@ const v3Block = [
   "};",
 ].join("\n");
 
+// v4: fix post-type detection — Indiekit removes post-type before calling postTemplate,
+// so fall back to permalink URL pattern to detect articles and notes.
+const v4Block = [
+  "  // Convert url to Eleventy permalink so generated URL matches Indiekit's stored URL",
+  "  // Add trailing slash to generate /path/index.html instead of /path.html",
+  "  if (properties.url) {",
+  "    const url = properties.url;",
+  "    properties.permalink = url.endsWith(\"/\") ? url : `${url}/`;",
+  "  }",
+  "  delete properties.url;",
+  "",
+  "  // Normalize and sanitize AI disclosure metadata for articles and notes only.",
+  "  const aiSource =",
+  "    properties.ai && typeof properties.ai === \"object\" && !Array.isArray(properties.ai)",
+  "      ? properties.ai",
+  "      : {};",
+  "",
+  "  const normaliseString = (value) => {",
+  "    if (value === undefined || value === null) {",
+  "      return undefined;",
+  "    }",
+  "",
+  "    const text = String(value).trim();",
+  "    return text === \"\" ? undefined : text;",
+  "  };",
+  "",
+  "  const normaliseLevel = (value, allowedValues, fallback = \"0\") => {",
+  "    const candidate = normaliseString(value);",
+  "",
+  "    if (!candidate) {",
+  "      return fallback;",
+  "    }",
+  "",
+  "    return allowedValues.includes(candidate) ? candidate : fallback;",
+  "  };",
+  "",
+  "  const aiTextLevelRaw =",
+  "    aiSource.textLevel ??",
+  "    aiSource.aiTextLevel ??",
+  "    properties.aiTextLevel ??",
+  "    properties[\"ai-text-level\"] ??",
+  "    \"0\";",
+  "",
+  "  const aiCodeLevelRaw =",
+  "    aiSource.codeLevel ??",
+  "    aiSource.aiCodeLevel ??",
+  "    properties.aiCodeLevel ??",
+  "    properties[\"ai-code-level\"] ??",
+  "    \"0\";",
+  "",
+  "  const aiTextLevel = normaliseLevel(aiTextLevelRaw, [\"0\", \"1\", \"2\", \"3\"]);",
+  "  // Legacy value \"3\" is folded into \"2\" for code-level taxonomy compatibility.",
+  "  const aiCodeLevel = normaliseLevel(",
+  "    aiCodeLevelRaw === \"3\" ? \"2\" : aiCodeLevelRaw,",
+  "    [\"0\", \"1\", \"2\"],",
+  "  );",
+  "",
+  "  const aiTools = normaliseString(",
+  "    aiSource.aiTools ?? aiSource.tools ?? properties.aiTools ?? properties[\"ai-tools\"],",
+  "  );",
+  "",
+  "  const aiDescription = normaliseString(",
+  "    aiSource.aiDescription ??",
+  "      aiSource.description ??",
+  "      properties.aiDescription ??",
+  "      properties[\"ai-description\"],",
+  "  );",
+  "",
+  "  delete properties.ai;",
+  "  delete properties.aiTextLevel;",
+  "  delete properties.aiCodeLevel;",
+  "  delete properties.aiTools;",
+  "  delete properties.aiDescription;",
+  "  delete properties[\"ai-text-level\"];",
+  "  delete properties[\"ai-code-level\"];",
+  "  delete properties[\"ai-tools\"];",
+  "  delete properties[\"ai-description\"];",
+  "",
+  "  // Indiekit removes post-type before calling postTemplate; fall back to permalink-based detection.",
+  "  const postType = String(",
+  "    properties.postType ?? properties[\"post-type\"] ?? properties.type ?? \"\",",
+  "  ).toLowerCase();",
+  "  const permalink = String(properties.permalink ?? \"\");",
+  "  const supportsAiDisclosure =",
+  "    postType === \"article\" || postType === \"note\" ||",
+  "    /\\/articles(?:\\/|$)/.test(permalink) || /\\/notes(?:\\/|$)/.test(permalink);",
+  "",
+  "  const frontMatter = YAML.stringify(properties, { lineWidth: 0 });",
+  "",
+  "  if (!supportsAiDisclosure) {",
+  "    return `---\\n${frontMatter}---\\n`;",
+  "  }",
+  "",
+  "  let aiFrontMatter = `ai:\\n  textLevel: \\\"${aiTextLevel}\\\"\\n  codeLevel: \\\"${aiCodeLevel}\\\"\\n  # aiTools: \\\"Claude, ChatGPT, Copilot\\\"\\n  # aiDescription: \\\"Optional disclosure about how AI was used\\\"\\n`;",
+  "",
+  "  if (aiTools) {",
+  "    aiFrontMatter = aiFrontMatter.replace(",
+  "      '  # aiTools: \\\"Claude, ChatGPT, Copilot\\\"\\n',",
+  "      `  aiTools: ${JSON.stringify(aiTools)}\\n`,",
+  "    );",
+  "  }",
+  "",
+  "  if (aiDescription) {",
+  "    aiFrontMatter = aiFrontMatter.replace(",
+  "      '  # aiDescription: \\\"Optional disclosure about how AI was used\\\"\\n',",
+  "      `  aiDescription: ${JSON.stringify(aiDescription)}\\n`,",
+  "    );",
+  "  }",
+  "",
+  "  return `---\\n${frontMatter}${aiFrontMatter}---\\n`;",
+  "};",
+].join("\n");
+
 async function exists(filePath) {
   try {
     await access(filePath);
@@ -279,12 +392,14 @@ for (const filePath of candidates) {
 
   let updated = source;
 
-  if (source.includes(v2PatchedBlock)) {
-    updated = source.replace(v2PatchedBlock, v3Block);
+  if (source.includes(v3Block)) {
+    updated = source.replace(v3Block, v4Block);
+  } else if (source.includes(v2PatchedBlock)) {
+    updated = source.replace(v2PatchedBlock, v4Block);
   } else if (source.includes(v1PatchedBlock)) {
-    updated = source.replace(v1PatchedBlock, v3Block);
+    updated = source.replace(v1PatchedBlock, v4Block);
   } else if (source.includes(upstreamBlock)) {
-    updated = source.replace(upstreamBlock, v3Block);
+    updated = source.replace(upstreamBlock, v4Block);
   } else {
     console.warn(
       `[postinstall] Skipping preset-eleventy AI frontmatter patch for ${filePath}: upstream format changed`,

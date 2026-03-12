@@ -331,6 +331,12 @@ export default {
     url: mastodonUrl,
     user: mastodonUser,
     accessToken: mastodonAccessToken,
+    // AP endpoint sends native Like/Announce activities; skip the redundant
+    // "❤️ URL" / "🔁 URL" status posts for external fediverse URLs.
+    // Native same-instance favourites/reblogs still work (needs write:favourites
+    // + write:statuses scope on the token).
+    syndicateExternalLikes: false,
+    syndicateExternalReposts: false,
   },
   "@indiekit/endpoint-syndicate": {
     mountPath: syndicateMountPath,

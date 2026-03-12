@@ -192,3 +192,51 @@ WEBMENTION_SENDER_MOUNT_PATH=/webmention-sender
 - The indiekit routes rate-limit patch (ported from `rmdes/indiekit-cloudron`) keeps strict limits on `/session/*`, applies generous limits to public API/well-known routes, and removes extra rate limiting from authenticated routes to avoid admin-side 429 spikes.
 - The indiekit error stack patch (ported from `rmdes/indiekit-cloudron`) suppresses stack traces in production error pages/JSON responses to avoid leaking internal runtime details.
 - The indieauth dev-mode guard patch prevents accidental production auth bypass by requiring explicit `INDIEKIT_ALLOW_DEV_AUTH=1` to enable dev auto-login, and broadens safe local redirect validation to allow common path characters (`-`, `.`, `%`) used by routes such as `/auth/new-password`.
+
+## AI transparency
+
+AI disclosure metadata is captured per-post and surfaced in the blog's frontend as a badge, a sidebar widget, and a full `/ai/` stats page.
+
+### Frontmatter fields
+
+Four optional fields are stored under the `ai:` key in each post's frontmatter:
+
+```yaml
+ai:
+  textLevel: "0"   # 0 = none, 1 = editorial, 2 = co-drafted, 3 = AI-generated
+  codeLevel: "0"   # same scale, optional
+  tools: ""        # comma-separated tool names, optional
+  description: ""  # free-text disclosure note, optional
+```
+
+Articles and notes support all four fields. Other post types (bookmarks, likes, etc.) do not.
+
+### Backend fields (Micropub form)
+
+`scripts/patch-endpoint-posts-ai-fields.mjs` patches the Nunjucks templates inside `@indiekit/endpoint-posts` to add `aiTextLevel`, `aiCodeLevel`, `aiTools`, and `aiDescription` inputs to the article/note edit form. `scripts/patch-endpoint-posts-ai-cleanup.mjs` patches `form.js` in the same endpoint to strip empty AI fields from the Micropub payload before submission so unused optional fields are not written as empty strings.
+
+### Frontmatter generation (preset-eleventy patch)
+
+`scripts/patch-preset-eleventy-ai-frontmatter.mjs` patches `post-template.js` inside `@rmdes/indiekit-preset-eleventy`. The patch adds a block that writes the `ai:` YAML section from the JF2 `aiTextLevel`/`aiCodeLevel`/`aiTools`/`aiDescription` properties when converting a Micropub post to markdown frontmatter.
+
+**Root cause of the v4 fix**: `@indiekit/endpoint-micropub/lib/utils.js` — `getPostTemplateProperties()` — explicitly deletes `post-type` before calling `postTemplate()`. Earlier patch versions (v1–v3) relied on `properties["post-type"]` or `properties.postType` to detect whether a post is an article or note, so `supportsAiDisclosure` was always `false` and the `ai:` block was never written. The v4 fix detects post type from `properties.permalink` via URL path regex instead:
+
+```js
+const permalink = String(properties.permalink ?? "");
+const supportsAiDisclosure =
+  postType === "article" || postType === "note" ||
+  /\/articles(?:\/|$)/.test(permalink) || /\/notes(?:\/|$)/.test(permalink);
+```
+
+The patch script is idempotent and versioned: it detects the current patch level (v1/v2/v3/upstream) by matching a unique marker string and upgrades to v4 in place.
+
+### Blog frontend
+
+- `_includes/layouts/post.njk` — renders an AI disclosure badge below article/note content, reading `ai.textLevel` and `ai.codeLevel` from the post's frontmatter.
+- `_includes/components/widgets/ai-usage.njk` — compact sidebar widget showing totals, level breakdown, and a per-year contribution graph. Hidden when no posts have AI metadata.
+- `_includes/components/sections/ai-usage.njk` — full-width homepage section version of the same stats.
+- `eleventy.config.js` — defines `aiStats` and `aiPosts` Eleventy filters that scan `collections.posts` for `ai.textLevel` values to compute totals, percentages, and by-level counts.
+
+### Re-saving existing posts
+
+Posts published before the v4 fix lack the `ai:` frontmatter block. To add it, open each post in the Indiekit backend (`/posts`) and save it again without changes. The patched `postTemplate()` will then write the `ai:` block with default values (`textLevel: "0"`, `codeLevel: "0"`). AI level values previously entered in the form will now be persisted correctly on save.

@@ -1,9 +1,16 @@
 /**
- * Patch: add /api/feeds alias for /api/blogs in the blogroll endpoint.
+ * Patch: dual-mount blogroll public API at /blogrollapi AND /rssapi,
+ * and add a /api/feeds alias for /api/blogs.
  *
- * The /news/ static page fetches /rssapi/api/feeds to populate the feed-source
- * filter dropdown. The blogroll endpoint exposes the same data under /api/blogs.
- * This patch inserts a /api/feeds route that delegates to the same controller.
+ * Problem: two static pages call different base paths:
+ *   /blogroll → fetches /blogrollapi/api/blogs, /api/categories, /api/items, /api/status
+ *   /news     → fetches /rssapi/api/items, /rssapi/api/feeds, /rssapi/api/status
+ *
+ * Solution:
+ *   1. Keep mountPath "/blogrollapi" (serves the /blogroll page as-is).
+ *   2. In init(), register a thin second endpoint at "/rssapi" pointing to the
+ *      same publicRouter so the /news page's fetches also resolve.
+ *   3. Add /api/feeds as an alias of /api/blogs on both routers.
  */
 import { access, readFile, writeFile } from "node:fs/promises";
 
@@ -19,6 +26,29 @@ const patchSpecs = [
     newSnippet: `    publicRouter.get("/api/blogs", apiController.listBlogs);
     // feeds alias for /api/blogs (used by the /news/ static page)
     publicRouter.get("/api/feeds", apiController.listBlogs);`,
+  },
+  {
+    name: "blogroll-rssapi-dual-mount",
+    marker: "rssapi dual-mount alias",
+    candidates: [
+      "node_modules/@rmdes/indiekit-endpoint-blogroll/index.js",
+      "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-blogroll/index.js",
+    ],
+    oldSnippet: `  init(Indiekit) {
+    Indiekit.addEndpoint(this);`,
+    newSnippet: `  init(Indiekit) {
+    Indiekit.addEndpoint(this);
+
+    // rssapi dual-mount alias: register the same public routes at /rssapi
+    // so the /news static page (which hardcodes /rssapi/api/*) also works
+    // alongside the /blogroll page (which hardcodes /blogrollapi/api/*).
+    Indiekit.addEndpoint({
+      name: "Blogroll /rssapi alias",
+      mountPath: "/rssapi",
+      get routesPublic() {
+        return publicRouter;
+      },
+    });`,
   },
 ];
 
@@ -68,9 +98,9 @@ for (const spec of patchSpecs) {
 if (filesChecked === 0) {
   console.log("[postinstall] No blogroll endpoint files found");
 } else if (filesPatched === 0) {
-  console.log("[postinstall] blogroll feeds alias already patched");
+  console.log("[postinstall] blogroll feeds alias + rssapi dual-mount already patched");
 } else {
   console.log(
-    `[postinstall] Patched blogroll feeds alias in ${filesPatched}/${filesChecked} file(s)`,
+    `[postinstall] Patched blogroll feeds alias + rssapi dual-mount in ${filesPatched}/${filesChecked} file(s)`,
   );
 }

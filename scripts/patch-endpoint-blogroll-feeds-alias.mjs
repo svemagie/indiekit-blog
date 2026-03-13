@@ -43,8 +43,7 @@ const patchSpecs = [
     // with a response-shape transformer so the /news static page works.
     // The /news page expects: item.link (not .url), item.feedId (not .blog.id),
     // item.sourceUrl (not .blog.siteUrl), and feedsRes.feeds (not .items).
-    const { Router } = require("express");
-    const rssapiRouter = Router();
+    const rssapiRouter = express.Router();
     rssapiRouter.use((req, res, next) => {
       const originalJson = res.json.bind(res);
       res.json = function (data) {

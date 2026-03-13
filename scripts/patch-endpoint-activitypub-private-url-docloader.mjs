@@ -1,75 +1,8 @@
 import { access, readFile, writeFile } from "node:fs/promises";
 
 const patchSpecs = [
-  {
-    name: "activitypub-compose-publication-private-docloader",
-    candidates: [
-      "node_modules/@rmdes/indiekit-endpoint-activitypub/lib/controllers/compose.js",
-      "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-activitypub/lib/controllers/compose.js",
-    ],
-    replacements: [
-      {
-        oldSnippet: [
-          "import { getToken, validateToken } from \"../csrf.js\";",
-          "import { sanitizeContent } from \"../timeline-store.js\";",
-        ].join("\n"),
-        newSnippet: [
-          "import { getToken, validateToken } from \"../csrf.js\";",
-          "import { sanitizeContent } from \"../timeline-store.js\";",
-          "",
-          "function createPublicationAwareDocumentLoader(documentLoader, publicationUrl) {",
-          "  if (typeof documentLoader !== \"function\") {",
-          "    return documentLoader;",
-          "  }",
-          "",
-          "  let publicationHost = \"\";",
-          "  try {",
-          "    publicationHost = new URL(publicationUrl).hostname;",
-          "  } catch {",
-          "    return documentLoader;",
-          "  }",
-          "",
-          "  return (url, options = {}) => {",
-          "    try {",
-          "      const parsed = new URL(",
-          "        typeof url === \"string\" ? url : (url?.href || String(url)),",
-          "      );",
-          "      if (parsed.hostname === publicationHost) {",
-          "        return documentLoader(url, { ...options, allowPrivateAddress: true });",
-          "      }",
-          "    } catch {",
-          "      // Fall through to default loader behavior.",
-          "    }",
-          "",
-          "    return documentLoader(url, options);",
-          "  };",
-          "}",
-        ].join("\n"),
-      },
-      {
-        oldSnippet: [
-          "            const documentLoader = await ctx.getDocumentLoader({",
-          "              identifier: handle,",
-          "            });",
-          "            const remoteObject = await ctx.lookupObject(new URL(replyTo), {",
-          "              documentLoader,",
-          "            });",
-        ].join("\n"),
-        newSnippet: [
-          "            const rawDocumentLoader = await ctx.getDocumentLoader({",
-          "              identifier: handle,",
-          "            });",
-          "            const documentLoader = createPublicationAwareDocumentLoader(",
-          "              rawDocumentLoader,",
-          "              plugin._publicationUrl,",
-          "            );",
-          "            const remoteObject = await ctx.lookupObject(new URL(replyTo), {",
-          "              documentLoader,",
-          "            });",
-        ].join("\n"),
-      },
-    ],
-  },
+  // compose.js: createPublicationAwareDocumentLoader and rawDocumentLoader wrapping
+  // are now built into the fork — no patch needed.
   {
     name: "activitypub-resolve-author-publication-private-docloader",
     candidates: [

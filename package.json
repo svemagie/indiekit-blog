@@ -25,7 +25,7 @@
     "@indiekit/indiekit": "^1.0.0-beta.25",
     "@indiekit/post-type-repost": "^1.0.0-beta.25",
     "@indiekit/store-github": "^1.0.0-beta.25",
-    "@rmdes/indiekit-endpoint-activitypub": "github:svemagie/indiekit-endpoint-activitypub",
+    "@rmdes/indiekit-endpoint-activitypub": "^2.8.2",
     "@rmdes/indiekit-endpoint-auth": "^1.0.0-beta.25",
     "@rmdes/indiekit-endpoint-blogroll": "github:svemagie/indiekit-endpoint-blogroll#bookmark-import",
     "@rmdes/indiekit-endpoint-comments": "^1.0.0",

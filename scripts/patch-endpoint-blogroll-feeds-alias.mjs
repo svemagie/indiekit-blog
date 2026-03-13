@@ -40,13 +40,42 @@ const patchSpecs = [
     Indiekit.addEndpoint(this);
 
     // rssapi dual-mount alias: register the same public routes at /rssapi
-    // so the /news static page (which hardcodes /rssapi/api/*) also works
-    // alongside the /blogroll page (which hardcodes /blogrollapi/api/*).
+    // with a response-shape transformer so the /news static page works.
+    // The /news page expects: item.link (not .url), item.feedId (not .blog.id),
+    // item.sourceUrl (not .blog.siteUrl), and feedsRes.feeds (not .items).
+    const { Router } = require("express");
+    const rssapiRouter = Router();
+    rssapiRouter.use((req, res, next) => {
+      const originalJson = res.json.bind(res);
+      res.json = function (data) {
+        if (data && Array.isArray(data.items)) {
+          if (req.path.startsWith("/api/items")) {
+            // Map url->link, blog.id->feedId, blog.siteUrl->sourceUrl
+            data = {
+              ...data,
+              items: data.items.map((item) => ({
+                ...item,
+                link: item.url,
+                feedId: item.blog?.id ?? null,
+                sourceUrl: item.blog?.siteUrl ?? null,
+              })),
+            };
+          } else if (req.path === "/api/feeds") {
+            // Rename items->feeds so feedsRes.feeds resolves correctly
+            const { items, ...rest } = data;
+            data = { ...rest, feeds: items };
+          }
+        }
+        return originalJson(data);
+      };
+      next();
+    });
+    rssapiRouter.use(publicRouter);
     Indiekit.addEndpoint({
       name: "Blogroll /rssapi alias",
       mountPath: "/rssapi",
       get routesPublic() {
-        return publicRouter;
+        return rssapiRouter;
       },
     });`,
   },

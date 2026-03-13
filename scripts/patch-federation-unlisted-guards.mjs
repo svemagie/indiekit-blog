@@ -1,18 +1,11 @@
 import { access, readFile, writeFile } from "node:fs/promises";
 
+// activitypub index.js and federation-setup.js unlisted guards are now
+// built into the fork — only endpoint-syndicate (separate package) needs patching.
+
 const endpointSyndicateCandidates = [
   "node_modules/@indiekit/endpoint-syndicate/lib/utils.js",
   "node_modules/@indiekit/indiekit/node_modules/@indiekit/endpoint-syndicate/lib/utils.js",
-];
-
-const activityPubIndexCandidates = [
-  "node_modules/@rmdes/indiekit-endpoint-activitypub/index.js",
-  "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-activitypub/index.js",
-];
-
-const activityPubFederationSetupCandidates = [
-  "node_modules/@rmdes/indiekit-endpoint-activitypub/lib/federation-setup.js",
-  "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-activitypub/lib/federation-setup.js",
 ];
 
 const patchSpecs = [
@@ -64,89 +57,6 @@ const patchSpecs = [
         $ne: "unlisted",
       },
     })`,
-  },
-  {
-    name: "activitypub-syndicator-unlisted-guard",
-    candidates: activityPubIndexCandidates,
-    oldSnippet: `      async syndicate(properties) {
-        if (!self._federation) {
-          return undefined;
-        }
-
-        try {`,
-    newSnippet: `      async syndicate(properties) {
-        if (!self._federation) {
-          return undefined;
-        }
-
-        const visibility = String(properties?.visibility || "").toLowerCase();
-        if (visibility === "unlisted") {
-          console.info(
-            "[ActivityPub] Skipping federation for unlisted post: " +
-              (properties?.url || "unknown"),
-          );
-          await logActivity(self._collections.ap_activities, {
-            direction: "outbound",
-            type: "Syndicate",
-            actorUrl: self._publicationUrl,
-            objectUrl: properties?.url,
-            summary: "Syndication skipped: post visibility is unlisted",
-          }).catch(() => {});
-          return undefined;
-        }
-
-        try {`,
-  },
-  {
-    name: "activitypub-outbox-unlisted-guard",
-    candidates: activityPubFederationSetupCandidates,
-    oldSnippet: `        const pageSize = 20;
-        const skip = cursor ? Number.parseInt(cursor, 10) : 0;
-        const total = await postsCollection.countDocuments();
-
-        const posts = await postsCollection
-          .find()`,
-    newSnippet: `        const pageSize = 20;
-        const skip = cursor ? Number.parseInt(cursor, 10) : 0;
-        const federationVisibilityQuery = {
-          "properties.post-status": { $ne: "draft" },
-          "properties.visibility": { $ne: "unlisted" },
-        };
-        const total = await postsCollection.countDocuments(
-          federationVisibilityQuery,
-        );
-
-        const posts = await postsCollection
-          .find(federationVisibilityQuery)`,
-  },
-  {
-    name: "activitypub-outbox-counter-unlisted-guard",
-    candidates: activityPubFederationSetupCandidates,
-    oldSnippet: `    .setCounter(async (ctx, identifier) => {
-      if (identifier !== handle) return 0;
-      const postsCollection = collections.posts;
-      if (!postsCollection) return 0;
-      return await postsCollection.countDocuments();
-    })`,
-    newSnippet: `    .setCounter(async (ctx, identifier) => {
-      if (identifier !== handle) return 0;
-      const postsCollection = collections.posts;
-      if (!postsCollection) return 0;
-      return await postsCollection.countDocuments({
-        "properties.post-status": { $ne: "draft" },
-        "properties.visibility": { $ne: "unlisted" },
-      });
-    })`,
-  },
-  {
-    name: "activitypub-object-dispatch-unlisted-guard",
-    candidates: activityPubFederationSetupCandidates,
-    oldSnippet: `    const post = await collections.posts.findOne({ "properties.url": postUrl });
-    if (!post) return null;`,
-    newSnippet: `    const post = await collections.posts.findOne({ "properties.url": postUrl });
-    if (!post) return null;
-    if (post?.properties?.["post-status"] === "draft") return null;
-    if (post?.properties?.visibility === "unlisted") return null;`,
   },
 ];
 

@@ -425,7 +425,7 @@ export default {
       checked: false
     },
     "@rmdes/indiekit-endpoint-blogroll": {
-      mountPath: "/blogrollapi",
+      mountPath: "/rssapi",
       syncInterval: 3600000,
       maxItemsPerBlog: 50,
       maxItemAge: 7,

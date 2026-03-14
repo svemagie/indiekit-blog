@@ -1,242 +1,176 @@
-# Indieweb/kit Blog Server
+# indiekit-blog
 
-## Admin login
+Personal [Indiekit](https://getindiekit.com/) deployment for [blog.giersig.eu](https://blog.giersig.eu).
 
-- The IndieKit admin uses root auth/session paths (for example: `/session/login`, `/auth`, `/auth/new-password`).
-- Login uses `PASSWORD_SECRET` (bcrypt hash), not `INDIEKIT_PASSWORD`.
-- If no `PASSWORD_SECRET` exists yet, open `/auth/new-password` once to generate it.
-- If login is blocked because `PASSWORD_SECRET` is missing/invalid, set `INDIEKIT_ALLOW_PASSWORD_SETUP=1` temporarily, restart, generate a new hash via `/auth/new-password`, set `PASSWORD_SECRET` to that hash, then remove `INDIEKIT_ALLOW_PASSWORD_SETUP`.
-- If login appears passwordless, first check for an existing authenticated session cookie. Use `/session/logout` to force a fresh login challenge.
-- Upstream IndieKit auto-authenticates in dev mode (`NODE_ENV=development`). This repository patches that behavior so dev auto-auth only works when `INDIEKIT_ALLOW_DEV_AUTH=1` is explicitly set.
-- Production startup now fails closed when auth/session settings are unsafe (`NODE_ENV` not `production`, `INDIEKIT_ALLOW_DEV_AUTH=1`, weak `SECRET`, missing/invalid `PASSWORD_SECRET`, or empty-password hash).
-- Post management UI should use `/posts` (`@indiekit/endpoint-posts.mountPath`).
-- Do not set post-management `mountPath` to frontend routes like `/blog`, otherwise backend publishing can be shadowed by the public site.
+Built on top of the [rmdes/indiekit](https://github.com/rmdes/indiekit) fork ecosystem. Several packages are sourced from custom forks (see below) and a set of patch scripts handle fixes that cannot yet be upstreamed.
 
-## Backend endpoints
+---
 
-- Configured endpoint mount paths:
-- Posts management: `/posts`
-- Files: `/files`
-- Webmentions moderation + API: `/webmentions`
-- Webmentions proxy API: `/webmentions-api`
-- Webmention sender + API: `/webmention-sender`
-- Homepage builder UI + API: `/homepage`
-- Conversations + API: `/conversations`
-- GitHub activity + API: `/github`
-- Funkwhale activity + API: `/funkwhale`
-- Last.fm activity + API: `/lastfmapi`
-- Podroll dashboard + API: `/podrollapi`
-- ActivityPub federation + admin reader: `/activitypub`
-- ActivityPub discovery: `/.well-known/webfinger`, `/nodeinfo/2.1`
+## Fork-based dependencies
 
-## MongoDB
+Three packages are installed directly from GitHub forks rather than the npm registry:
 
-- Preferred: set `MONGO_USERNAME` and `MONGO_PASSWORD` explicitly; config builds the URL from `MONGO_USERNAME`, `MONGO_PASSWORD`, `MONGO_HOST`, `MONGO_PORT`, `MONGO_DATABASE`, `MONGO_AUTH_SOURCE`.
-- You can still use a full `MONGO_URL` (example: `mongodb://user:pass@host:27017/indiekit?authSource=admin`).
-- If both `MONGO_URL` and `MONGO_USERNAME`/`MONGO_PASSWORD` are set, decomposed credentials take precedence by default to avoid stale URL mismatches. Set `MONGO_PREFER_URL=1` to force `MONGO_URL` precedence.
-- Startup scripts now fail fast when `MONGO_URL` is absent and `MONGO_USERNAME` is missing, to avoid silent auth mismatches.
-- Startup now runs `scripts/preflight-mongo-connection.mjs` before boot. Preflight is strict by default and aborts start on Mongo auth/connect failures; set `REQUIRE_MONGO=0` to bypass strict mode intentionally.
-- For `MongoServerError: Authentication failed`, first verify `MONGO_PASSWORD`, then try `MONGO_AUTH_SOURCE=admin`.
+| Dependency | Source | Reason |
+|---|---|---|
+| `@rmdes/indiekit-endpoint-activitypub` | [svemagie/indiekit-endpoint-activitypub](https://github.com/svemagie/indiekit-endpoint-activitypub) | Alpine.js fix for reader buttons + private-address document loader for self-hosted Fedify instances |
+| `@rmdes/indiekit-endpoint-blogroll` | [svemagie/indiekit-endpoint-blogroll#bookmark-import](https://github.com/svemagie/indiekit-endpoint-blogroll/tree/bookmark-import) | Bookmark import feature |
+| `@rmdes/indiekit-endpoint-microsub` | [svemagie/indiekit-endpoint-microsub#bookmarks-import](https://github.com/svemagie/indiekit-endpoint-microsub/tree/bookmarks-import) | Bookmarks import feature |
 
-## Content paths
+In `package.json` these use the `github:owner/repo[#branch]` syntax so npm fetches them directly from GitHub on install.
 
-- This setup writes post files to the content repo `blog` under `content/`.
-- Photo upload binaries are written to `images/{filename}` and published at `${PUBLICATION_URL}/images/{filename}`.
-- Current paths in `publication.postTypes` are:
-- `content/articles/{slug}.md`
-- `content/notes/{slug}.md`
-- `content/bookmarks/{slug}.md`
-- `content/likes/{slug}.md`
-- `content/photos/{slug}.md`
-- `content/replies/{slug}.md`
-- `content/pages/{slug}.md`
-- If these paths do not match the content repo structure, edit/delete actions can fail with GitHub `Not Found`.
-- Reposts are configured as a dedicated post type (`repost`) and stored at `content/reposts/{slug}.md`.
+---
 
-## Post URLs
+## Patch scripts
 
-- Current post URLs in `publication.postTypes` are:
-- `https://blog.giersig.eu/articles/{slug}/`
-- `https://blog.giersig.eu/notes/{slug}/`
-- `https://blog.giersig.eu/bookmarks/{slug}/`
-- `https://blog.giersig.eu/likes/{slug}/`
-- `https://blog.giersig.eu/photos/{slug}/`
-- `https://blog.giersig.eu/replies/{slug}/`
-- `https://blog.giersig.eu/{slug}/` (page post type)
+Patches are Node.js `.mjs` scripts in `scripts/` that surgically modify files in `node_modules` after install. They are idempotent (check for a marker string before applying) and run automatically via `postinstall` and at the start of `serve`.
 
-## GitHub tokens
+### ActivityPub
 
-- Recommended for two-repo setups:
-- `GH_CONTENT_TOKEN`: token for content repo (`blog`), used by `@indiekit/store-github`.
-- `GH_ACTIVITY_TOKEN`: token for GitHub dashboard/activity endpoint, used by `@rmdes/indiekit-endpoint-github`.
-- `GITHUB_USERNAME`: GitHub user/owner name.
-- Backward compatibility: if `GH_CONTENT_TOKEN` or `GH_ACTIVITY_TOKEN` are not set, config falls back to `GITHUB_TOKEN`.
+**`patch-endpoint-activitypub-locales.mjs`**
+Injects German (`de`) locale overrides into `@rmdes/indiekit-endpoint-activitypub` (e.g. "Benachrichtigungen", "Mein Profil"). The package ships only an English locale; this copies and customises it.
 
-## Listening tokens
+### Conversations
 
-- Funkwhale endpoint requirements:
-- `FUNKWHALE_INSTANCE` (for example `https://your-funkwhale.example`, root server URL only)
-- `FUNKWHALE_USERNAME`
-- `FUNKWHALE_TOKEN` (read API token)
-- Last.fm endpoint requirements:
-- `LASTFM_API_KEY`
-- `LASTFM_USERNAME`
-- Listening endpoint plugins target Node.js 20+; older runtimes can produce inconsistent fetch/JSON behavior.
-- If `FUNKWHALE_INSTANCE` points to a host that does not expose Funkwhale's API routes, API responses now degrade to empty data instead of repeated 500 errors.
-- If these variables are missing, the endpoints still exist but return empty activity until credentials are configured.
+**`patch-conversations-collection-guards.mjs`**
+Adds null-safety guards to `conversation-items.js` so the endpoint does not crash when the MongoDB `conversation_items` collection is missing or empty (returns an empty cursor instead of throwing).
 
-## Podroll endpoint
+**`patch-conversations-mastodon-disconnect.mjs`**
+Patches the conversations endpoint to handle a missing or disconnected Mastodon account gracefully — prevents startup crashes when Mastodon credentials are not configured.
 
-- Podroll endpoint is enabled via `@rmdes/indiekit-endpoint-podroll` and mounted at `/podrollapi` by default.
-- Optional environment variables:
-- `PODROLL_MOUNT_PATH` (default `/podrollapi`)
-- `PODROLL_EPISODES_URL` (FreshRSS greader endpoint URL used for episode sync)
-- `PODROLL_OPML_URL` (FreshRSS OPML export URL used for podcast source sync)
-- If `PODROLL_EPISODES_URL` and `PODROLL_OPML_URL` are not set, the endpoint still loads and can be configured from its admin dashboard.
+### Files
 
-## Webmention sender
+**`patch-endpoint-files-upload-route.mjs`**
+Fixes the file upload XHR to POST to `window.location.pathname` instead of a hardcoded endpoint path, which broke uploads behind a custom mount prefix. Also adds fallback text for missing locale keys.
 
-- Webmention sender endpoint is enabled via `@rmdes/indiekit-endpoint-webmention-sender` and mounted at `/webmention-sender` by default.
-- Optional environment variables:
-- `WEBMENTION_SENDER_MOUNT_PATH` (default `/webmention-sender`)
-- `WEBMENTION_SENDER_TIMEOUT` (default `10000`, endpoint discovery timeout in milliseconds)
-- `WEBMENTION_SENDER_USER_AGENT` (default `${SITE_NAME} Webmention Sender`)
-- Startup polling loop variables (used by `start.example.sh`):
-- `WEBMENTION_SENDER_AUTO_POLL` (default `1`, set `0` to disable)
-- `WEBMENTION_SENDER_POLL_INTERVAL` (default `300`, seconds)
-- `WEBMENTION_SENDER_HOST` (default `127.0.0.1`)
-- `WEBMENTION_SENDER_PORT` (default `${PORT}` or `3000`)
-- `WEBMENTION_SENDER_ORIGIN` (optional JWT `me` claim override, defaults `PUBLICATION_URL` -> `SITE_URL`)
-- `WEBMENTION_SENDER_ENDPOINT` (optional full URL override)
-- `POST /webmention-sender` requires authentication (`update` scope) and sends pending webmentions for unpublished targets.
+**`patch-endpoint-files-upload-locales.mjs`**
+Injects German locale strings for the files endpoint.
 
-## Webmentions proxy
+### Media
 
-- Webmentions proxy endpoint is enabled via `@rmdes/indiekit-endpoint-webmentions-proxy` and mounted at `/webmentions-api` by default.
-- Optional environment variables:
-- `WEBMENTIONS_PROXY_MOUNT_PATH` (default `/webmentions-api`)
-- `WEBMENTIONS_PROXY_CACHE_TTL` (default `60`, cache TTL in seconds)
-- Uses existing `WEBMENTION_IO_TOKEN` and `WEBMENTION_IO_DOMAIN` configuration for upstream webmention.io requests.
-- Public JSON API route: `GET /webmentions-api/api/mentions` (supports `page`, `per-page`, `target`, `wm-property` query parameters).
+**`patch-endpoint-media-scope.mjs`**
+Changes the scope check from strict equality (`scope === "create"`) to `scope.includes("create")` so tokens with compound scopes (e.g. `"create update"`) can still upload media.
 
-## ActivityPub
+**`patch-endpoint-media-sharp-runtime.mjs`**
+Wraps the `sharp` import with a lazy runtime loader so the server starts even if the native `sharp` binary is missing (falls back gracefully rather than crashing at import time).
 
-- ActivityPub federation is enabled via `@rmdes/indiekit-endpoint-activitypub`.
-- Actor handle resolution order is: `AP_HANDLE`, then `ACTIVITYPUB_HANDLE`, then `GITHUB_USERNAME`, then publication hostname first label.
-- Actor profile seed values come from `AUTHOR_NAME`, `AUTHOR_BIO`, `AUTHOR_AVATAR`, and `SITE_DESCRIPTION`.
-- `AUTHOR_AVATAR` can be absolute (`https://...`) or slash-relative (`/images/avatar.jpg`); startup normalizes it to an absolute URL.
-- Optional ActivityPub variables:
-- `AP_ALSO_KNOWN_AS` (Mastodon migration alias URL)
-- `AP_LOG_LEVEL` (`debug|info|warning|error|fatal`, default `info`)
-- `AP_DEBUG` (`1` or `true` enables debug dashboard)
-- `AP_DEBUG_PASSWORD` (required when debug dashboard is enabled)
-- `REDIS_URL` (recommended for production delivery queue durability)
-- Startup preflight `scripts/preflight-activitypub-rsa-key.mjs` ensures `ap_keys` contains a usable RSA key pair (`publicKeyPem` + `privateKeyPem`) so outgoing inbox deliveries are HTTP-signed and not rejected with `Request not signed`.
-- Startup preflight `scripts/preflight-activitypub-profile-urls.mjs` normalizes existing ActivityPub profile URL fields in MongoDB (`url`, `icon`, `image`, `alsoKnownAs`) so WebFinger/actor responses do not fail on invalid URL values.
-- The ActivityPub private-url docloader patch (`scripts/patch-endpoint-activitypub-private-url-docloader.mjs`) allows Fedify lookups for your own publication hostname when split-horizon DNS resolves it to a private jail IP.
-- The ActivityPub locale patch creates/repairs `locales/de.json` from `locales/en.json` so backend UI keys do not render as raw `activitypub.*` translation strings when `SITE_LOCALE=de`.
-- Quick verification commands:
-- `curl -s "https://blog.giersig.eu/.well-known/webfinger?resource=acct:<handle>@blog.giersig.eu" | jq .`
-- `curl -s -H "Accept: application/activity+json" "https://blog.giersig.eu/" | jq .`
-- `curl -s "https://blog.giersig.eu/nodeinfo/2.1" | jq .`
-- If a reverse proxy serves static HTML, ensure AP requests are proxied to Indiekit for `/activitypub*`, `/.well-known/*`, `/nodeinfo/*`, and content-negotiated `Accept: application/activity+json` / `application/ld+json` requests on `/` and post URLs.
+### Frontend
 
-## Startup script
+**`patch-frontend-sharp-runtime.mjs`**
+Same lazy `sharp` runtime guard applied to `@indiekit/frontend/lib/sharp.js` (avatar/image processing). Handles multiple nested copies of the package across the dependency tree.
 
-- `start.sh` is intentionally ignored by Git (`.gitignore`) so server secrets are not committed.
-- Use `start.example.sh` as the tracked template and keep real credentials in environment variables (or `.env` on the server).
-- Startup scripts parse `.env` with the `dotenv` parser (not shell `source`), so values containing spaces are handled safely.
-- `start.example.sh` includes an optional background webmention sender polling loop for bare-metal deployments (including FreeBSD jails).
-- For FreeBSD service management, use `indiekit.rcd.example` as a template for `/usr/local/etc/rc.d/indiekit`.
-- Important: do not use `daemon -r` in the rc.d command args. Let `service indiekit restart` control restart behavior; `-r` can keep the supervisor alive during stop/restart.
-- The rc.d template uses daemon supervisor pidfile `-P` (and child pidfile `-p`) and supports `indiekit_stop_timeout` in `rc.conf` (default `20` seconds).
-- FreeBSD rc.d install example:
+**`patch-frontend-serviceworker-file.mjs`**
+Ensures `@indiekit/frontend/lib/serviceworker.js` exists at the path the service worker registration expects, copying it from whichever nested copy of the package is present.
+
+**`patch-lightningcss.mjs`**
+Fixes the `~module/path` resolver in `lightningcss.js` to use `require.resolve()` correctly, preventing CSS build failures when module paths contain backslashes or when package hoisting differs.
+
+### Micropub
+
+**`patch-endpoint-micropub-where-note-visibility.mjs`**
+Defaults OwnYourSwarm `/where` check-in notes to `visibility: unlisted` unless the post explicitly sets a visibility. Prevents accidental public syndication of location check-ins.
+
+**`patch-micropub-ai-block-resync.mjs`**
+Detects stale AI-disclosure block files and re-generates them on next post save. Fixes posts that had MongoDB AI fields set but missing or empty `_ai-block.md` sidecar files (caused by a previous bug where `supportsAiDisclosure` always returned false).
+
+### Posts
+
+**`patch-endpoint-posts-ai-fields.mjs`**
+Adds AI disclosure field UI (text level, code level, etc.) to the post creation/editing form in `@rmdes/indiekit-endpoint-posts`.
+
+**`patch-endpoint-posts-ai-cleanup.mjs`**
+Removes AI disclosure fields from the post form submission before saving, delegating persistence to the AI block sidecar system.
+
+**`patch-endpoint-posts-uid-lookup.mjs`**
+Fixes post editing 404s by adding `uid`-based lookup to the micropub source query. Without this, posts older than the first 40 results could not be opened for editing.
+
+**`patch-endpoint-posts-prefill-url.mjs`**
+Pre-fills the reference URL when creating posts from the `/news` "Post" button (`/posts/create?type=like&url=…`). The standard `postData.create` only reads `request.body`, ignoring query params.
+
+### Preset / Eleventy
+
+**`patch-preset-eleventy-ai-frontmatter.mjs`**
+Adds AI disclosure fields (`aiTextLevel`, `aiCodeLevel`, etc.) to the Eleventy post template frontmatter so they are written into generated content files.
+
+### Federation / Syndication
+
+**`patch-federation-unlisted-guards.mjs`**
+Prevents unlisted posts from being re-syndicated via `@indiekit/endpoint-syndicate`. The corresponding guards in `@rmdes/indiekit-endpoint-activitypub` are now built into the fork directly.
+
+### Indiekit core
+
+**`patch-indiekit-routes-rate-limits.mjs`**
+Replaces the single blanket rate limiter with separate strict (session/auth) and relaxed (general) limiters so legitimate API traffic is not throttled during normal use.
+
+**`patch-indiekit-error-production-stack.mjs`**
+Strips stack traces from error responses in `NODE_ENV=production` to avoid leaking internal file paths to clients.
+
+**`patch-indieauth-devmode-guard.mjs`**
+Gates dev-mode auto-login behind an explicit `INDIEKIT_ALLOW_DEV_AUTH=1` env var so `devMode: true` in config does not accidentally bypass authentication in staging/production. Also widens the redirect URL regex to allow encoded characters (`%`, `.`).
+
+### Endpoints — misc
+
+**`patch-endpoint-homepage-locales.mjs`**
+Injects German locale strings for the homepage endpoint.
+
+**`patch-endpoint-homepage-identity-defaults.mjs`**
+Sets fallback values for identity fields on the dashboard when they are not configured, preventing blank/undefined display names.
+
+**`patch-endpoint-blogroll-feeds-alias.mjs`**
+Dual-mounts the blogroll public API at both `/blogrollapi` and `/rssapi`, and adds a `/api/feeds` alias for `/api/blogs`, so existing static pages that reference different base paths all resolve correctly.
+
+**`patch-endpoint-comments-locales.mjs`**
+Injects German locale strings for the comments endpoint.
+
+**`patch-endpoint-github-changelog-categories.mjs`**
+Extends the GitHub changelog controller with additional commit category labels.
+
+**`patch-endpoint-podroll-opml-upload.mjs`**
+Adds OPML file upload support to the podroll endpoint.
+
+### Microsub / Reader
+
+**`patch-microsub-reader-ap-dispatch.mjs`**
+Adds Fediverse/ActivityPub detection and dispatch to the Microsub reader so AP profile URLs are routed to the ActivityPub reader rather than the RSS reader.
+
+**`patch-microsub-feed-discovery.mjs`**
+Improves feed discovery in `fetchAndParseFeed`: when a bookmarked URL is an HTML page, falls back to `<link rel="alternate">` discovery and a broader set of candidate paths rather than only the fixed short list.
+
+### Listening (Funkwhale / Last.fm)
+
+**`patch-listening-endpoint-runtime-guards.mjs`**
+Applies several guards to the listening endpoints: scopes Funkwhale history fetches to the authenticated user (`scope: "me"`) rather than the entire instance, and adds null-safety for missing credentials so the server doesn't crash when these services aren't configured.
+
+### Webmention sender
+
+**`patch-webmention-sender-livefetch.mjs`**
+Forces the webmention sender to always fetch the live published page rather than using the stored post body. Ensures outgoing webmentions contain the full rendered HTML including all microformats.
+
+**`patch-webmention-sender-content-scope.mjs`**
+Scopes link extraction to the post content area (`.h-entry`, `<article>`, or `<main>`) when parsing a full page, preventing links in navigation and footers from generating spurious webmentions.
+
+**`patch-webmention-sender-reset-stale.mjs`**
+One-time migration (guarded by a `migrations` MongoDB collection entry) that resets posts incorrectly marked as webmention-sent with empty results because the live page was not yet deployed when the poller first fired.
+
+---
+
+## Preflight scripts
+
+Run at the start of `serve` before the server starts. They fail fast with a clear message rather than letting the server start in a broken state.
+
+| Script | Checks |
+|---|---|
+| `preflight-production-security.mjs` | `PASSWORD_SECRET` is set and bcrypt-hashed; blocks startup if missing in strict mode |
+| `preflight-mongo-connection.mjs` | MongoDB is reachable; blocks startup if connection fails in strict mode |
+| `preflight-activitypub-rsa-key.mjs` | RSA key pair for ActivityPub exists in MongoDB; generates one if absent |
+| `preflight-activitypub-profile-urls.mjs` | ActivityPub actor URLs are correctly configured; warns on mismatch |
+
+---
+
+## Setup
 
 ```sh
-install -m 0555 /usr/local/indiekit/indiekit.rcd.example /usr/local/etc/rc.d/indiekit
-sysrc indiekit_enable=YES
-service indiekit restart
+npm install       # installs dependencies and runs all postinstall patches
+npm run serve     # runs preflights + patches + starts the server
 ```
 
-- FreeBSD jail env example for auto-send polling:
-
-```sh
-SITE_URL=https://blog.example.net
-PORT=3000
-
-WEBMENTION_SENDER_AUTO_POLL=1
-WEBMENTION_SENDER_POLL_INTERVAL=300
-WEBMENTION_SENDER_HOST=127.0.0.1
-WEBMENTION_SENDER_PORT=3000
-WEBMENTION_SENDER_MOUNT_PATH=/webmention-sender
-
-# Optional overrides
-# WEBMENTION_SENDER_ORIGIN=https://blog.example.net
-# WEBMENTION_SENDER_ENDPOINT=http://127.0.0.1:3000/webmention-sender
-```
-
-- Startup scripts run preflight + patch helpers before boot (`scripts/preflight-production-security.mjs`, `scripts/preflight-mongo-connection.mjs`, `scripts/preflight-activitypub-rsa-key.mjs`, `scripts/preflight-activitypub-profile-urls.mjs`, `scripts/patch-lightningcss.mjs`, `scripts/patch-endpoint-media-scope.mjs`, `scripts/patch-endpoint-media-sharp-runtime.mjs`, `scripts/patch-frontend-sharp-runtime.mjs`, `scripts/patch-endpoint-files-upload-route.mjs`, `scripts/patch-endpoint-files-upload-locales.mjs`, `scripts/patch-endpoint-activitypub-locales.mjs`, `scripts/patch-endpoint-activitypub-docloader-loglevel.mjs`, `scripts/patch-endpoint-activitypub-private-url-docloader.mjs`, `scripts/patch-endpoint-activitypub-migrate-alias-clear.mjs`, `scripts/patch-endpoint-homepage-locales.mjs`, `scripts/patch-frontend-serviceworker-file.mjs`, `scripts/patch-endpoint-comments-locales.mjs`, `scripts/patch-conversations-collection-guards.mjs`, `scripts/patch-indiekit-routes-rate-limits.mjs`, `scripts/patch-indiekit-error-production-stack.mjs`, `scripts/patch-indieauth-devmode-guard.mjs`, `scripts/patch-listening-endpoint-runtime-guards.mjs`).
-- The production security preflight blocks startup on insecure auth/session configuration and catches empty-password bcrypt hashes.
-- One-time recovery mode is available with `INDIEKIT_ALLOW_PASSWORD_SETUP=1` to bootstrap/reset `PASSWORD_SECRET` when locked out. Remove this flag after setting a valid hash.
-- The media scope patch fixes a known upstream issue where file uploads can fail if the token scope is `create update delete` without explicit `media`.
-- The ActivityPub RSA key preflight repairs or creates a usable `type="rsa"` key document in `ap_keys`, so outgoing federation requests can be signed and accepted by stricter inboxes.
-- The ActivityPub profile URL preflight repairs invalid URL fields in the `ap_profile` document (for example relative `icon` paths), preventing `/.well-known/webfinger` and actor responses from failing with `TypeError: Invalid URL`.
-- The media sharp runtime patch makes image transformation resilient on FreeBSD: if `sharp` cannot load, uploads continue without resize/rotation instead of crashing the server process.
-- The frontend sharp runtime patch makes icon generation non-fatal on FreeBSD when `sharp` cannot load, preventing startup crashes in asset controller imports.
-- The files upload route patch fixes browser multi-upload by posting to `/files/upload` (session-authenticated) instead of direct `/media` calls without bearer token.
-- The files upload locale patch adds missing `files.upload.dropText`/`files.upload.browse`/`files.upload.submitMultiple` labels in endpoint locale files so UI text does not render raw translation keys.
-- The ActivityPub locale patch backfills missing `de` locale keys from the endpoint's `en` locale and applies German admin title labels for notifications/profile.
-- The comments locale patch backfills missing comments endpoint locale files, adds translations for de/es/fr/nl/pt/sv, and localizes dashboard labels that were hardcoded in the comments template.
-- The frontend serviceworker patch ensures `@indiekit/frontend/lib/serviceworker.js` exists at runtime, forces network-only handling for `/auth` and `/session` pages, patches frontend layout templates to unregister stale service workers and clear caches on load, and suppresses sidebar rendering whenever `app--minimalui` is present.
-- The conversations guard patch prevents `Cannot read properties of undefined (reading 'find')` when the `conversation_items` collection is temporarily unavailable.
-- The indiekit routes rate-limit patch (ported from `rmdes/indiekit-cloudron`) keeps strict limits on `/session/*`, applies generous limits to public API/well-known routes, and removes extra rate limiting from authenticated routes to avoid admin-side 429 spikes.
-- The indiekit error stack patch (ported from `rmdes/indiekit-cloudron`) suppresses stack traces in production error pages/JSON responses to avoid leaking internal runtime details.
-- The indieauth dev-mode guard patch prevents accidental production auth bypass by requiring explicit `INDIEKIT_ALLOW_DEV_AUTH=1` to enable dev auto-login, and broadens safe local redirect validation to allow common path characters (`-`, `.`, `%`) used by routes such as `/auth/new-password`.
-
-## AI transparency
-
-AI disclosure metadata is captured per-post and surfaced in the blog's frontend as a badge, a sidebar widget, and a full `/ai/` stats page.
-
-### Frontmatter fields
-
-Four optional fields are stored under the `ai:` key in each post's frontmatter:
-
-```yaml
-ai:
-  textLevel: "0"   # 0 = none, 1 = editorial, 2 = co-drafted, 3 = AI-generated
-  codeLevel: "0"   # same scale, optional
-  tools: ""        # comma-separated tool names, optional
-  description: ""  # free-text disclosure note, optional
-```
-
-Articles and notes support all four fields. Other post types (bookmarks, likes, etc.) do not.
-
-### Backend fields (Micropub form)
-
-`scripts/patch-endpoint-posts-ai-fields.mjs` patches the Nunjucks templates inside `@indiekit/endpoint-posts` to add `aiTextLevel`, `aiCodeLevel`, `aiTools`, and `aiDescription` inputs to the article/note edit form. `scripts/patch-endpoint-posts-ai-cleanup.mjs` patches `form.js` in the same endpoint to strip empty AI fields from the Micropub payload before submission so unused optional fields are not written as empty strings.
-
-### Frontmatter generation (preset-eleventy patch)
-
-`scripts/patch-preset-eleventy-ai-frontmatter.mjs` patches `post-template.js` inside `@rmdes/indiekit-preset-eleventy`. The patch adds a block that writes the `ai:` YAML section from the JF2 `aiTextLevel`/`aiCodeLevel`/`aiTools`/`aiDescription` properties when converting a Micropub post to markdown frontmatter.
-
-**Root cause of the v4 fix**: `@indiekit/endpoint-micropub/lib/utils.js` — `getPostTemplateProperties()` — explicitly deletes `post-type` before calling `postTemplate()`. Earlier patch versions (v1–v3) relied on `properties["post-type"]` or `properties.postType` to detect whether a post is an article or note, so `supportsAiDisclosure` was always `false` and the `ai:` block was never written. The v4 fix detects post type from `properties.permalink` via URL path regex instead:
-
-```js
-const permalink = String(properties.permalink ?? "");
-const supportsAiDisclosure =
-  postType === "article" || postType === "note" ||
-  /\/articles(?:\/|$)/.test(permalink) || /\/notes(?:\/|$)/.test(permalink);
-```
-
-The patch script is idempotent and versioned: it detects the current patch level (v1/v2/v3/upstream) by matching a unique marker string and upgrades to v4 in place.
-
-### Blog frontend
-
-- `_includes/layouts/post.njk` — renders an AI disclosure badge below article/note content, reading `ai.textLevel` and `ai.codeLevel` from the post's frontmatter.
-- `_includes/components/widgets/ai-usage.njk` — compact sidebar widget showing totals, level breakdown, and a per-year contribution graph. Hidden when no posts have AI metadata.
-- `_includes/components/sections/ai-usage.njk` — full-width homepage section version of the same stats.
-- `eleventy.config.js` — defines `aiStats` and `aiPosts` Eleventy filters that scan `collections.posts` for `ai.textLevel` values to compute totals, percentages, and by-level counts.
-
-### Re-saving existing posts
-
-Posts published before the v4 fix lack the `ai:` frontmatter block. To add it, open each post in the Indiekit backend (`/posts`) and save it again without changes. The patched `postTemplate()` will then write the `ai:` block with default values (`textLevel: "0"`, `codeLevel: "0"`). AI level values previously entered in the form will now be persisted correctly on save.
+Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.mjs` for the full configuration.

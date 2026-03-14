@@ -1,18 +1,11 @@
 /**
- * Patch @rmdes/indiekit-endpoint-webmention-sender webmention.js to:
+ * Patch @rmdes/indiekit-endpoint-webmention-sender webmention.js:
  *
- * Scope link extraction to the post content area only (.h-entry, or <article>,
- * or <main>) when processing a full page.
- * Without this, links from the sidebar, navigation, and footer are included
- * because the live-fetch patch fetches the full rendered page HTML.
- *
- * Scopes to the full .h-entry (not just .e-content) so that microformat
- * property links like u-in-reply-to, u-like-of, u-repost-of, u-bookmark-of
- * are included — these are rendered outside .e-content (e.g. in an aside
- * before the prose body) but are still inside the .h-entry root.
- *
- * Falls back to the whole document when no content container is found
- * (e.g. when processing a stored post body fragment rather than a full page).
+ * Fix `scope.find is not a function` crash when a post has no .h-entry,
+ * <article>, or <main> element. In that case contentRoot is null and
+ * `scope = contentRoot ?? $` sets scope to the Cheerio constructor function
+ * which has no .find() method. Using $.root() instead returns a proper
+ * Cheerio document object that supports .find().
  */
 
 import { access, readFile, writeFile } from "node:fs/promises";
@@ -20,27 +13,9 @@ import { access, readFile, writeFile } from "node:fs/promises";
 const filePath =
   "node_modules/@rmdes/indiekit-endpoint-webmention-sender/lib/webmention.js";
 
-const patchMarker = "// [patched:content-scope]";
-
-const originalBlock = `  $("a[href]").each((_, el) => {`;
-
-const newBlock = `  // [patched:content-scope] Scope to post content area only, so that
-  // sidebar/nav/footer links from the live-fetched full page are excluded.
-  // Use .h-entry (not .h-entry .e-content) so that microformat property links
-  // like u-in-reply-to, u-like-of, u-repost-of etc. are included — these are
-  // rendered outside .e-content but still inside the .h-entry root.
-  const contentRoot =
-    $(".h-entry").first().length
-      ? $(".h-entry").first()
-      : $("article").first().length
-      ? $("article").first()
-      : $("main").first().length
-      ? $("main").first()
-      : null;
-
-  const scope = contentRoot ?? $;
-
-  scope.find("a[href]").each((_, el) => {`;
+const patchMarker = "// [patched:scope-root]";
+const oldLine = "  const scope = contentRoot ?? $;";
+const newLine = "  const scope = contentRoot ?? $.root(); // [patched:scope-root]";
 
 async function exists(p) {
   try {
@@ -52,30 +27,23 @@ async function exists(p) {
 }
 
 if (!(await exists(filePath))) {
-  console.log("[patch-webmention-sender-content-scope] File not found, skipping");
+  console.log("[postinstall] patch-webmention-sender-content-scope: file not found, skipping");
   process.exit(0);
 }
 
 const source = await readFile(filePath, "utf8");
 
 if (source.includes(patchMarker)) {
-  console.log("[patch-webmention-sender-content-scope] Already patched");
+  console.log("[postinstall] patch-webmention-sender-content-scope: already patched");
   process.exit(0);
 }
 
-if (!source.includes(originalBlock)) {
+if (!source.includes(oldLine)) {
   console.warn(
-    "[patch-webmention-sender-content-scope] Target block not found — upstream format may have changed, skipping"
+    "[postinstall] patch-webmention-sender-content-scope: target line not found — skipping"
   );
   process.exit(0);
 }
 
-const patched = source.replace(originalBlock, newBlock);
-
-if (!patched.includes(patchMarker)) {
-  console.warn("[patch-webmention-sender-content-scope] Patch validation failed, skipping");
-  process.exit(0);
-}
-
-await writeFile(filePath, patched, "utf8");
-console.log("[patch-webmention-sender-content-scope] Patched successfully");
+await writeFile(filePath, source.replace(oldLine, newLine), "utf8");
+console.log("[postinstall] patch-webmention-sender-content-scope: patched $.root() fix");

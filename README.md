@@ -174,3 +174,57 @@ npm run serve     # runs preflights + patches + starts the server
 ```
 
 Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.mjs` for the full configuration.
+
+---
+
+## Changelog
+
+### 2026-03-14
+
+**chore: upgrade checkout and setup-node actions to v4** (`d3fb055`)
+Upgraded `actions/checkout` and `actions/setup-node` from v3 to v4. Addresses the Node.js 20 deprecation warning ahead of the June 2026 forced migration to Node.js 24.
+
+**chore: update comments-locales patch for 1.0.10 template, drop livefetch patch** (`53b40a5`)
+Updated `patch-endpoint-comments-locales` to match the rewritten `comments.njk` template (Nunjucks macros + `badge()`). Removed obsolete locale keys and deleted the orphaned `patch-webmention-sender-livefetch` script.
+
+**chore: update @indiekit/* to beta.27, bump endpoint-comments and webmention-sender** (`53bb7d3`)
+- `@indiekit/indiekit`, `@indiekit/store-github`: beta.25 → beta.27
+- `@rmdes/indiekit-endpoint-comments`: 1.0.0 → 1.0.10
+- `@rmdes/indiekit-endpoint-webmention-sender`: 1.0.6 → 1.0.7
+
+**fix: buffer ActivityPub body before checking for PeerTube View activities** (`314a085`)
+Express's JSON body parser ignores `application/activity+json`, so `req.body` was always undefined and the PeerTube View guard never fired. Now manually buffers and parses the raw stream for `activity+json`/`ld+json` POSTs before the type check.
+
+**chore: remove Mastodon syndicator and related patches** (`3708dd9`)
+Removed the Mastodon syndicator package, config vars, patch script, and `.env` example entries. The blog is now a native ActivityPub actor.
+
+**fix: skip PeerTube View activities before Fedify JSON-LD parse** (`296745f`)
+Added an early guard in `createFedifyMiddleware` that short-circuits any POST with `body.type === "View"` and returns 200 immediately, preventing Fedify from crashing on PeerTube's non-standard View activities.
+
+**fix: silently ignore PeerTube View activities in ActivityPub inbox** (`f004ecd`)
+Added a no-op `.on(View, ...)` inbox handler to suppress noisy "Unsupported activity type" errors from PeerTube's per-watch broadcasts.
+
+**feat: add gardenStage and ai fields to all post type presets** (`304c75f`)
+- `gardenStage`: added to all post types
+- `aiTextLevel`, `aiCodeLevel`, `aiTools`, `aiDescription`: extended to all content post types (bookmark, repost, photo, reply, page)
+
+**fix: register bluesky cursor-fix patch in postinstall and serve scripts** (`3781503`)
+Ensured the Bluesky cursor-fix patch runs during both `postinstall` and `serve`.
+
+**fix: clear stale Bluesky polling cursor to restore interaction ingestion** (`655bc73`)
+Cleared a stale cursor that was blocking new Bluesky interactions from being ingested.
+
+**fix: filter out self-interactions from own Bluesky account** (`4f1440a`, `f8f595f`)
+Filtered out likes, reposts, and replies from the blog's own Bluesky account to prevent self-syndication loops.
+
+**fix: scope webmention link extraction to .h-entry not .e-content** (`b632af9`)
+`u-in-reply-to`, `u-like-of`, `u-repost-of` etc. are rendered before `.e-content`, not inside it. Scoping to `.h-entry .e-content` caused them to be missed. Bumped reset-stale migration to v3 to retry affected posts.
+
+**fix: improve microsub feed discovery via `<link rel="alternate">` tags** (`3ca9200`)
+`fetchAndParseFeed` now calls `discoverFeeds()` on the fetched HTML before probing common paths, using any typed RSS/Atom/JSONFeed `<link rel="alternate">` it finds.
+
+**fix: pre-fill reference URL when creating post from /news entry** (`0dc71d1`)
+`postData.create` previously only read `request.body`, ignoring query params. Now seeds `properties` from `?url=`/`?name=` per post type: `like-of`, `bookmark-of`, `in-reply-to`, `repost-of`.
+
+**fix: post edit 404 — query micropub source by _id not paginated scan** (`1d28df8`)
+`getPostProperties` was scanning the 40 most-recent posts for a uid match, returning 404 for any older post. Fixed by patching the micropub query controller to perform a direct `findOne({ _id: getObjectId(uid) })` when `?q=source&uid=` is present.

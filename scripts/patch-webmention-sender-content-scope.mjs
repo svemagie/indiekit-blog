@@ -1,10 +1,15 @@
 /**
  * Patch @rmdes/indiekit-endpoint-webmention-sender webmention.js to:
  *
- * Scope link extraction to the post content area only (.e-content inside
- * .h-entry, or <article>, or <main>) when processing a full page.
+ * Scope link extraction to the post content area only (.h-entry, or <article>,
+ * or <main>) when processing a full page.
  * Without this, links from the sidebar, navigation, and footer are included
  * because the live-fetch patch fetches the full rendered page HTML.
+ *
+ * Scopes to the full .h-entry (not just .e-content) so that microformat
+ * property links like u-in-reply-to, u-like-of, u-repost-of, u-bookmark-of
+ * are included — these are rendered outside .e-content (e.g. in an aside
+ * before the prose body) but are still inside the .h-entry root.
  *
  * Falls back to the whole document when no content container is found
  * (e.g. when processing a stored post body fragment rather than a full page).
@@ -21,11 +26,12 @@ const originalBlock = `  $("a[href]").each((_, el) => {`;
 
 const newBlock = `  // [patched:content-scope] Scope to post content area only, so that
   // sidebar/nav/footer links from the live-fetched full page are excluded.
+  // Use .h-entry (not .h-entry .e-content) so that microformat property links
+  // like u-in-reply-to, u-like-of, u-repost-of etc. are included — these are
+  // rendered outside .e-content but still inside the .h-entry root.
   const contentRoot =
-    $(".h-entry .e-content").first().length
-      ? $(".h-entry .e-content").first()
-      : $(".e-content").first().length
-      ? $(".e-content").first()
+    $(".h-entry").first().length
+      ? $(".h-entry").first()
       : $("article").first().length
       ? $("article").first()
       : $("main").first().length

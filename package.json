@@ -22,9 +22,9 @@
     "@indiekit/frontend": "npm:@rmdes/indiekit-frontend@^1.0.0-beta.27"
   },
   "dependencies": {
-    "@indiekit/indiekit": "^1.0.0-beta.25",
+    "@indiekit/indiekit": "^1.0.0-beta.27",
     "@indiekit/post-type-repost": "^1.0.0-beta.25",
-    "@indiekit/store-github": "^1.0.0-beta.25",
+    "@indiekit/store-github": "^1.0.0-beta.27",
     "@rmdes/indiekit-endpoint-activitypub": "github:svemagie/indiekit-endpoint-activitypub",
     "@rmdes/indiekit-endpoint-auth": "^1.0.0-beta.25",
     "@rmdes/indiekit-endpoint-blogroll": "github:svemagie/indiekit-endpoint-blogroll#bookmark-import",
@@ -38,7 +38,7 @@
     "@rmdes/indiekit-endpoint-podroll": "^1.0.11",
     "@rmdes/indiekit-endpoint-posts": "^1.0.0-beta.25",
     "@rmdes/indiekit-endpoint-webmention-io": "^1.0.7",
-    "@rmdes/indiekit-endpoint-webmention-sender": "^1.0.6",
+    "@rmdes/indiekit-endpoint-webmention-sender": "^1.0.7",
     "@rmdes/indiekit-endpoint-webmentions-proxy": "^1.0.3",
     "@rmdes/indiekit-endpoint-youtube": "github:rmdes/indiekit-endpoint-youtube",
     "@rmdes/indiekit-post-type-page": "^1.0.4",

@@ -84,14 +84,6 @@ const blueskyHandle = (process.env.BLUESKY_HANDLE || "")
   .trim()
   .replace(/^@+/, "");
 const blueskyPassword = process.env.BLUESKY_PASSWORD || "";
-const mastodonUrl = process.env.MASTODON_URL || "https://troet.cafe";
-const mastodonUser = (
-  process.env.MASTODON_USER || process.env.MASTODON_USERNAME || ""
-)
-  .trim()
-  .replace(/^@+/, "");
-const mastodonAccessToken =
-  process.env.MASTODON_ACCESS_TOKEN || process.env.MASTODON_TOKEN || "";
 const syndicateMountPath =
   process.env.SYNDICATE_MOUNT_PATH || "/syndicate";
 const publicationBaseUrl = (
@@ -327,7 +319,6 @@ export default {
     "@indiekit/post-type-repost",
     "@rmdes/indiekit-post-type-page",
     "@rmdes/indiekit-syndicator-bluesky",
-    "@rmdes/indiekit-syndicator-mastodon",
     "@rmdes/indiekit-syndicator-indienews",
     "@rmdes/indiekit-preset-eleventy",
     "@rmdes/indiekit-endpoint-github",
@@ -366,17 +357,6 @@ export default {
   "@rmdes/indiekit-syndicator-bluesky": {
     handle: blueskyHandle,
     password: blueskyPassword,
-  },
-  "@rmdes/indiekit-syndicator-mastodon": {
-    url: mastodonUrl,
-    user: mastodonUser,
-    accessToken: mastodonAccessToken,
-    // AP endpoint sends native Like/Announce activities; skip the redundant
-    // "❤️ URL" / "🔁 URL" status posts for external fediverse URLs.
-    // Native same-instance favourites/reblogs still work (needs write:favourites
-    // + write:statuses scope on the token).
-    syndicateExternalLikes: false,
-    syndicateExternalReposts: false,
   },
   "@indiekit/endpoint-syndicate": {
     mountPath: syndicateMountPath,

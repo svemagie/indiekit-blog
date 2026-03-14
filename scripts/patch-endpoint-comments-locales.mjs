@@ -29,20 +29,6 @@ const localeAliases = {
   "pt-BR": "pt",
 };
 
-const sourceOverrides = {
-  comments: {
-    dashboard: {
-      hiddenBadge: "Hidden",
-      targetPrefix: "on:",
-      paginationLabel: "Pagination",
-      previous: "Previous",
-      page: "Page",
-      of: "of",
-      next: "Next",
-    },
-  },
-};
-
 const localeOverrides = {
   de: {
     comments: {
@@ -67,12 +53,7 @@ const localeOverrides = {
         commentHidden: "Kommentar versteckt",
         commentPurged: "Kommentar geloescht",
         commentRestored: "Kommentar wiederhergestellt",
-        hiddenBadge: "Versteckt",
-        targetPrefix: "zu:",
-        paginationLabel: "Seitennavigation",
         previous: "Zurueck",
-        page: "Seite",
-        of: "von",
         next: "Weiter",
       },
       api: {
@@ -107,12 +88,7 @@ const localeOverrides = {
         commentHidden: "Comentario ocultado",
         commentPurged: "Comentario eliminado",
         commentRestored: "Comentario restaurado",
-        hiddenBadge: "Oculto",
-        targetPrefix: "en:",
-        paginationLabel: "Paginacion",
         previous: "Anterior",
-        page: "Pagina",
-        of: "de",
         next: "Siguiente",
       },
       api: {
@@ -147,12 +123,7 @@ const localeOverrides = {
         commentHidden: "Commentaire masque",
         commentPurged: "Commentaire supprime",
         commentRestored: "Commentaire restaure",
-        hiddenBadge: "Masque",
-        targetPrefix: "sur:",
-        paginationLabel: "Pagination",
         previous: "Precedent",
-        page: "Page",
-        of: "de",
         next: "Suivant",
       },
       api: {
@@ -187,12 +158,7 @@ const localeOverrides = {
         commentHidden: "Reactie verborgen",
         commentPurged: "Reactie verwijderd",
         commentRestored: "Reactie hersteld",
-        hiddenBadge: "Verborgen",
-        targetPrefix: "op:",
-        paginationLabel: "Paginatie",
         previous: "Vorige",
-        page: "Pagina",
-        of: "van",
         next: "Volgende",
       },
       api: {
@@ -227,12 +193,7 @@ const localeOverrides = {
         commentHidden: "Comentario ocultado",
         commentPurged: "Comentario removido",
         commentRestored: "Comentario restaurado",
-        hiddenBadge: "Oculto",
-        targetPrefix: "em:",
-        paginationLabel: "Paginacao",
         previous: "Anterior",
-        page: "Pagina",
-        of: "de",
         next: "Proximo",
       },
       api: {
@@ -267,12 +228,7 @@ const localeOverrides = {
         commentHidden: "Kommentar dold",
         commentPurged: "Kommentar raderad",
         commentRestored: "Kommentar aterstalld",
-        hiddenBadge: "Dold",
-        targetPrefix: "pa:",
-        paginationLabel: "Sidindelning",
         previous: "Foregaende",
-        page: "Sida",
-        of: "av",
         next: "Nasta",
       },
       api: {
@@ -285,43 +241,6 @@ const localeOverrides = {
     },
   },
 };
-
-const viewReplacements = [
-  {
-    oldSnippet: '<span class="badge badge--red">Hidden</span>',
-    newSnippet:
-      '<span class="badge badge--red">{{ __("comments.dashboard.hiddenBadge") if __ else "Hidden" }}</span>',
-  },
-  {
-    oldSnippet: "              on: {{ comment.target }}",
-    newSnippet:
-      '              {{ __("comments.dashboard.targetPrefix") if __ else "on:" }} {{ comment.target }}',
-  },
-  {
-    oldSnippet: `  {% if totalPages > 1 %}
-  <nav class="flex gap-2 justify-center mt-6" aria-label="Pagination">
-    {% if page > 1 %}
-    <a href="{{ baseUrl }}?page={{ page - 1 }}&status={{ statusFilter }}" class="button button--secondary button--small">Previous</a>
-    {% endif %}
-    <span class="text-sm self-center">Page {{ page }} of {{ totalPages }}</span>
-    {% if page < totalPages %}
-    <a href="{{ baseUrl }}?page={{ page + 1 }}&status={{ statusFilter }}" class="button button--secondary button--small">Next</a>
-    {% endif %}
-  </nav>
-  {% endif %}`,
-    newSnippet: `  {% if totalPages > 1 %}
-  <nav class="flex gap-2 justify-center mt-6" aria-label="{{ __("comments.dashboard.paginationLabel") if __ else "Pagination" }}">
-    {% if page > 1 %}
-    <a href="{{ baseUrl }}?page={{ page - 1 }}&status={{ statusFilter }}" class="button button--secondary button--small">{{ __("comments.dashboard.previous") if __ else "Previous" }}</a>
-    {% endif %}
-    <span class="text-sm self-center">{{ __("comments.dashboard.page") if __ else "Page" }} {{ page }} {{ __("comments.dashboard.of") if __ else "of" }} {{ totalPages }}</span>
-    {% if page < totalPages %}
-    <a href="{{ baseUrl }}?page={{ page + 1 }}&status={{ statusFilter }}" class="button button--secondary button--small">{{ __("comments.dashboard.next") if __ else "Next" }}</a>
-    {% endif %}
-  </nav>
-  {% endif %}`,
-  },
-];
 
 function isObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -377,8 +296,6 @@ async function exists(filePath) {
 let checkedEndpoints = 0;
 let checkedLocales = 0;
 let patchedLocales = 0;
-let checkedTemplates = 0;
-let patchedTemplates = 0;
 
 for (const endpointPath of endpointCandidates) {
   if (!(await exists(endpointPath))) {
@@ -400,13 +317,7 @@ for (const endpointPath of endpointCandidates) {
     continue;
   }
 
-  const sourcePatched = applyOverrides(sourceLocaleJson, sourceOverrides);
   checkedLocales += 1;
-
-  if (JSON.stringify(sourcePatched) !== JSON.stringify(sourceLocaleJson)) {
-    await writeFile(sourcePath, `${JSON.stringify(sourcePatched, null, 2)}\n`, "utf8");
-    patchedLocales += 1;
-  }
 
   for (const locale of targetLocales) {
     const localePath = path.join(endpointPath, "locales", `${locale}.json`);
@@ -421,7 +332,7 @@ for (const endpointPath of endpointCandidates) {
       }
     }
 
-    const merged = mergeMissing(localeJson, sourcePatched);
+    const merged = mergeMissing(localeJson, sourceLocaleJson);
     const overrideKey = localeAliases[locale] || locale;
     const patched = applyOverrides(merged, localeOverrides[overrideKey] || {});
 
@@ -432,45 +343,14 @@ for (const endpointPath of endpointCandidates) {
     await writeFile(localePath, `${JSON.stringify(patched, null, 2)}\n`, "utf8");
     patchedLocales += 1;
   }
-
-  const viewPath = path.join(endpointPath, "views", "comments.njk");
-  if (!(await exists(viewPath))) {
-    continue;
-  }
-
-  checkedTemplates += 1;
-
-  const viewSource = await readFile(viewPath, "utf8");
-  let viewUpdated = viewSource;
-  let templateChanged = false;
-
-  for (const replacement of viewReplacements) {
-    if (viewUpdated.includes(replacement.newSnippet)) {
-      continue;
-    }
-
-    if (!viewUpdated.includes(replacement.oldSnippet)) {
-      continue;
-    }
-
-    viewUpdated = viewUpdated.replace(replacement.oldSnippet, replacement.newSnippet);
-    templateChanged = true;
-  }
-
-  if (!templateChanged) {
-    continue;
-  }
-
-  await writeFile(viewPath, viewUpdated, "utf8");
-  patchedTemplates += 1;
 }
 
 if (checkedEndpoints === 0) {
   console.log("[postinstall] No comments endpoint directories found");
-} else if (patchedLocales === 0 && patchedTemplates === 0) {
-  console.log("[postinstall] comments locales and templates already patched");
+} else if (patchedLocales === 0) {
+  console.log("[postinstall] comments locales already patched");
 } else {
   console.log(
-    `[postinstall] Patched comments locales in ${patchedLocales}/${checkedLocales} file(s) and templates in ${patchedTemplates}/${checkedTemplates} file(s)`,
+    `[postinstall] Patched comments locales in ${patchedLocales}/${checkedLocales} file(s)`,
   );
 }

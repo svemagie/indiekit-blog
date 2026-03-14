@@ -84,7 +84,7 @@ const blueskyHandle = (process.env.BLUESKY_HANDLE || "")
   .trim()
   .replace(/^@+/, "");
 const blueskyPassword = process.env.BLUESKY_PASSWORD || "";
-const mastodonUrl = process.env.MASTODON_URL || "";
+const mastodonUrl = process.env.MASTODON_URL || "https://troet.cafe";
 const mastodonUser = (
   process.env.MASTODON_USER || process.env.MASTODON_USERNAME || ""
 )

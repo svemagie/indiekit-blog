@@ -213,6 +213,7 @@ export default {
           url: `${publicationBaseUrl}/articles/{slug}/`,
         },
         fields: {
+          gardenStage: {},
           aiTextLevel: {},
           aiCodeLevel: {},
           aiTools: {},
@@ -226,6 +227,7 @@ export default {
           url: `${publicationBaseUrl}/notes/{slug}/`,
         },
         fields: {
+          gardenStage: {},
           aiTextLevel: {},
           aiCodeLevel: {},
           aiTools: {},
@@ -238,6 +240,13 @@ export default {
           path: "content/bookmarks/{slug}.md",
           url: `${publicationBaseUrl}/bookmarks/{slug}/`,
         },
+        fields: {
+          gardenStage: {},
+          aiTextLevel: {},
+          aiCodeLevel: {},
+          aiTools: {},
+          aiDescription: {},
+        },
       },
       like: {
         name: "Like",
@@ -245,12 +254,22 @@ export default {
           path: "content/likes/{slug}.md",
           url: `${publicationBaseUrl}/likes/{slug}/`,
         },
+        fields: {
+          gardenStage: {},
+        },
       },
       repost: {
         name: "Repost",
         post: {
           path: "content/reposts/{slug}.md",
           url: `${publicationBaseUrl}/reposts/{slug}/`,
+        },
+        fields: {
+          gardenStage: {},
+          aiTextLevel: {},
+          aiCodeLevel: {},
+          aiTools: {},
+          aiDescription: {},
         },
       },
       photo: {
@@ -263,6 +282,13 @@ export default {
           path: "images/{filename}",
           url: `${publicationBaseUrl}/images/{filename}`,
         },
+        fields: {
+          gardenStage: {},
+          aiTextLevel: {},
+          aiCodeLevel: {},
+          aiTools: {},
+          aiDescription: {},
+        },
       },
       reply: {
         name: "Antwort",
@@ -270,12 +296,26 @@ export default {
           path: "content/replies/{slug}.md",
           url: `${publicationBaseUrl}/replies/{slug}/`,
         },
+        fields: {
+          gardenStage: {},
+          aiTextLevel: {},
+          aiCodeLevel: {},
+          aiTools: {},
+          aiDescription: {},
+        },
       },
       page: {
         name: "Seite",
         post: {
           path: "content/pages/{slug}.md",
           url: `${publicationBaseUrl}/{slug}/`,
+        },
+        fields: {
+          gardenStage: {},
+          aiTextLevel: {},
+          aiCodeLevel: {},
+          aiTools: {},
+          aiDescription: {},
         },
       },
     },

@@ -194,6 +194,7 @@ export default {
     name: "Indiekit",
     mongodbUrl: mongoUrl,
     url: applicationBaseUrl,
+    locale: "de",
   },
   publication: {
     me: publicationBaseUrl,

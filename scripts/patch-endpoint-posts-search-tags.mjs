@@ -153,15 +153,56 @@ const newView = `{% extends "document.njk" %}
   <ol class="card-grid" role="list" style="--min-card-size: 16rem">
     {%- for item in posts %}
     <li class="card-grid__item">
-      {{ card(item) | indent(4) }}
-      {%- if item.tagLinks and item.tagLinks.length > 0 %}
-      <dl class="prose--caption" style="padding:0 1rem 0.75rem">
-        <dt class="-!-visually-hidden">Tags</dt>
-        {%- for tagLink in item.tagLinks %}
-        <dd class="tag"><a href="{{ tagLink.href }}">{{ tagLink.text }}</a></dd>
-        {%- endfor %}
-      </dl>
-      {%- endif %}
+      <article class="card">
+        {%- if item.photo %}
+        <div class="card__photo">
+          <img src="{{ item.photo.url | imageUrl(application, width=240, height=240) }}" alt="{{ item.photo.alt }}" width="240" height="240" decoding="async" loading="lazy" onerror="this.src='/assets/not-found.svg'">
+        </div>
+        {%- endif %}
+        <div class="card__body">
+          {%- if item.title %}
+          <h2 class="card__title">
+            {%- if item.url %}
+            <a href="{{ item.url }}" rel="bookmark">
+            {%- endif %}
+              {{- icon(item.icon) if item.icon -}}
+              {{- item.title | safe -}}
+            {%- if item.url %}
+            </a>
+            {%- endif %}
+          </h2>
+          {%- endif %}
+          {{ prose({ classes: "card__meta", text: item.description.text, html: item.description.html }) | indent(10) if item.description }}
+          {%- set hasNonGarden = false %}
+          {%- for tl in item.tagLinks %}
+          {%- if tl.text != "garden" %}{%- set hasNonGarden = true %}{%- endif %}
+          {%- endfor %}
+          {%- if hasNonGarden %}
+          <div style="padding:0.25rem 0 0.5rem;display:flex;flex-wrap:wrap;gap:0.25rem">
+            {%- for tl in item.tagLinks %}
+            {%- if tl.text != "garden" %}
+            <a href="{{ tl.href }}" class="tag" style="font-size:0.75em">{{ tl.text }}</a>
+            {%- endif %}
+            {%- endfor %}
+          </div>
+          {%- endif %}
+          {%- if item.published or item.badges %}
+          <footer class="card__footer" style="display:flex;align-items:center;gap:0.5rem">
+            {%- for badgeItem in item.badges %}
+            {{ badge(badgeItem) | indent(12) if badgeItem }}
+            {%- endfor %}
+            {%- for tl in item.tagLinks %}
+            {%- if tl.text == "garden" %}
+            <a href="{{ tl.href }}" class="tag" style="margin-left:auto;font-size:0.75em;flex-shrink:0">garden</a>
+            {%- endif %}
+            {%- endfor %}
+            <time datetime="{{ item.published }}">
+              {{ item.published | date("PPp", { locale: item.locale, timeZone: application.timeZone }) }}
+            </time>
+          </footer>
+          {%- endif %}
+        </div>
+      </article>
     </li>
     {%- endfor %}
   </ol>

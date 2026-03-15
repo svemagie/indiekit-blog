@@ -3,7 +3,9 @@ import path from "node:path";
 
 const endpointCandidates = [
   "node_modules/@rmdes/indiekit-endpoint-posts",
+  "node_modules/@indiekit/endpoint-posts",
   "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-posts",
+  "node_modules/@indiekit/indiekit/node_modules/@indiekit/endpoint-posts",
 ];
 
 const sourceLocale = "en";
@@ -15,15 +17,70 @@ const localeOverrides = {
       delete: {
         cancel: "Nein – zurück zum Beitrag",
       },
+      purge: {
+        action: "Endgültig löschen",
+        title: "Diesen Beitrag endgültig löschen?",
+        warning:
+          "Der Beitrag wird aus der Datenbank entfernt. Diese Aktion kann nicht rückgängig gemacht werden.",
+        submit: "Ich bin sicher – endgültig löschen",
+        cancel: "Nein – zurück zur Beitragsübersicht",
+        success: "Beitrag endgültig gelöscht",
+      },
       post: {
         syndicate: "Beitrag syndizieren",
+      },
+      posts: {
+        title: "Beiträge",
       },
       status: {
         unlisted: "Nicht gelistet",
       },
+      filter: {
+        type: "Typ",
+        status: "Status",
+        all: "Alle",
+        status_published: "Veröffentlicht",
+        status_draft: "Entwürfe",
+        status_deleted: "Gelöscht",
+        status_all: "Alle",
+        searchPlaceholder: "Beiträge suchen…",
+        searchButton: "Suchen",
+        clear: "Zurücksetzen",
+        newest: "Neueste",
+        oldest: "Älteste",
+        results: "Beiträge",
+      },
       form: {
         summary: {
           label: "Zusammenfassung",
+        },
+        "mp-syndicate-to": {
+          label: "Syndizieren nach",
+        },
+        pinned: {
+          label: "Hervorgehobener Beitrag",
+          no: "Nein",
+          yes: "Ja – im Bereich Hervorgehoben anpinnen",
+        },
+        "ai-text-level": {
+          label: "KI-Textebene",
+          0: "0 – Keine",
+          1: "1 – Redaktionelle Unterstützung",
+          2: "2 – Ko-Erstellung",
+          3: "3 – KI-generiert (menschlich geprüft)",
+        },
+        "ai-code-level": {
+          label: "KI-Codeebene",
+          0: "0 – Menschlich geschrieben",
+          1: "1 – KI-unterstützt",
+          2: "2 – Überwiegend KI-generiert",
+        },
+        "ai-tools": {
+          label: "KI-Werkzeuge",
+          placeholder: "z. B. Claude, ChatGPT, Copilot",
+        },
+        "ai-description": {
+          label: "KI-Nutzungshinweis",
         },
       },
     },

@@ -332,7 +332,7 @@ export default {
     "@rmdes/indiekit-endpoint-funkwhale",
     "@rmdes/indiekit-endpoint-lastfm",
     "@rmdes/indiekit-endpoint-podroll",
-    //"@rmdes/indiekit-endpoint-rss",
+    "@rmdes/indiekit-endpoint-rss",
     "@rmdes/indiekit-endpoint-activitypub",
     "@rmdes/indiekit-endpoint-youtube",
     "@rmdes/indiekit-endpoint-blogroll",
@@ -457,13 +457,13 @@ export default {
     "@rmdes/indiekit-endpoint-microsub": {
       mountPath: "/microsub",
     },
-   // "@rmdes/indiekit-endpoint-rss": {
-   //   mountPath: "/rssapi",
-   //   syncInterval: 900_000,
-   //   maxItemsPerFeed: 50,
-   //   fetchTimeout: 10_000,
-   //   maxConcurrentFetches: 3,
-   // },
+    "@rmdes/indiekit-endpoint-rss": {
+      mountPath: "/rssapi",
+      syncInterval: 900_000,
+      maxItemsPerFeed: 50,
+      fetchTimeout: 10_000,
+      maxConcurrentFetches: 3,
+    },
     "@rmdes/indiekit-endpoint-cv": {
       mountPath: "/cv",
     },

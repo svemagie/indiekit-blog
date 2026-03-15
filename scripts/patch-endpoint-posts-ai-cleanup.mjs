@@ -69,6 +69,10 @@ for (const filePath of candidates) {
   }
 
   if (!source.includes(oldSnippet)) {
+    // Beta.41+ has native AI field cleanup — skip silently
+    if (source.includes('"ai-text-level"') && source.includes('"ai-code-level"')) {
+      continue;
+    }
     console.warn(
       `[postinstall] Skipping endpoint-posts AI cleanup patch for ${filePath}: upstream format changed`,
     );

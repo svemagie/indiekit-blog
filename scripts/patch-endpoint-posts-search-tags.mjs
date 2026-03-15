@@ -232,6 +232,11 @@ for (const filePath of controllerCandidates) {
     [oldRender, newRender],
   ]) {
     if (!source.includes(oldSnip)) {
+      // Beta.41+ has native filter/search/sort built in — skip silently
+      if (source.includes("buildFilterQuery") || source.includes("filters.postType")) {
+        changed = false;
+        break;
+      }
       console.warn(
         `[postinstall] posts search-tags: snippet not found in ${filePath}, skipping`,
       );
@@ -259,6 +264,10 @@ for (const filePath of viewCandidates) {
   if (source.includes(viewMarker)) continue;
 
   if (!source.includes(oldView)) {
+    // Beta.41+ has native filter/sort UI built in — skip silently
+    if (source.includes("posts-filter-row") || source.includes("posts.filter.type")) {
+      continue;
+    }
     console.warn(
       `[postinstall] posts search-tags: view not found in ${filePath}, skipping`,
     );

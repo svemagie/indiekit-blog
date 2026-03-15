@@ -90,6 +90,10 @@ for (const spec of patchSpecs) {
 
     if (source.includes(spec.marker)) continue;
     if (!source.includes(spec.oldSnippet)) {
+      // Beta.41+ uses direct MongoDB queries — uid lookup is native, skip silently
+      if (source.includes("getPostProperties") || source.includes("getPosts")) {
+        continue;
+      }
       console.log(`[postinstall] ${spec.name}: snippet not found in ${filePath}`);
       continue;
     }

@@ -7,16 +7,9 @@ const candidates = [
   "node_modules/@indiekit/indiekit/node_modules/@indiekit/endpoint-posts/lib/controllers/form.js",
 ];
 
-const marker = "Remove empty AI metadata fields so Micropub payload stays lean.";
+const marker = "Always remove legacy hyphenated keys — superseded by camelCase equivalents.";
 
 const oldSnippet = [
-  "      // Easy MDE appends `image` value to formData for last image uploaded",
-  "      delete values.image;",
-  "",
-  "      const mf2 = jf2ToMf2({ properties: sanitise(values) });",
-].join("\n");
-
-const newSnippet = [
   "      // Easy MDE appends `image` value to formData for last image uploaded",
   "      delete values.image;",
   "",
@@ -39,6 +32,34 @@ const newSnippet = [
   "          delete values[key];",
   "        }",
   "      }",
+  "",
+  "      const mf2 = jf2ToMf2({ properties: sanitise(values) });",
+].join("\n");
+
+const newSnippet = [
+  "      // Easy MDE appends `image` value to formData for last image uploaded",
+  "      delete values.image;",
+  "",
+  "      // Remove empty AI metadata fields so Micropub payload stays lean.",
+  "      for (const key of [",
+  "        \"aiTextLevel\",",
+  "        \"aiCodeLevel\",",
+  "        \"aiTools\",",
+  "        \"aiDescription\",",
+  "      ]) {",
+  "        if (",
+  "          values[key] === undefined ||",
+  "          values[key] === null ||",
+  "          String(values[key]).trim() === \"\"",
+  "        ) {",
+  "          delete values[key];",
+  "        }",
+  "      }",
+  "      // Always remove legacy hyphenated keys — superseded by camelCase equivalents.",
+  "      delete values[\"ai-text-level\"];",
+  "      delete values[\"ai-code-level\"];",
+  "      delete values[\"ai-tools\"];",
+  "      delete values[\"ai-description\"];",
   "",
   "      const mf2 = jf2ToMf2({ properties: sanitise(values) });",
 ].join("\n");

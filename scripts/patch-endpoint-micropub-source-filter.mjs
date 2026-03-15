@@ -53,19 +53,10 @@ const newSnippet = `        } else {
                 filterQuery["properties.category"] = String(categoryParam);
               }
               if (searchParam) {
-                const re = String(searchParam).replace(
-                  /[$()*+.?[\\\]^{|}]/g,
-                  "\\$&",
-                );
                 filterQuery.$or = [
-                  { "properties.name": { $regex: re, $options: "i" } },
-                  {
-                    "properties.content.text": {
-                      $regex: re,
-                      $options: "i",
-                    },
-                  },
-                  { "properties.content": { $regex: re, $options: "i" } },
+                  { "properties.name": { $regex: String(searchParam), $options: "i" } },
+                  { "properties.content.text": { $regex: String(searchParam), $options: "i" } },
+                  { "properties.content": { $regex: String(searchParam), $options: "i" } },
                 ];
               }
               const findLimit = (limit && limit > 0) ? limit : 40;

@@ -321,15 +321,18 @@ export default {
     "@rmdes/indiekit-syndicator-bluesky",
     "@rmdes/indiekit-syndicator-indienews",
     "@rmdes/indiekit-preset-eleventy",
+    "@indiekit/endpoint-json-feed",
     "@rmdes/indiekit-endpoint-github",
     "@rmdes/indiekit-endpoint-webmention-io",
     "@rmdes/indiekit-endpoint-webmention-sender",
     "@rmdes/indiekit-endpoint-homepage",
+    "@rmdes/indiekit-endpoint-cv",
     "@rmdes/indiekit-endpoint-conversations",
     "@rmdes/indiekit-endpoint-comments",
     "@rmdes/indiekit-endpoint-funkwhale",
     "@rmdes/indiekit-endpoint-lastfm",
     "@rmdes/indiekit-endpoint-podroll",
+    "@rmdes/indiekit-endpoint-rss",
     "@rmdes/indiekit-endpoint-activitypub",
     "@rmdes/indiekit-endpoint-youtube",
     "@rmdes/indiekit-endpoint-blogroll",
@@ -453,6 +456,16 @@ export default {
     },
     "@rmdes/indiekit-endpoint-microsub": {
       mountPath: "/microsub",
+    },
+    "@rmdes/indiekit-endpoint-rss": {
+      mountPath: "/rssapi",
+      syncInterval: 900_000,
+      maxItemsPerFeed: 50,
+      fetchTimeout: 10_000,
+      maxConcurrentFetches: 3,
+    },
+    "@rmdes/indiekit-endpoint-cv": {
+      mountPath: "/cv",
     },
 };
 

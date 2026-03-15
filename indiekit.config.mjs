@@ -337,6 +337,7 @@ export default {
     "@rmdes/indiekit-endpoint-youtube",
     "@rmdes/indiekit-endpoint-blogroll",
     "@rmdes/indiekit-endpoint-microsub",
+    "@indiekit/endpoint-syndicate",
   ],
   
   "@rmdes/indiekit-endpoint-auth": {

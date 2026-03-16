@@ -161,6 +161,42 @@ const targets = [
       },
     ],
   },
+  // --- indieauth.js: token exchange (login flow) ---
+  {
+    paths: [
+      "node_modules/@indiekit/indiekit/lib/indieauth.js",
+    ],
+    replacements: [
+      {
+        old: `    const tokenResponse = await fetch(tokenUrl.href, {`,
+        new: `    const tokenResponse = await fetch(_toInternalUrl(tokenUrl.href), {`,
+      },
+    ],
+  },
+  // --- token.js: introspection (every authenticated request) ---
+  {
+    paths: [
+      "node_modules/@indiekit/indiekit/lib/token.js",
+    ],
+    replacements: [
+      {
+        old: `  const introspectionResponse = await fetch(introspectionUrl, {`,
+        new: `  const introspectionResponse = await fetch(_toInternalUrl(introspectionUrl.href), {`,
+      },
+    ],
+  },
+  // --- media.js: file uploads via media endpoint ---
+  {
+    paths: [
+      "node_modules/@indiekit/endpoint-micropub/lib/media.js",
+    ],
+    replacements: [
+      {
+        old: `      const response = await fetch(mediaEndpoint, {`,
+        new: `      const response = await fetch(_toInternalUrl(mediaEndpoint), {`,
+      },
+    ],
+  },
 ];
 
 async function exists(filePath) {
@@ -194,22 +230,19 @@ for (const target of targets) {
       continue;
     }
 
-    // Insert helper block after the last import statement
+    // Insert helper block after the last import statement (or at top if no imports)
     const allImportMatches = [...source.matchAll(/^import\s/gm)];
-    if (allImportMatches.length === 0) {
-      console.warn(`[postinstall] micropub-fetch-internal-url: no imports found in ${filePath} — skipping`);
-      continue;
+    let insertAt = 0;
+
+    if (allImportMatches.length > 0) {
+      const lastImportStart = allImportMatches.at(-1).index;
+      const afterLastImport = source.slice(lastImportStart);
+      const fromMatch = afterLastImport.match(/from\s+["'][^"']+["']\s*;\s*\n/);
+      if (fromMatch) {
+        insertAt = lastImportStart + fromMatch.index + fromMatch[0].length;
+      }
     }
 
-    const lastImportStart = allImportMatches.at(-1).index;
-    const afterLastImport = source.slice(lastImportStart);
-    const fromMatch = afterLastImport.match(/from\s+["'][^"']+["']\s*;\s*\n/);
-    if (!fromMatch) {
-      console.warn(`[postinstall] micropub-fetch-internal-url: can't find end of last import in ${filePath} — skipping`);
-      continue;
-    }
-
-    const insertAt = lastImportStart + fromMatch.index + fromMatch[0].length;
     const beforeHelper = source.slice(0, insertAt);
     const afterHelper = source.slice(insertAt);
 

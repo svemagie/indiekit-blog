@@ -129,7 +129,7 @@ Adds OPML file upload support to the podroll endpoint.
 
 ### Microsub / Reader
 
-**`patch-microsub-reader-ap-dispatch.mjs`**
+// **`patch-microsub-reader-ap-dispatch.mjs`**
 Adds Fediverse/ActivityPub detection and dispatch to the Microsub reader so AP profile URLs are routed to the ActivityPub reader rather than the RSS reader.
 
 **`patch-microsub-feed-discovery.mjs`**

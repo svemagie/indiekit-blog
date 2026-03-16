@@ -90,8 +90,12 @@ for (const filePath of candidates) {
   }
 
   if (!source.includes(oldSnippet)) {
-    // Beta.41+ has native AI field cleanup — skip silently
-    if (source.includes('"ai-text-level"') && source.includes('"ai-code-level"')) {
+    // Already has AI field cleanup in some form — skip silently
+    if (
+      source.includes('"ai-text-level"') ||
+      source.includes('"aiTextLevel"') ||
+      !source.includes("jf2ToMf2")
+    ) {
       continue;
     }
     console.warn(

@@ -74,12 +74,12 @@ for (const filePath of candidates) {
   checked += 1;
   const source = await readFile(filePath, "utf8");
 
-  if (source.includes(MARKER)) {
+  if (source.includes(MARKER) || source.includes("allowPrivateAddress")) {
     continue;
   }
 
   if (!source.includes(OLD_SNIPPET)) {
-    console.log(`[postinstall] patch-ap-allow-private-address: snippet not found in ${filePath}`);
+    console.log(`[postinstall] patch-ap-allow-private-address: snippet not found in ${filePath} — skipping`);
     continue;
   }
 

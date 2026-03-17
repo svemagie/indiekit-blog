@@ -225,10 +225,10 @@ server {
     listen 10.100.0.10:80;
     server_name blog.giersig.eu;
 
-    # Pretend we're HTTPS so Indiekit's force-https middleware
-    # doesn't redirect internal requests.
+    # Tell Indiekit this is the real domain (not 10.100.0.10) and
+    # that TLS was terminated upstream so force-https doesn't redirect.
+    proxy_set_header Host blog.giersig.eu;
     proxy_set_header X-Forwarded-Proto https;
-    proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 

@@ -40,16 +40,30 @@ const originalBlock = `        // If no content, try fetching the published page
 const newBlock = `        // [patched:livefetch] Always fetch the live page so template-rendered links
         // (u-in-reply-to, u-like-of, u-bookmark-of, u-repost-of, etc.) are included.
         // Stored content only has the post body, not these microformat links.
+        // Rewrite public URL to localhost for jailed setups where the server
+        // can't reach its own public HTTPS URL.
         let contentToProcess = "";
         try {
-          const pageResponse = await fetch(postUrl);
+          const _internalBase = (() => {
+            if (process.env.INTERNAL_FETCH_URL) return process.env.INTERNAL_FETCH_URL.replace(/\\/+$/, "");
+            const port = process.env.PORT || "3000";
+            return \`http://localhost:\${port}\`;
+          })();
+          const _publicBase = (process.env.PUBLICATION_URL || process.env.SITE_URL || "").replace(/\\/+$/, "");
+          const fetchUrl = (_publicBase && postUrl.startsWith(_publicBase))
+            ? _internalBase + postUrl.slice(_publicBase.length)
+            : postUrl;
+          const _ac = new AbortController();
+          const _timeout = setTimeout(() => _ac.abort(), 15000);
+          const pageResponse = await fetch(fetchUrl, { signal: _ac.signal });
+          clearTimeout(_timeout);
           if (pageResponse.ok) {
             contentToProcess = await pageResponse.text();
           } else {
-            console.log(\`[webmention] Live page returned \${pageResponse.status} for \${postUrl}\`);
+            console.log(\`[webmention] Live page returned \${pageResponse.status} for \${fetchUrl}\`);
           }
         } catch (error) {
-          console.log(\`[webmention] Could not fetch \${postUrl}: \${error.message}\`);
+          console.log(\`[webmention] Could not fetch live page for \${postUrl}: \${error.message}\`);
         }
 
         // Fall back to stored content if live page is unavailable

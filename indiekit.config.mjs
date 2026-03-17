@@ -337,6 +337,7 @@ export default {
     "@rmdes/indiekit-endpoint-youtube",
     "@rmdes/indiekit-endpoint-blogroll",
     "@rmdes/indiekit-endpoint-microsub",
+    "@rmdes/indiekit-endpoint-readlater",
     "@indiekit/endpoint-syndicate",
   ],
   
@@ -457,6 +458,9 @@ export default {
     },
     "@rmdes/indiekit-endpoint-microsub": {
       mountPath: "/microsub",
+    },
+    "@rmdes/indiekit-endpoint-readlater": {
+      mountPath: "/readlater",
     },
     "@rmdes/indiekit-endpoint-cv": {
       mountPath: "/cv",

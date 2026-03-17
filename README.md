@@ -143,13 +143,23 @@ Applies several guards to the listening endpoints: scopes Funkwhale history fetc
 ### Webmention sender
 
 **`patch-webmention-sender-livefetch.mjs`**
-Forces the webmention sender to always fetch the live published page rather than using the stored post body. Ensures outgoing webmentions contain the full rendered HTML including all microformats.
-
-**`patch-webmention-sender-content-scope.mjs`**
-Scopes link extraction to the post content area (`.h-entry`, `<article>`, or `<main>`) when parsing a full page, preventing links in navigation and footers from generating spurious webmentions.
+Forces the webmention sender to always fetch the live published page rather than using the stored post body. Ensures outgoing webmentions contain the full rendered HTML including all microformats. Rewrites the fetch URL via `INTERNAL_FETCH_URL` for jailed setups.
 
 **`patch-webmention-sender-reset-stale.mjs`**
 One-time migration (guarded by a `migrations` MongoDB collection entry) that resets posts incorrectly marked as webmention-sent with empty results because the live page was not yet deployed when the poller first fired.
+
+### Bluesky syndicator
+
+**`patch-bluesky-syndicator-internal-url.mjs`**
+Rewrites own-domain fetch URLs in the Bluesky syndicator to `INTERNAL_FETCH_URL` for jailed setups. Covers `uploadMedia()` (photo uploads), `uploadImageFromUrl()` (OG image thumbnails), and `fetchOpenGraphData()` (OG metadata extraction).
+
+### Internal URL rewriting
+
+**`patch-micropub-fetch-internal-url.mjs`**
+Rewrites self-referential fetch URLs to `INTERNAL_FETCH_URL` (or `http://localhost:PORT`) across multiple endpoints: endpoint-syndicate, endpoint-share, microsub reader, activitypub compose, endpoint-posts, indieauth token exchange, token introspection, and media uploads. Required for jailed setups where the server cannot reach its own public HTTPS URL.
+
+**`patch-syndicate-force-checked-default.mjs`**
+When force-syndicating a post with no `mp-syndicate-to` and no existing syndication URLs, falls back to targets with `checked: true` instead of doing nothing.
 
 ---
 
@@ -163,6 +173,83 @@ Run at the start of `serve` before the server starts. They fail fast with a clea
 | `preflight-mongo-connection.mjs` | MongoDB is reachable; blocks startup if connection fails in strict mode |
 | `preflight-activitypub-rsa-key.mjs` | RSA key pair for ActivityPub exists in MongoDB; generates one if absent |
 | `preflight-activitypub-profile-urls.mjs` | ActivityPub actor URLs are correctly configured; warns on mismatch |
+
+---
+
+## Server architecture
+
+The production setup uses two FreeBSD jails managed by [Bastille](https://bastillebsd.org/):
+
+```
+                    ┌─────────────────────────────────────────┐
+  Internet ──▶ 443 │  web jail (10.100.0.10)                 │
+                    │  nginx — terminates TLS                 │
+                    │  • static files (Eleventy _site output) │
+                    │  • proxy_pass dynamic → node jail :3000 │
+                    │  • port 80 for internal fetches (no TLS)│
+                    └───────────────┬─────────────────────────┘
+                                    │ http://10.100.0.20:3000
+                    ┌───────────────▼─────────────────────────┐
+                    │  node jail (10.100.0.20)                │
+                    │  Indiekit (Express on port 3000)        │
+                    │  MongoDB (localhost or separate jail)    │
+                    └─────────────────────────────────────────┘
+```
+
+### Internal fetch URL
+
+The node jail cannot reach the public HTTPS URL (`https://blog.giersig.eu`) because TLS terminates on the web jail. Several features need to fetch their own pages or static assets:
+
+- **Webmention sender** — fetches live page HTML for link extraction
+- **Bluesky syndicator** — fetches photos for upload, OG metadata/images for link cards
+- **Micropub/syndicate** — self-fetches for token introspection, post updates
+
+All of these use a shared `_toInternalUrl()` helper (injected by patch scripts) that rewrites the public base URL to `INTERNAL_FETCH_URL`. This should point to the nginx web jail's **HTTP** (port 80) listener, which serves both static files and proxies dynamic routes to Indiekit — without TLS.
+
+```
+INTERNAL_FETCH_URL=http://10.100.0.10
+```
+
+### nginx port 80 configuration
+
+The internal HTTP listener must:
+
+1. **Serve content directly** (not redirect to HTTPS)
+2. **Set `X-Forwarded-Proto: https`** so Indiekit's `force-https` middleware does not redirect internal requests back to HTTPS
+3. Proxy dynamic routes to the node jail, serve static files from the Eleventy build output
+
+```nginx
+# Internal HTTP listener — used by Indiekit for self-fetches.
+# Not exposed to the internet (firewall blocks external port 80).
+server {
+    listen 10.100.0.10:80;
+    server_name blog.giersig.eu;
+
+    # Pretend we're HTTPS so Indiekit's force-https middleware
+    # doesn't redirect internal requests.
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+    # Static files from Eleventy build (rsynced to /usr/local/www/blog)
+    location /images/ { root /usr/local/www/blog; }
+    location /og/     { root /usr/local/www/blog; }
+
+    # Everything else → Indiekit
+    location / {
+        proxy_pass http://10.100.0.20:3000;
+    }
+}
+```
+
+### Key environment variables (node jail `.env`)
+
+| Variable | Example | Purpose |
+|---|---|---|
+| `INTERNAL_FETCH_URL` | `http://10.100.0.10` | nginx HTTP endpoint for self-fetches |
+| `INDIEKIT_BIND_HOST` | `10.100.0.20` | Jail IP (loopback unavailable in jails); used by webmention poller |
+| `PORT` | `3000` | Indiekit listen port (default 3000) |
 
 ---
 

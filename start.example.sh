@@ -88,7 +88,7 @@ WEBMENTION_ORIGIN="${PUBLICATION_URL:-${SITE_URL:-}}"
     )"
 
     if [ -n "$TOKEN" ]; then
-      RESULT="$(curl -sS -X POST "${WEBMENTION_ENDPOINT}?token=${TOKEN}" 2>&1 || true)"
+      RESULT="$(curl -sS --max-time 300 -X POST -d "" "${WEBMENTION_ENDPOINT}?token=${TOKEN}" 2>&1 || true)"
       echo "[webmention] $(date '+%Y-%m-%d %H:%M:%S') - ${RESULT:-ok}"
     else
       echo "[webmention] $(date '+%Y-%m-%d %H:%M:%S') - token generation failed"

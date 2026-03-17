@@ -60,17 +60,19 @@ done
 "${NODE_BIN}" node_modules/@indiekit/indiekit/bin/cli.js serve --config indiekit.config.mjs &
 INDIEKIT_PID="$!"
 
-# Webmention sender — polls every 5 minutes (see @rmdes/indiekit-endpoint-webmention-sender README)
+# Webmention sender — polls every N seconds (see @rmdes/indiekit-endpoint-webmention-sender README)
+# Routes through INTERNAL_FETCH_URL (nginx) so the request gets correct Host header
+# and X-Forwarded-Proto, avoiding empty-reply issues with direct jail connections.
 WEBMENTION_POLL_INTERVAL="${WEBMENTION_SENDER_POLL_INTERVAL:-300}"
-INDIEKIT_LOCAL_URL="http://${INDIEKIT_BIND_HOST:-127.0.0.1}:${PORT:-3000}"
-WEBMENTION_ENDPOINT="${INDIEKIT_LOCAL_URL}${WEBMENTION_SENDER_MOUNT_PATH:-/webmention-sender}"
+INDIEKIT_INTERNAL_URL="${INTERNAL_FETCH_URL:-http://${INDIEKIT_BIND_HOST:-127.0.0.1}:${PORT:-3000}}"
+WEBMENTION_ENDPOINT="${INDIEKIT_INTERNAL_URL}${WEBMENTION_SENDER_MOUNT_PATH:-/webmention-sender}"
 WEBMENTION_ORIGIN="${PUBLICATION_URL:-${SITE_URL:-}}"
 
 (
   echo "[webmention] Starting auto-send polling every ${WEBMENTION_POLL_INTERVAL}s (${WEBMENTION_ENDPOINT})"
   # Wait for indiekit to be ready before first poll (up to 2 minutes)
   _i=0
-  until curl -sf "${INDIEKIT_LOCAL_URL}/status" -o /dev/null 2>&1; do
+  until curl -sf "${INDIEKIT_INTERNAL_URL}/status" -o /dev/null 2>&1; do
     _i=$((_i + 1))
     [ $_i -lt 60 ] || { echo "[webmention] Warning: indiekit not ready after 120s, proceeding anyway"; break; }
     sleep 2

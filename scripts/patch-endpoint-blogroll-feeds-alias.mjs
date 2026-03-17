@@ -42,21 +42,25 @@ const patchSpecs = [
     // rssapi dual-mount alias: register the same public routes at /rssapi
     // with a response-shape transformer so the /news static page works.
     // The /news page expects: item.link (not .url), item.feedId (not .blog.id),
-    // item.sourceUrl (not .blog.siteUrl), and feedsRes.feeds (not .items).
+    // item.feedTitle/sourceTitle (not .blog.title), item.sourceUrl (not .blog.siteUrl),
+    // item.author (fallback to .blog.title), and feedsRes.feeds (not .items).
     const rssapiRouter = express.Router();
     rssapiRouter.use((req, res, next) => {
       const originalJson = res.json.bind(res);
       res.json = function (data) {
         if (data && Array.isArray(data.items)) {
           if (req.path.startsWith("/api/items")) {
-            // Map url->link, blog.id->feedId, blog.siteUrl->sourceUrl
+            // Map url->link, blog->flat feed fields
             data = {
               ...data,
               items: data.items.map((item) => ({
                 ...item,
                 link: item.url,
                 feedId: item.blog?.id ?? null,
+                feedTitle: item.blog?.title ?? null,
                 sourceUrl: item.blog?.siteUrl ?? null,
+                sourceTitle: item.blog?.title ?? null,
+                author: item.author || item.blog?.title || null,
               })),
             };
           } else if (req.path === "/api/feeds") {

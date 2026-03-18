@@ -463,7 +463,7 @@ export default {
       mountPath: "/readlater",
     },
     "@rmdes/indiekit-endpoint-cv": {
-      mountPath: "/cv",
+      mountPath: "/cv-editor",
     },
 };
 

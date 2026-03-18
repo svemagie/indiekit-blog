@@ -9,6 +9,10 @@
  * 2. Don't permanently mark a post as webmention-sent when the live page
  *    is unreachable (e.g. deploy still in progress). Skip it silently so
  *    the next poll retries it.
+ *
+ * Handles both the original upstream code and the state left by the older
+ * patch-webmention-sender-retry.mjs (which only fixed the fetch-failure
+ * path but not the always-fetch-live path).
  */
 
 import { access, readFile, writeFile } from "node:fs/promises";
@@ -18,6 +22,7 @@ const filePath =
 
 const patchMarker = "// [patched:livefetch]";
 
+// Original upstream code
 const originalBlock = `        // If no content, try fetching the published page
         let contentToProcess = postContent;
         if (!contentToProcess) {
@@ -32,6 +37,37 @@ const originalBlock = `        // If no content, try fetching the published page
         }
 
         if (!contentToProcess) {
+          console.log(\`[webmention] No content to process for \${postUrl}\`);
+          await markWebmentionsSent(postsCollection, postUrl, { sent: [], failed: [], skipped: [] });
+          continue;
+        }`;
+
+// State left by older patch-webmention-sender-retry.mjs (which only fixed the
+// fetch-failure path but not the live-fetch-always path)
+const retryPatchedBlock = `        // If no content, try fetching the published page
+        let contentToProcess = postContent;
+        let fetchFailed = false;
+        if (!contentToProcess) {
+          try {
+            const pageResponse = await fetch(postUrl);
+            if (pageResponse.ok) {
+              contentToProcess = await pageResponse.text();
+            } else {
+              fetchFailed = true;
+            }
+          } catch (error) {
+            fetchFailed = true;
+            console.log(\`[webmention] Could not fetch \${postUrl}: \${error.message}\`);
+          }
+        }
+
+        if (!contentToProcess) {
+          if (fetchFailed) {
+            // Page not yet available — skip and retry on next poll rather than
+            // permanently marking this post as sent with zero webmentions.
+            console.log(\`[webmention] Page not yet available for \${postUrl}, will retry next poll\`);
+            continue;
+          }
           console.log(\`[webmention] No content to process for \${postUrl}\`);
           await markWebmentionsSent(postsCollection, postUrl, { sent: [], failed: [], skipped: [] });
           continue;
@@ -88,14 +124,20 @@ if (source.includes(patchMarker)) {
   process.exit(0);
 }
 
-if (!source.includes(originalBlock)) {
+const targetBlock = source.includes(originalBlock)
+  ? originalBlock
+  : source.includes(retryPatchedBlock)
+    ? retryPatchedBlock
+    : null;
+
+if (!targetBlock) {
   console.warn(
     "[patch-webmention-sender-livefetch] Target block not found — upstream format may have changed, skipping"
   );
   process.exit(0);
 }
 
-const patched = source.replace(originalBlock, newBlock);
+const patched = source.replace(targetBlock, newBlock);
 
 if (!patched.includes(patchMarker)) {
   console.warn("[patch-webmention-sender-livefetch] Patch validation failed, skipping");

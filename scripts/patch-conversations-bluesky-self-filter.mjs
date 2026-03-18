@@ -42,47 +42,56 @@ const patchSpecs = [
     for (const notification of result.items) {
       // Skip self-interactions (e.g. own account liking/reposting a syndicated post)
       if (ownBskyHandle && (notification.author?.handle || "").toLowerCase() === ownBskyHandle) {
-        continue;
-      }
+        const webmentionSenderCandidates = [
+          "node_modules/@rmdes/indiekit-endpoint-webmention-sender/lib/controllers/webmention-sender.js",
+          "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-webmention-sender/lib/controllers/webmention-sender.js",
+        ];
 
-      let canonicalUrl = null;`,
-  },
-  {
-    name: "conversations-bluesky-api-self-filter",
-    candidates: controllerCandidates,
-    marker: "// Filter out self-interactions from own Bluesky account",
-    oldSnippet: `    const children = items.map(conversationItemToJf2);
+        const patchSpecs = [
+          {
+            name: "conversations-bluesky-scheduler-self-filter",
+            candidates: schedulerCandidates,
+            marker: "// Skip self-interactions",
+            oldSnippet: `    let stored = 0;
 
-    response.set("Cache-Control", "public, max-age=60");`,
-    newSnippet: `    // Filter out self-interactions from own Bluesky account
-    const _selfBskyHandle = (process.env.BLUESKY_IDENTIFIER || process.env.BLUESKY_HANDLE || "").replace(/^@+/, "").toLowerCase();
-    if (_selfBskyHandle) {
-      const _selfBskyUrl = "https://bsky.app/profile/" + _selfBskyHandle;
-      items = items.filter(item => (item.author?.url || "").toLowerCase() !== _selfBskyUrl);
-    }
+            for (const notification of result.items) {
+              let canonicalUrl = null;`,
+            newSnippet: `    let stored = 0;
 
-    const children = items.map(conversationItemToJf2);
+            // Derive own handle from identifier (strip leading @)
+            const ownBskyHandle = (credentials.identifier || "").replace(/^@+/, "").toLowerCase();
 
-    response.set("Cache-Control", "public, max-age=60");`,
-  },
-];
+            for (const notification of result.items) {
+              // Skip self-interactions (e.g. own account liking/reposting a syndicated post)
+              if (ownBskyHandle && (notification.author?.handle || "").toLowerCase() === ownBskyHandle) {
+                continue;
+              }
 
-async function exists(filePath) {
-  try {
-    await access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
+              let canonicalUrl = null;`,
+          },
+          {
+            name: "conversations-bluesky-api-self-filter",
+            candidates: controllerCandidates,
+            marker: "// Filter out self-interactions from own Bluesky account",
+            oldSnippet: `    const children = items.map(conversationItemToJf2);
 
-const checkedFiles = new Set();
-const patchedFiles = new Set();
+            response.set("Cache-Control", "public, max-age=60");`,
+            newSnippet: `    // Filter out self-interactions from own Bluesky account
+            const _selfBskyHandle = (process.env.BLUESKY_IDENTIFIER || process.env.BLUESKY_HANDLE || "").replace(/^@+/, "").toLowerCase();
+            if (_selfBskyHandle) {
+              const _selfBskyUrl = "https://bsky.app/profile/" + _selfBskyHandle;
+              items = items.filter(item => (item.author?.url || "").toLowerCase() !== _selfBskyUrl);
+            }
 
-for (const spec of patchSpecs) {
-  let foundAnyTarget = false;
+            const children = items.map(conversationItemToJf2);
 
-  for (const filePath of spec.candidates) {
+            response.set("Cache-Control", "public, max-age=60");`,
+          },
+          {
+            name: "webmention-sender-bluesky-self-filter",
+            candidates: webmentionSenderCandidates,
+            marker: "// Filter out self Bluesky profile from webmention results",
+            oldSnippet: `  return posts.map((post) => ({
     if (!(await exists(filePath))) {
       continue;
     }
@@ -90,6 +99,29 @@ for (const spec of patchSpecs) {
     foundAnyTarget = true;
     checkedFiles.add(filePath);
 
+            newSnippet: `  // Filter out self Bluesky profile from webmention results
+          const _selfBskyHandle = (process.env.BLUESKY_IDENTIFIER || process.env.BLUESKY_HANDLE || "").replace(/^@+/, "").toLowerCase();
+          const _selfBskyUrl = _selfBskyHandle ? "https://bsky.app/profile/" + _selfBskyHandle : null;
+          return posts.map((post) => {
+            let details = post.properties["webmention-results"]?.details || null;
+            if (_selfBskyUrl && details && typeof details === "object") {
+              // Remove any sent/failed/skipped entries where source is own Bluesky profile
+              for (const key of ["sent", "failed", "skipped"]) {
+                if (Array.isArray(details[key])) {
+                  details[key] = details[key].filter(entry => (entry.source || entry.author || "").toLowerCase() !== _selfBskyUrl);
+                }
+              }
+            }
+            return {
+              url: post.properties.url,
+              sent: post.properties["webmention-results"]?.sent || 0,
+              failed: post.properties["webmention-results"]?.failed || 0,
+              skipped: post.properties["webmention-results"]?.skipped || 0,
+              details,
+              timestamp: post.properties["webmention-results"]?.timestamp,
+            };
+          });`,
+          },
     const source = await readFile(filePath, "utf8");
 
     if (spec.marker && source.includes(spec.marker)) {

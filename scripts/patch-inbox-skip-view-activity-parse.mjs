@@ -43,8 +43,48 @@ const patchSpecs = [
     } else if (ct.includes("application/x-www-form-urlencoded")) {`,
     newSnippet: `    // PeerTube activity+json body fix
     if (ct.includes("application/json") || ct.includes("activity+json") || ct.includes("ld+json")) {
+      // Use original raw bytes when available (set by createFedifyMiddleware buffer guard).
+      // JSON.stringify() changes byte layout, breaking Fedify's HTTP Signature Digest check.
+      body = req._rawBody || JSON.stringify(req.body); // raw body digest fix
+    } else if (ct.includes("application/x-www-form-urlencoded")) {`,
+  },
+
+  // --- Patch 1b: upgrade fromExpressRequest to use _rawBody (fixes Digest verification) ---
+  // Handles files where Patch 1 was already applied but without the _rawBody fix.
+  {
+    name: "from-express-request-raw-body-fix",
+    marker: "req._rawBody || JSON.stringify",
+    oldSnippet: `    // PeerTube activity+json body fix
+    if (ct.includes("application/json") || ct.includes("activity+json") || ct.includes("ld+json")) {
       body = JSON.stringify(req.body);
     } else if (ct.includes("application/x-www-form-urlencoded")) {`,
+    newSnippet: `    // PeerTube activity+json body fix
+    if (ct.includes("application/json") || ct.includes("activity+json") || ct.includes("ld+json")) {
+      // Use original raw bytes when available (set by createFedifyMiddleware buffer guard).
+      // JSON.stringify() changes byte layout, breaking Fedify's HTTP Signature Digest check.
+      body = req._rawBody || JSON.stringify(req.body); // raw body digest fix
+    } else if (ct.includes("application/x-www-form-urlencoded")) {`,
+  },
+
+  // --- Patch 1c: upgrade middleware buffer guard to set _rawBody (fixes Digest verification) ---
+  // Handles files where Patch 2 was already applied but without the _rawBody fix.
+  {
+    name: "inbox-buffer-raw-body-fix",
+    marker: "req._rawBody = _raw",
+    oldSnippet: `        const _chunks = [];
+        for await (const _chunk of req) {
+          _chunks.push(Buffer.isBuffer(_chunk) ? _chunk : Buffer.from(_chunk));
+        }
+        try {
+          req.body = JSON.parse(Buffer.concat(_chunks).toString("utf8"));`,
+    newSnippet: `        const _chunks = [];
+        for await (const _chunk of req) {
+          _chunks.push(Buffer.isBuffer(_chunk) ? _chunk : Buffer.from(_chunk));
+        }
+        const _raw = Buffer.concat(_chunks); // raw body digest fix
+        req._rawBody = _raw; // Preserve original bytes for Fedify HTTP Signature Digest verification
+        try {
+          req.body = JSON.parse(_raw.toString("utf8"));`,
   },
 
   // --- Patch 2a: replace the old (broken) v1 guard with the buffering v2 guard ---
@@ -78,8 +118,10 @@ const patchSpecs = [
         for await (const _chunk of req) {
           _chunks.push(Buffer.isBuffer(_chunk) ? _chunk : Buffer.from(_chunk));
         }
+        const _raw = Buffer.concat(_chunks); // raw body digest fix
+        req._rawBody = _raw; // Preserve original bytes for Fedify HTTP Signature Digest verification
         try {
-          req.body = JSON.parse(Buffer.concat(_chunks).toString("utf8"));
+          req.body = JSON.parse(_raw.toString("utf8"));
         } catch {
           req.body = {};
         }
@@ -117,8 +159,10 @@ const patchSpecs = [
         for await (const _chunk of req) {
           _chunks.push(Buffer.isBuffer(_chunk) ? _chunk : Buffer.from(_chunk));
         }
+        const _raw = Buffer.concat(_chunks); // raw body digest fix
+        req._rawBody = _raw; // Preserve original bytes for Fedify HTTP Signature Digest verification
         try {
-          req.body = JSON.parse(Buffer.concat(_chunks).toString("utf8"));
+          req.body = JSON.parse(_raw.toString("utf8"));
         } catch {
           req.body = {};
         }

@@ -32,16 +32,19 @@ const candidates = [
 
 const MARKER = "// allow private address fix";
 
-const OLD_SNIPPET = `  const federation = createFederation({
+const patchSpecs = [
+  // Case 1: signatureTimeWindow already present (from old patch or fork)
+  {
+    name: "with-signature-time-window",
+    oldSnippet: `  const federation = createFederation({
     kv,
     queue,
     // Accept signatures up to 12 h old. // signature time window fix
     // Mastodon retries failed deliveries with the original signature, which
     // can be hours old by the time the delivery succeeds.
     signatureTimeWindow: { hours: 12 },
-  });`;
-
-const NEW_SNIPPET = `  const federation = createFederation({
+  });`,
+    newSnippet: `  const federation = createFederation({
     kv,
     queue,
     // Accept signatures up to 12 h old. // signature time window fix
@@ -52,7 +55,29 @@ const NEW_SNIPPET = `  const federation = createFederation({
     // blog.giersig.eu resolves to 10.100.0.10 on the home LAN. Without this,
     // Fedify's SSRF guard blocks lookupObject() / WebFinger for own posts.
     allowPrivateAddress: true,
-  });`;
+  });`,
+  },
+  // Case 2: fresh v2.10.1 without signatureTimeWindow — add both
+  {
+    name: "fresh-without-signature-time-window",
+    oldSnippet: `  const federation = createFederation({
+    kv,
+    queue,
+  });`,
+    newSnippet: `  const federation = createFederation({
+    kv,
+    queue,
+    // Accept signatures up to 12 h old. // signature time window fix
+    // Mastodon retries failed deliveries with the original signature, which
+    // can be hours old by the time the delivery succeeds.
+    signatureTimeWindow: { hours: 12 },
+    // Allow fetching own-site URLs that resolve to private IPs. // allow private address fix
+    // blog.giersig.eu resolves to 10.100.0.10 on the home LAN. Without this,
+    // Fedify's SSRF guard blocks lookupObject() / WebFinger for own posts.
+    allowPrivateAddress: true,
+  });`,
+  },
+];
 
 async function exists(filePath) {
   try {
@@ -72,26 +97,27 @@ for (const filePath of candidates) {
   }
 
   checked += 1;
-  const source = await readFile(filePath, "utf8");
+  let source = await readFile(filePath, "utf8");
 
   if (source.includes(MARKER) || source.includes("allowPrivateAddress")) {
     continue;
   }
 
-  if (!source.includes(OLD_SNIPPET)) {
-    console.log(`[postinstall] patch-ap-allow-private-address: snippet not found in ${filePath} — skipping`);
-    continue;
+  let applied = false;
+  for (const spec of patchSpecs) {
+    if (!source.includes(spec.oldSnippet)) continue;
+    const updated = source.replace(spec.oldSnippet, spec.newSnippet);
+    if (updated === source) continue;
+    await writeFile(filePath, updated, "utf8");
+    patched += 1;
+    applied = true;
+    console.log(`[postinstall] Applied patch-ap-allow-private-address (${spec.name}) to ${filePath}`);
+    break;
   }
 
-  const updated = source.replace(OLD_SNIPPET, NEW_SNIPPET);
-
-  if (updated === source) {
-    continue;
+  if (!applied) {
+    console.log(`[postinstall] patch-ap-allow-private-address: no matching snippet in ${filePath} — skipping`);
   }
-
-  await writeFile(filePath, updated, "utf8");
-  patched += 1;
-  console.log(`[postinstall] Applied patch-ap-allow-private-address to ${filePath}`);
 }
 
 if (checked === 0) {

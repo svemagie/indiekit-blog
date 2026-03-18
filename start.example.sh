@@ -77,7 +77,8 @@ WEBMENTION_ORIGIN="${PUBLICATION_URL:-${SITE_URL:-}}"
     [ $_i -lt 60 ] || { echo "[webmention] Warning: indiekit not ready after 120s, proceeding anyway"; break; }
     sleep 2
   done
-  echo "[webmention] Indiekit ready"
+  echo "[webmention] Indiekit ready, waiting 5s for plugins to finish loading…"
+  sleep 5
   while true; do
     TOKEN="$(
       WEBMENTION_ORIGIN="$WEBMENTION_ORIGIN" WEBMENTION_SECRET="$SECRET" \

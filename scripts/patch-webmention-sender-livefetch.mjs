@@ -81,11 +81,11 @@ const newBlock = `        // [patched:livefetch] Always fetch the live page so t
         let contentToProcess = "";
         try {
           const _wmInternalBase = (() => {
-            if (process.env.INTERNAL_FETCH_URL) return process.env.INTERNAL_FETCH_URL.replace(/\\\\/+$/, "");
+            if (process.env.INTERNAL_FETCH_URL) return process.env.INTERNAL_FETCH_URL.replace(/\\/+$/, "");
             const port = process.env.PORT || "3000";
-            return \\\`http://localhost:\\\${port}\\\`;
+            return \`http://localhost:\${port}\`;
           })();
-          const _wmPublicBase = (process.env.PUBLICATION_URL || process.env.SITE_URL || "").replace(/\\\\/+$/, "");
+          const _wmPublicBase = (process.env.PUBLICATION_URL || process.env.SITE_URL || "").replace(/\\/+$/, "");
           const fetchUrl = (_wmPublicBase && postUrl.startsWith(_wmPublicBase))
             ? _wmInternalBase + postUrl.slice(_wmPublicBase.length)
             : postUrl;

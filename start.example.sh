@@ -70,15 +70,16 @@ WEBMENTION_ORIGIN="${PUBLICATION_URL:-${SITE_URL:-}}"
 
 (
   echo "[webmention] Starting auto-send polling every ${WEBMENTION_POLL_INTERVAL}s (${WEBMENTION_ENDPOINT})"
-  # Wait for indiekit to be ready before first poll (up to 2 minutes)
+  # Wait for the webmention-sender endpoint itself to be ready (up to 3 minutes).
+  # Using the plugin's own /api/status ensures MongoDB collections and plugin
+  # routes are fully initialised, not just the bare Express server.
   _i=0
-  until curl -sf "${INDIEKIT_INTERNAL_URL}/status" -o /dev/null 2>&1; do
+  until curl -sf "${WEBMENTION_ENDPOINT}/api/status" -o /dev/null 2>&1; do
     _i=$((_i + 1))
-    [ $_i -lt 60 ] || { echo "[webmention] Warning: indiekit not ready after 120s, proceeding anyway"; break; }
+    [ $_i -lt 90 ] || { echo "[webmention] Warning: webmention-sender not ready after 180s, proceeding anyway"; break; }
     sleep 2
   done
-  echo "[webmention] Indiekit ready, waiting 5s for plugins to finish loading…"
-  sleep 5
+  echo "[webmention] Webmention sender ready"
   while true; do
     TOKEN="$(
       WEBMENTION_ORIGIN="$WEBMENTION_ORIGIN" WEBMENTION_SECRET="$SECRET" \

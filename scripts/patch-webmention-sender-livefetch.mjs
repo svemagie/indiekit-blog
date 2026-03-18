@@ -55,7 +55,8 @@ const newBlock = `        // [patched:livefetch] Always fetch the live page so t
             : postUrl;
           const _ac = new AbortController();
           const _timeout = setTimeout(() => _ac.abort(), 15000);
-          const pageResponse = await fetch(fetchUrl, { signal: _ac.signal });
+          const _fetchHost = new URL(postUrl).host;
+          const pageResponse = await fetch(fetchUrl, { signal: _ac.signal, headers: { "Host": _fetchHost } });
           clearTimeout(_timeout);
           if (pageResponse.ok) {
             contentToProcess = await pageResponse.text();

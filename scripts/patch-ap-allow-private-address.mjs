@@ -33,9 +33,33 @@ const candidates = [
 const MARKER = "// allow private address fix";
 
 const patchSpecs = [
-  // Case 1: signatureTimeWindow already present (from old patch or fork)
+  // Case 1: v2.15+ — signatureTimeWindow present, upstream comment style (no marker suffix)
   {
-    name: "with-signature-time-window",
+    name: "upstream-v2.15-with-signature-time-window",
+    oldSnippet: `  const federation = createFederation({
+    kv,
+    queue,
+    // Accept signatures up to 12 h old.
+    // Mastodon retries failed deliveries with the original signature, which
+    // can be hours old by the time the delivery succeeds.
+    signatureTimeWindow: { hours: 12 },
+  });`,
+    newSnippet: `  const federation = createFederation({
+    kv,
+    queue,
+    // Accept signatures up to 12 h old.
+    // Mastodon retries failed deliveries with the original signature, which
+    // can be hours old by the time the delivery succeeds.
+    signatureTimeWindow: { hours: 12 },
+    // Allow fetching own-site URLs that resolve to private IPs. // allow private address fix
+    // blog.giersig.eu resolves to 10.100.0.10 on the home LAN. Without this,
+    // Fedify's SSRF guard blocks lookupObject() / WebFinger for own posts.
+    allowPrivateAddress: true,
+  });`,
+  },
+  // Case 2: signatureTimeWindow present with old marker comment style
+  {
+    name: "with-signature-time-window-marker",
     oldSnippet: `  const federation = createFederation({
     kv,
     queue,
@@ -57,7 +81,7 @@ const patchSpecs = [
     allowPrivateAddress: true,
   });`,
   },
-  // Case 2: fresh v2.10.1 without signatureTimeWindow — add both
+  // Case 3: fresh install without signatureTimeWindow — add both
   {
     name: "fresh-without-signature-time-window",
     oldSnippet: `  const federation = createFederation({

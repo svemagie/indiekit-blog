@@ -12,14 +12,14 @@ Four packages are installed directly from GitHub forks rather than the npm regis
 
 | Dependency | Source | Reason |
 |---|---|---|
-| `@rmdes/indiekit-endpoint-activitypub` | [svemagie/indiekit-endpoint-activitypub](https://github.com/svemagie/indiekit-endpoint-activitypub) | Alpine.js fix for reader buttons + private-address document loader for self-hosted Fedify instances |
+| `@rmdes/indiekit-endpoint-activitypub` | [svemagie/indiekit-endpoint-activitypub](https://github.com/svemagie/indiekit-endpoint-activitypub) | DM support, Like/Announce addressing, draft/unlisted outbox guards, merged with upstream v2.15.4 |
 | `@rmdes/indiekit-endpoint-blogroll` | [svemagie/indiekit-endpoint-blogroll#bookmark-import](https://github.com/svemagie/indiekit-endpoint-blogroll/tree/bookmark-import) | Bookmark import feature |
 | `@rmdes/indiekit-endpoint-microsub` | [svemagie/indiekit-endpoint-microsub#bookmarks-import](https://github.com/svemagie/indiekit-endpoint-microsub/tree/bookmarks-import) | Bookmarks import feature |
 | `@rmdes/indiekit-endpoint-youtube` | [svemagie/indiekit-endpoint-youtube](https://github.com/svemagie/indiekit-endpoint-youtube) | OAuth 2.0 liked-videos sync as "like" posts |
 
 In `package.json` these use the `github:owner/repo[#branch]` syntax so npm fetches them directly from GitHub on install.
 
-> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The current lockfile pins to `eefa46f` (v2.10.1); the fork HEAD is at `d143abf` with Like/Announce addressing and nested tag fixes baked in.
+> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `b99f5fb` (merged upstream v2.13.0–v2.15.4 with DM support, Like/Announce addressing, and draft/unlisted guards).
 
 ---
 
@@ -130,8 +130,8 @@ Posts are converted from Indiekit's JF2 format to ActivityStreams 2.0 in two mod
 |---|---|---|---|
 | note | Create | Note | Plain text/HTML content |
 | article | Create | Article | Has `name` (title) and optional `summary` |
-| like | Like | URL | `to: Public, cc: followers`; outbox serves as Note for Mastodon compat |
-| repost | Announce | URL | `to: Public, cc: followers`; outbox serves as Note for Mastodon compat |
+| like | Like | URL | `to: Public, cc: followers` (baked into fork); outbox serves as Note for Mastodon compat |
+| repost | Announce | URL | `to: Public, cc: followers` (baked into fork); outbox serves as Note for Mastodon compat |
 | bookmark | Create | Note | Content prefixed with bookmark emoji + URL |
 | reply | Create | Note | `inReplyTo` set, author CC'd and Mentioned |
 
@@ -164,12 +164,7 @@ These patches are applied to `node_modules` via postinstall and at serve startup
 | Patch | Target | What it does |
 |---|---|---|
 | `patch-ap-allow-private-address` | federation-setup.js | Adds `signatureTimeWindow` and `allowPrivateAddress` to `createFederation()` |
-| `patch-ap-object-url-trailing-slash` | federation-setup.js | Object dispatcher uses `$in` query to match URLs with/without trailing slash |
 | `patch-ap-url-lookup-api` | Adds new route | Public `GET /activitypub/api/ap-url` resolves blog URL → AP object URL |
-| `patch-ap-like-announce-addressing` | jf2-to-as2.js | Adds `to: Public, cc: followers` to Like and Announce activities for shared inbox routing |
-| `patch-ap-normalize-nested-tags` | jf2-to-as2.js | Strips path prefix from nested hashtags (`on/art/music` → `#music`) |
-| `patch-inbox-skip-view-activity-parse` | federation-bridge.js | Buffers body, skips PeerTube View, preserves `_rawBody` for Digest verification |
-| `patch-inbox-ignore-view-activity` | inbox-listeners.js | Registers no-op View handler to suppress "Unsupported activity type" errors |
 | `patch-federation-unlisted-guards` | endpoint-syndicate | Prevents unlisted posts from being re-syndicated (AP fork has this natively) |
 | `patch-endpoint-activitypub-locales` | locales | Injects German (`de`) translations for the AP endpoint UI |
 
@@ -406,23 +401,8 @@ Patches are Node.js `.mjs` scripts in `scripts/` that surgically modify files in
 **`patch-ap-allow-private-address.mjs`**
 Adds `signatureTimeWindow: { hours: 12 }` and `allowPrivateAddress: true` to `createFederation()`. Handles both fresh v2.10.1 and already-patched files. Without this, Fedify rejects Mastodon retry signatures and blocks own-site URL resolution on the private LAN.
 
-**`patch-ap-like-announce-addressing.mjs`**
-Adds `to: Public, cc: followers` to Like activities and `cc: followers` to Announce activities in `jf2ToAS2Activity()`. Without this, Mastodon shared inboxes accept the activities (HTTP 202) but silently drop them because they lack the followers collection in their addressing. Create/Note activities were already correctly addressed.
-
-**`patch-ap-normalize-nested-tags.mjs`**
-Strips path prefix from nested hashtags in JF2→AS2 conversion (`on/art/music` → `#music`). Mastodon doesn't support slash-delimited tag paths.
-
-**`patch-ap-object-url-trailing-slash.mjs`**
-Replaces exact-match `findOne()` in the object dispatcher with a `$in` query that tries both `postUrl` and `postUrl + "/"`. Posts in MongoDB have trailing slashes; AP object URLs don't.
-
 **`patch-ap-url-lookup-api.mjs`**
 Adds a public `GET /activitypub/api/ap-url?url=` endpoint that resolves a blog post URL to its canonical Fedify-served AP object URL. Used by the "Also on fediverse" widget for `authorize_interaction`.
-
-**`patch-inbox-skip-view-activity-parse.mjs`**
-Buffers incoming ActivityPub request bodies, short-circuits PeerTube View activities (returns 200), and preserves original bytes in `req._rawBody` for HTTP Signature Digest verification. Without the raw body preservation, `JSON.stringify()` produces different bytes and Fedify rejects all incoming activities.
-
-**`patch-inbox-ignore-view-activity.mjs`**
-Registers a no-op `.on(View, ...)` inbox handler to suppress "Unsupported activity type" error logs from PeerTube watch broadcasts.
 
 **`patch-endpoint-activitypub-locales.mjs`**
 Injects German (`de`) locale overrides into `@rmdes/indiekit-endpoint-activitypub` (e.g. "Benachrichtigungen", "Mein Profil"). The package ships only an English locale; this copies and customises it.
@@ -666,11 +646,12 @@ Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.
 
 ### 2026-03-19
 
-**fix: add cc:followers addressing to AP Like/Announce activities** (`bee8df2`)
-Like and Announce activities were missing the followers collection in their `to`/`cc` addressing. Mastodon shared inboxes silently drop activities without `cc: followers`, so likes and reposts were delivered (HTTP 202) but never appeared on remote instances. Fix applied to both the fork source and as a patch script (`patch-ap-like-announce-addressing.mjs`).
+**chore: merge upstream rmdes:main v2.13.0–v2.15.4 into fork** (`b99f5fb`)
+Merged 15 upstream commits adding: manual follow approval, custom emoji, FEP-8fcf/fe34 compliance (v2.13.0), server blocking, Redis caching, key refresh, async inbox queue (v2.14.0), outbox failure handling with strike system, reply chain forwarding, reply intelligence in reader (v2.15.0–v2.15.4), CW `content-warning` property, soft-delete filtering, `as:Endpoints` type stripping. Preserved our DM compose path, Like/Announce addressing, draft/unlisted outbox guards.
 
-**chore: update activitypub endpoint fork** (`d143abf`)
-Pushed Like/Announce addressing fix and nested tag normalization directly to the `svemagie/indiekit-endpoint-activitypub` fork.
+**chore: remove 5 obsolete AP patches** — `patch-ap-object-url-trailing-slash`, `patch-ap-normalize-nested-tags`, `patch-ap-like-announce-addressing`, `patch-inbox-skip-view-activity-parse`, `patch-inbox-ignore-view-activity` are now baked into the fork source.
+
+**fix: update patch-ap-allow-private-address for v2.15 comment style** — The upstream `createFederation` block changed its comment format; updated the patch to match.
 
 ### 2026-03-14
 

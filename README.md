@@ -8,13 +8,14 @@ Built on top of the [rmdes/indiekit](https://github.com/rmdes/indiekit) fork eco
 
 ## Fork-based dependencies
 
-Three packages are installed directly from GitHub forks rather than the npm registry:
+Four packages are installed directly from GitHub forks rather than the npm registry:
 
 | Dependency | Source | Reason |
 |---|---|---|
 | `@rmdes/indiekit-endpoint-activitypub` | [svemagie/indiekit-endpoint-activitypub](https://github.com/svemagie/indiekit-endpoint-activitypub) | Alpine.js fix for reader buttons + private-address document loader for self-hosted Fedify instances |
 | `@rmdes/indiekit-endpoint-blogroll` | [svemagie/indiekit-endpoint-blogroll#bookmark-import](https://github.com/svemagie/indiekit-endpoint-blogroll/tree/bookmark-import) | Bookmark import feature |
 | `@rmdes/indiekit-endpoint-microsub` | [svemagie/indiekit-endpoint-microsub#bookmarks-import](https://github.com/svemagie/indiekit-endpoint-microsub/tree/bookmarks-import) | Bookmarks import feature |
+| `@rmdes/indiekit-endpoint-youtube` | [svemagie/indiekit-endpoint-youtube](https://github.com/svemagie/indiekit-endpoint-youtube) | OAuth 2.0 liked-videos sync as "like" posts |
 
 In `package.json` these use the `github:owner/repo[#branch]` syntax so npm fetches them directly from GitHub on install.
 
@@ -308,6 +309,83 @@ The live page fetch is failing every time. Check:
 
 **Previously failed posts not retrying**
 Run the stale-reset migration: `node scripts/patch-webmention-sender-reset-stale.mjs`. It resets all posts marked as sent with 0/0/0 results. It's idempotent (guarded by a migration ID in MongoDB).
+
+---
+
+## YouTube likes sync
+
+The blog syncs YouTube liked videos as IndieWeb "like" posts. Powered by the forked `@rmdes/indiekit-endpoint-youtube` with an added OAuth 2.0 flow.
+
+### How it works
+
+```
+First sync after connecting:
+  YouTube API → fetch all liked video IDs → store in youtubeLikesSeen collection
+  (no posts created — baseline snapshot only)
+
+Every subsequent sync (hourly background + manual trigger):
+  YouTube API → fetch liked videos → compare against youtubeLikesSeen
+    ↓ new like found (not in seen set)
+  Insert into youtubeLikesSeen + create "like" post in posts collection
+    ↓ already seen
+  Skip
+```
+
+Only likes added **after** the initial connection produce posts. Existing likes (e.g. 200 historical ones) are baselined without generating posts.
+
+### OAuth 2.0 setup
+
+The YouTube Data API requires OAuth 2.0 (not just an API key) to access a user's liked videos.
+
+1. Create an **OAuth 2.0 Client ID** (Web application) in [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+2. Add authorized redirect URI: `https://blog.giersig.eu/youtube/likes/callback`
+3. Ensure **YouTube Data API v3** is enabled for the project
+4. Set environment variables:
+
+| Variable | Description |
+|---|---|
+| `YOUTUBE_OAUTH_CLIENT_ID` | OAuth 2.0 client ID |
+| `YOUTUBE_OAUTH_CLIENT_SECRET` | OAuth 2.0 client secret |
+
+> **Brand Account caveat:** If your YouTube channel runs under a Brand Account, you must authorize the Brand Account (not your personal Google account) during the OAuth consent screen. The `myRating=like` API call only returns likes for the authenticated account. If you see "account is closed", you selected the wrong account.
+
+### Routes
+
+| Route | Auth | Description |
+|---|---|---|
+| `GET /youtube/likes` | Yes | Dashboard: OAuth status, sync info, controls |
+| `GET /youtube/likes/connect` | Yes | Starts OAuth flow (redirects to Google) |
+| `GET /youtube/likes/callback` | No | OAuth callback (Google redirects here) |
+| `POST /youtube/likes/disconnect` | Yes | Removes stored tokens |
+| `POST /youtube/likes/sync` | Yes | Triggers manual sync |
+| `GET /youtube/api/likes` | No | Public JSON API (`?limit=N&offset=N`) |
+
+### MongoDB collections
+
+| Collection | Purpose |
+|---|---|
+| `youtubeMeta` | OAuth tokens (`key: "oauth_tokens"`), sync status (`key: "likes_sync"`), baseline flag (`key: "likes_baseline"`) |
+| `youtubeLikesSeen` | Set of all video IDs seen so far (indexed on `videoId`, unique). Prevents duplicate post creation and ensures only new likes after baseline produce posts. |
+
+### Configuration
+
+```javascript
+"@rmdes/indiekit-endpoint-youtube": {
+  oauth: {
+    clientId: process.env.YOUTUBE_OAUTH_CLIENT_ID,
+    clientSecret: process.env.YOUTUBE_OAUTH_CLIENT_SECRET,
+  },
+  likes: {
+    syncInterval: 3_600_000,  // 1 hour (default)
+    maxPages: 3,              // 50 likes/page → up to 150 per sync
+    autoSync: true,           // background periodic sync
+  },
+},
+```
+
+### Quota usage
+
+`videos.list?myRating=like` costs **1 quota unit per page** (50 videos). With defaults (3 pages/sync, hourly): ~72 units/day out of the 10,000 daily quota.
 
 ---
 

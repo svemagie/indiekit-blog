@@ -197,6 +197,120 @@ The body buffering patch must preserve raw bytes in `req._rawBody`. If `JSON.str
 
 ---
 
+## Outgoing webmentions
+
+The blog sends [webmentions](https://www.w3.org/TR/webmention/) to every external URL found in a published post. This is handled by the `@rmdes/indiekit-endpoint-webmention-sender` plugin, extended by several patches and a shell-based poller.
+
+### How it works
+
+```
+Post created via Micropub → saved to MongoDB
+    ↓
+Shell poller (every 300s) POSTs to /webmention-sender?token=JWT
+    ↓
+Plugin queries MongoDB for posts with webmention-sent != true
+    ↓
+For each unsent post:
+  1. Fetch the live HTML page (not stored content)
+  2. Parse with microformats — scope to .h-entry
+  3. Extract all <a href="…"> links
+  4. Filter to external links only
+  5. For each link: discover webmention endpoint via <link> / HTTP header
+  6. Send webmention (source=postUrl, target=linkUrl)
+  7. Mark post as webmention-sent with results {sent, failed, skipped}
+```
+
+### Why live-fetch instead of stored content
+
+Post content stored in MongoDB (`post.properties.content.html`) is just the post body text. It does **not** contain the microformat links rendered by the Eleventy templates:
+
+- `u-in-reply-to` — rendered by `reply-context.njk` inside the `.h-entry` wrapper
+- `u-like-of` — same template
+- `u-repost-of` — same template
+- `u-bookmark-of` — same template
+
+These links only exist in the live HTML page, so the webmention sender must always fetch the rendered page to discover them. This is what `patch-webmention-sender-livefetch.mjs` does.
+
+### Poller architecture (start.sh)
+
+The webmention sender plugin does not have its own scheduling — it exposes an HTTP endpoint that triggers a scan when POSTed to. The `start.sh` script runs a background shell loop:
+
+1. **Readiness check** — polls `GET /webmention-sender/api/status` every 2s until it returns 200 (up to 3 minutes). This ensures MongoDB collections and plugin routes are fully initialised before the first scan.
+2. **JWT generation** — mints a short-lived token (`{ me, scope: "update" }`, 5-minute expiry) signed with `SECRET`.
+3. **POST trigger** — `curl -X POST /webmention-sender?token=JWT` triggers one scan cycle.
+4. **Sleep** — waits `WEBMENTION_SENDER_POLL_INTERVAL` seconds (default 300 = 5 minutes), then repeats.
+
+The poller routes through nginx (`INTERNAL_FETCH_URL`) rather than hitting Indiekit directly, so the request arrives with correct `Host` and `X-Forwarded-Proto` headers.
+
+### Internal URL rewriting
+
+When the livefetch patch fetches a post's live page, it rewrites the URL from the public domain to the internal nginx address:
+
+```
+https://blog.giersig.eu/replies/693e6/
+    ↓ rewrite via INTERNAL_FETCH_URL
+http://10.100.0.10/replies/693e6/
+    ↓ nginx proxies to Indiekit
+http://10.100.0.20:3000/replies/693e6/
+```
+
+Without this, the node jail cannot reach its own public HTTPS URL (TLS terminates on the web jail). The fallback chain is:
+
+1. `INTERNAL_FETCH_URL` environment variable (production: `http://10.100.0.10`)
+2. `http://localhost:${PORT}` (development)
+
+### Retry behaviour
+
+If the live page fetch fails (e.g. deploy still in progress, 502 from nginx), the post is **not** marked as sent. It stays in the "unsent" queue and is retried on the next poll cycle. This prevents the original upstream bug where a failed fetch would permanently mark the post as sent with zero webmentions.
+
+### Patches
+
+| Patch | Purpose |
+|---|---|
+| `patch-webmention-sender-livefetch.mjs` | Always fetch live HTML instead of stored content; rewrite URL for jailed setups; skip (don't mark sent) on fetch failure |
+| `patch-webmention-sender-retry.mjs` | Predecessor to livefetch — only fixed the fetch-failure path. Now a no-op because livefetch runs first and is a superset. Kept for safety in case livefetch fails to apply. |
+| `patch-webmention-sender-reset-stale.mjs` | One-time MongoDB migration: resets posts incorrectly marked as sent with 0/0/0 results. Guarded by `migrations` collection (`webmention-sender-reset-stale-v8`). |
+| `patch-webmention-sender-empty-details.mjs` | UI patch: shows "No external links discovered" in the dashboard when a post was processed but had no outbound links (instead of a blank row). |
+
+### Patch ordering
+
+Patches run alphabetically via `for patch in scripts/patch-*.mjs`. For webmention patches:
+
+1. `patch-webmention-sender-empty-details.mjs` — targets the `.njk` template (independent)
+2. `patch-webmention-sender-livefetch.mjs` — replaces the fetch block in `webmention-sender.js`
+3. `patch-webmention-sender-reset-stale.mjs` — MongoDB migration (independent)
+4. `patch-webmention-sender-retry.mjs` — targets the same fetch block, but it's already gone (livefetch replaced it), so it reports "already applied" and skips
+
+### Environment variables
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `WEBMENTION_SENDER_POLL_INTERVAL` | `300` | Seconds between poll cycles |
+| `WEBMENTION_SENDER_MOUNT_PATH` | `/webmention-sender` | Plugin mount path in Express |
+| `WEBMENTION_SENDER_TIMEOUT` | `10000` | Per-endpoint send timeout (ms) |
+| `WEBMENTION_SENDER_USER_AGENT` | `"Indiekit Webmention Sender"` | User-Agent for outgoing requests |
+| `INTERNAL_FETCH_URL` | — | Internal nginx URL for self-fetches (e.g. `http://10.100.0.10`) |
+| `SECRET` | _(required)_ | JWT signing secret for poller authentication |
+
+### Troubleshooting
+
+**"No external links discovered in this post"**
+The live page was fetched successfully but no `<a href>` tags with external URLs were found inside the `.h-entry`. Check that the post's Eleventy template renders the microformat links (`u-like-of`, etc.) correctly.
+
+**502 Bad Gateway on first poll**
+The readiness check (`/webmention-sender/api/status`) should prevent this. If it still happens, the plugin may have registered its routes but MongoDB isn't ready yet. Increase the readiness timeout or check MongoDB connectivity.
+
+**Posts stuck as "not sent" / retrying every cycle**
+The live page fetch is failing every time. Check:
+1. `INTERNAL_FETCH_URL` is set and nginx port 80 is reachable from the node jail
+2. nginx port 80 has `proxy_set_header X-Forwarded-Proto https` (prevents redirect loop)
+3. The post URL actually resolves to a page (not a 404)
+
+**Previously failed posts not retrying**
+Run the stale-reset migration: `node scripts/patch-webmention-sender-reset-stale.mjs`. It resets all posts marked as sent with 0/0/0 results. It's idempotent (guarded by a migration ID in MongoDB).
+
+---
+
 ## Patch scripts
 
 Patches are Node.js `.mjs` scripts in `scripts/` that surgically modify files in `node_modules` after install. They are idempotent (check for a marker string before applying) and run automatically via `postinstall` and at the start of `serve`.

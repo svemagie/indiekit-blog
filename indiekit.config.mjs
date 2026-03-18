@@ -444,6 +444,15 @@ export default {
       limits: {
         videos: 10,
       },
+      oauth: {
+        clientId: process.env.YOUTUBE_OAUTH_CLIENT_ID || "",
+        clientSecret: process.env.YOUTUBE_OAUTH_CLIENT_SECRET || "",
+      },
+      likes: {
+        syncInterval: 3_600_000,  // 1 hour
+        maxPages: 3,              // up to 150 likes per sync
+        autoSync: true,
+      },
     },
     "@rmdes/indiekit-syndicator-indienews": {
       languages: ["en", "de"],

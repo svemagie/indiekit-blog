@@ -17,9 +17,11 @@ const newCode = `    // Post type
     const type = getPostType(postTypes, properties);
     properties["post-type"] = type;
 
-    // Default OwnYourSwarm /where check-in notes to unlisted unless explicitly set.
+    // Force OwnYourSwarm /where check-in notes to unlisted so they are
+    // hidden from the blog, syndication targets, and ActivityPub federation.
+    // OwnYourSwarm may send visibility:"private" which Indiekit does not
+    // recognise, so we always override to "unlisted" for these posts.
     const hasCheckinProperty = Object.prototype.hasOwnProperty.call(properties, "checkin");
-    const hasVisibility = Object.prototype.hasOwnProperty.call(properties, "visibility");
     const syndicationValues = Array.isArray(properties.syndication)
       ? properties.syndication
       : properties.syndication
@@ -31,7 +33,6 @@ const newCode = `    // Post type
 
     if (
       type === "note" &&
-      !hasVisibility &&
       (hasCheckinProperty || hasSwarmSyndication)
     ) {
       properties.visibility = "unlisted";

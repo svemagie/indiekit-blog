@@ -49,7 +49,7 @@ const newBlock = `        // [patched:livefetch] Always fetch the live page so t
             const port = process.env.PORT || "3000";
             return \`http://localhost:\${port}\`;
           })();
-          const _publicBase = (process.env.PUBLICATION_URL || process.env.SITE_URL || "").replace(/\\/+$/, "");
+          const _publicBase = (process.env.PUBLICATION_URL || process.env.SITE_URL || siteUrl || "").replace(/\\/+$/, "");
           const fetchUrl = (_publicBase && postUrl.startsWith(_publicBase))
             ? _internalBase + postUrl.slice(_publicBase.length)
             : postUrl;

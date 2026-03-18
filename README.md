@@ -18,6 +18,183 @@ Three packages are installed directly from GitHub forks rather than the npm regi
 
 In `package.json` these use the `github:owner/repo[#branch]` syntax so npm fetches them directly from GitHub on install.
 
+> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The current lockfile pins to `eefa46f` (v2.10.1); the fork HEAD is at `8b9bff4` with additional AP reliability fixes baked in.
+
+---
+
+## ActivityPub federation
+
+The blog is a native ActivityPub actor (`@svemagie@blog.giersig.eu`) powered by [Fedify](https://fedify.dev/) v2.0.3 via the `@rmdes/indiekit-endpoint-activitypub` package. All federation routes are mounted at `/activitypub`.
+
+### Actor identity
+
+| Field | Value |
+|---|---|
+| Handle | `svemagie` (`AP_HANDLE` env var) |
+| Actor URL | `https://blog.giersig.eu/activitypub/users/svemagie` |
+| Actor type | `Person` |
+| WebFinger | `acct:svemagie@blog.giersig.eu` |
+| Migration alias | `https://troet.cafe/users/svemagie` (`AP_ALSO_KNOWN_AS`) |
+
+### Key management
+
+Two key pairs are persisted in MongoDB (`ap_keys` collection) and loaded by the key pairs dispatcher:
+
+| Algorithm | Purpose | Storage format | Generation |
+|---|---|---|---|
+| RSA 2048-bit | HTTP Signatures (Mastodon/Pleroma standard) | PEM (`publicKeyPem` + `privateKeyPem`) | `preflight-activitypub-rsa-key.mjs` at startup |
+| Ed25519 | Object Integrity Proofs (newer standard) | JWK (`publicKeyJwk` + `privateKeyJwk`) | Auto-generated on first use |
+
+The RSA key is mandatory. The preflight script generates it if missing and repairs broken documents. Ed25519 is optional and fails gracefully.
+
+### Message queue and delivery
+
+```
+Post created via Micropub
+    ↓
+syndicator.syndicate(properties)
+    ↓
+jf2ToAS2Activity() → Create/Like/Announce
+    ↓
+ctx.sendActivity({ identifier }, "followers", activity, {
+    preferSharedInbox: true,     // batch by shared inbox
+    syncCollection: true,        // FEP-8fcf collection sync
+    orderingKey: postUrl,        // deduplication
+})
+    ↓
+Redis message queue (5 parallel workers)
+    ↓
+Fedify signs with RSA key → HTTP POST to follower inboxes
+```
+
+**Queue backends:**
+
+| Backend | When used | Notes |
+|---|---|---|
+| `RedisMessageQueue` + `ParallelMessageQueue` (5 workers) | `REDIS_URL` is set | Production: persistent, survives restarts |
+| `InProcessMessageQueue` | No Redis | **Not production-safe**: queue lost on restart |
+
+**KV store:** Redis (`RedisKvStore`) when available, otherwise MongoDB (`MongoKvStore`). Stores idempotence records, public key cache, remote document cache.
+
+### Federation options
+
+```javascript
+createFederation({
+    kv,
+    queue,
+    signatureTimeWindow: { hours: 12 },  // accept Mastodon retry signatures
+    allowPrivateAddress: true,            // own-site resolves to 10.100.0.10
+});
+```
+
+- **`signatureTimeWindow: { hours: 12 }`** — Mastodon retries failed deliveries with the original signature, which can be hours old. Without this, retries are rejected.
+- **`allowPrivateAddress: true`** — blog.giersig.eu resolves to a private IP (10.100.0.10) on the home LAN. Without this, Fedify's SSRF guard blocks WebFinger and `lookupObject()` for own-site URLs, breaking federation.
+
+### Inbox handling
+
+Incoming activities go through `createFedifyMiddleware` → `federation.fetch()`. Registered inbox listeners:
+
+| Activity type | Handler |
+|---|---|
+| Follow | Accept/store in `ap_followers` |
+| Undo | Remove follow/like/announce |
+| Like | Store in `ap_activities` |
+| Announce | Store in `ap_activities` |
+| Create | Store in `ap_activities` (notes, replies) |
+| Delete | Remove referenced activity |
+| Update | Update referenced activity |
+| Flag | Log report |
+| Move | Update follower actor URL |
+| Block | Remove follower |
+| View | No-op (PeerTube watch events, silently ignored) |
+
+### Outbox and collections
+
+| Collection | MongoDB collection | Endpoint |
+|---|---|---|
+| Outbox | `ap_activities` | `/activitypub/users/svemagie/outbox` |
+| Followers | `ap_followers` | `/activitypub/users/svemagie/followers` |
+| Following | `ap_following` | `/activitypub/users/svemagie/following` |
+| Liked | `ap_interactions` | `/activitypub/users/svemagie/liked` |
+| Featured | `ap_featured` | `/activitypub/users/svemagie/featured` |
+
+### JF2 to ActivityStreams conversion
+
+Posts are converted from Indiekit's JF2 format to ActivityStreams 2.0 in two modes:
+
+1. **`jf2ToAS2Activity()`** — Fedify vocab objects for outbox delivery (Create wrapping Note/Article)
+2. **`jf2ToActivityStreams()`** — Plain JSON-LD for content negotiation on post URLs
+
+| Post type | Activity | Object | Notes |
+|---|---|---|---|
+| note | Create | Note | Plain text/HTML content |
+| article | Create | Article | Has `name` (title) and optional `summary` |
+| like | Like | URL | Outbox serves as Note for Mastodon compatibility |
+| repost | Announce | URL | Outbox serves as Note for Mastodon compatibility |
+| bookmark | Create | Note | Content prefixed with bookmark emoji + URL |
+| reply | Create | Note | `inReplyTo` set, author CC'd and Mentioned |
+
+**Visibility mapping:**
+
+| Visibility | `to` | `cc` |
+|---|---|---|
+| public (default) | `as:Public` | followers |
+| unlisted | followers | `as:Public` |
+| followers | followers | _(none)_ |
+
+**Content processing:**
+- Bare URLs auto-linked via `linkifyUrls()`
+- Permalink appended to content body
+- Nested hashtags normalized: `on/art/music` → `#music` (Mastodon doesn't support path-style tags)
+- Sensitive posts flagged with `sensitive: true`; summary doubles as CW text for notes
+
+### Express ↔ Fedify bridge
+
+`federation-bridge.js` converts Express requests to standard `Request` objects for Fedify:
+
+- **Body buffering**: For `application/activity+json` POSTs, the raw stream is buffered into `req._rawBody` (original bytes) and `req.body` (parsed JSON). This is critical because `JSON.stringify(req.body)` produces different bytes than the original, breaking the `Digest` header that Fedify uses for HTTP Signature verification.
+- **PeerTube View short-circuit**: If the buffered body has `type === "View"`, returns 200 immediately before Fedify's JSON-LD parser sees it (PeerTube's Schema.org extensions crash the parser).
+- **Mastodon attachment fix**: `sendFedifyResponse()` ensures `attachment` is always an array (JSON-LD compaction collapses single-element arrays, breaking Mastodon's profile field display).
+
+### AP-specific patches
+
+These patches are applied to `node_modules` via postinstall and at serve startup. They're needed because the lockfile pins the fork to v2.10.1 which predates some fixes, and because some fixes cannot be upstreamed.
+
+| Patch | Target | What it does |
+|---|---|---|
+| `patch-ap-allow-private-address` | federation-setup.js | Adds `signatureTimeWindow` and `allowPrivateAddress` to `createFederation()` |
+| `patch-ap-object-url-trailing-slash` | federation-setup.js | Object dispatcher uses `$in` query to match URLs with/without trailing slash |
+| `patch-ap-url-lookup-api` | Adds new route | Public `GET /activitypub/api/ap-url` resolves blog URL → AP object URL |
+| `patch-ap-normalize-nested-tags` | jf2-to-as2.js | Strips path prefix from nested hashtags (`on/art/music` → `#music`) |
+| `patch-inbox-skip-view-activity-parse` | federation-bridge.js | Buffers body, skips PeerTube View, preserves `_rawBody` for Digest verification |
+| `patch-inbox-ignore-view-activity` | inbox-listeners.js | Registers no-op View handler to suppress "Unsupported activity type" errors |
+| `patch-federation-unlisted-guards` | endpoint-syndicate | Prevents unlisted posts from being re-syndicated (AP fork has this natively) |
+| `patch-endpoint-activitypub-locales` | locales | Injects German (`de`) translations for the AP endpoint UI |
+
+### AP environment variables
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `AP_HANDLE` | `"svemagie"` | Actor handle (username part of `@handle@domain`) |
+| `AP_ALSO_KNOWN_AS` | — | Mastodon profile URL for account migration (`alsoKnownAs`) |
+| `AP_LOG_LEVEL` | `"info"` | Fedify log level: `debug` / `info` / `warning` / `error` / `fatal` |
+| `AP_DEBUG` | — | Set to `1` or `true` to enable Fedify debug dashboard at `/activitypub/__debug__/` |
+| `AP_DEBUG_PASSWORD` | — | Password-protect the debug dashboard |
+| `REDIS_URL` | — | Redis connection string for message queue + KV store |
+
+### Troubleshooting
+
+**`ERR fedify·federation·inbox Failed to verify the request's HTTP Signatures`**
+The body buffering patch must preserve raw bytes in `req._rawBody`. If `JSON.stringify(req.body)` is used instead, the Digest header won't match. Check that `patch-inbox-skip-view-activity-parse` applied correctly.
+
+**Activities appear in outbox but Mastodon doesn't receive them**
+1. Check Redis connectivity: `redis-cli -h 10.100.0.20 ping`
+2. Look for `[ActivityPub] Using Redis message queue` in startup logs
+3. Set `AP_LOG_LEVEL=debug` to see Fedify delivery attempts
+4. Verify `allowPrivateAddress: true` is in `createFederation()` — without it, Fedify blocks own-site URL resolution
+
+**Patch chain dependency**: `patch-ap-allow-private-address` adds both `signatureTimeWindow` and `allowPrivateAddress`. It handles both fresh v2.10.1 (no prior patches) and already-patched files. If it logs "snippet not found — skipping", the base code structure has changed and the patch needs updating.
+
 ---
 
 ## Patch scripts
@@ -25,6 +202,26 @@ In `package.json` these use the `github:owner/repo[#branch]` syntax so npm fetch
 Patches are Node.js `.mjs` scripts in `scripts/` that surgically modify files in `node_modules` after install. They are idempotent (check for a marker string before applying) and run automatically via `postinstall` and at the start of `serve`.
 
 ### ActivityPub
+
+> See also the [ActivityPub federation](#activitypub-federation) section above for a full architecture overview.
+
+**`patch-ap-allow-private-address.mjs`**
+Adds `signatureTimeWindow: { hours: 12 }` and `allowPrivateAddress: true` to `createFederation()`. Handles both fresh v2.10.1 and already-patched files. Without this, Fedify rejects Mastodon retry signatures and blocks own-site URL resolution on the private LAN.
+
+**`patch-ap-normalize-nested-tags.mjs`**
+Strips path prefix from nested hashtags in JF2→AS2 conversion (`on/art/music` → `#music`). Mastodon doesn't support slash-delimited tag paths.
+
+**`patch-ap-object-url-trailing-slash.mjs`**
+Replaces exact-match `findOne()` in the object dispatcher with a `$in` query that tries both `postUrl` and `postUrl + "/"`. Posts in MongoDB have trailing slashes; AP object URLs don't.
+
+**`patch-ap-url-lookup-api.mjs`**
+Adds a public `GET /activitypub/api/ap-url?url=` endpoint that resolves a blog post URL to its canonical Fedify-served AP object URL. Used by the "Also on fediverse" widget for `authorize_interaction`.
+
+**`patch-inbox-skip-view-activity-parse.mjs`**
+Buffers incoming ActivityPub request bodies, short-circuits PeerTube View activities (returns 200), and preserves original bytes in `req._rawBody` for HTTP Signature Digest verification. Without the raw body preservation, `JSON.stringify()` produces different bytes and Fedify rejects all incoming activities.
+
+**`patch-inbox-ignore-view-activity.mjs`**
+Registers a no-op `.on(View, ...)` inbox handler to suppress "Unsupported activity type" error logs from PeerTube watch broadcasts.
 
 **`patch-endpoint-activitypub-locales.mjs`**
 Injects German (`de`) locale overrides into `@rmdes/indiekit-endpoint-activitypub` (e.g. "Benachrichtigungen", "Mein Profil"). The package ships only an English locale; this copies and customises it.

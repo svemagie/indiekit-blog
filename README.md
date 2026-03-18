@@ -326,12 +326,16 @@ First sync after connecting:
 Every subsequent sync (hourly background + manual trigger):
   YouTube API → fetch liked videos → compare against youtubeLikesSeen
     ↓ new like found (not in seen set)
-  Insert into youtubeLikesSeen + create "like" post in posts collection
+  Mark as seen → generate markdown via publication.postTemplate()
+    → write file to GitHub store via store.createFile()
+    → insert post document into MongoDB posts collection
     ↓ already seen
   Skip
 ```
 
 Only likes added **after** the initial connection produce posts. Existing likes (e.g. 200 historical ones) are baselined without generating posts.
+
+Like posts are created as **drafts** (`post-status: draft` → `draft: true` in Eleventy frontmatter) with content `Video Title - Channel Name`. The markdown file is committed to the GitHub `blog` repo via `@indiekit/store-github`, following the same flow as Micropub-created posts (postTemplate → store.createFile). Reset also deletes files from the store.
 
 ### OAuth 2.0 setup
 
@@ -358,6 +362,7 @@ The YouTube Data API requires OAuth 2.0 (not just an API key) to access a user's
 | `GET /youtube/likes/callback` | No | OAuth callback (Google redirects here) |
 | `POST /youtube/likes/disconnect` | Yes | Removes stored tokens |
 | `POST /youtube/likes/sync` | Yes | Triggers manual sync |
+| `POST /youtube/likes/reset` | Yes | Deletes all like posts (GitHub + MongoDB), seen IDs, baseline |
 | `GET /youtube/api/likes` | No | Public JSON API (`?limit=N&offset=N`) |
 
 ### MongoDB collections

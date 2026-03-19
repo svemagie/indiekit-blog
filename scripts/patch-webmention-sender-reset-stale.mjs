@@ -3,7 +3,7 @@
  * with empty results because the live page was not yet deployed when the poller fired.
  *
  * Runs at startup but only executes once (guarded by a migrations collection entry).
- * After running, the patch-webmention-sender-retry.mjs code fix prevents recurrence.
+ * After running, the patch-webmention-sender-livefetch.mjs v2 fix prevents recurrence.
  */
 
 import { MongoClient } from "mongodb";

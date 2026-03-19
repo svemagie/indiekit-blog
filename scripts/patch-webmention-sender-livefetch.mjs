@@ -99,7 +99,7 @@ const newBlock = `        // [patched:livefetch:v2] Always fetch the live page s
             // Validate the response is a real post page, not an error/502 page.
             // extractLinks scopes to .h-entry, so if there's no .h-entry the page
             // is not a valid post (e.g. nginx 502, login redirect, error template).
-            if (_html.includes("h-entry")) {
+            if (_html.includes("h-entry\"") || _html.includes("h-entry ")) {
               contentToProcess = _html;
             } else {
               console.log(\`[webmention] Live page for \${postUrl} has no .h-entry — skipping (error page?)\`);

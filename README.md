@@ -265,9 +265,9 @@ If the live page fetch fails (e.g. deploy still in progress, 502 from nginx), th
 
 | Patch | Purpose |
 |---|---|
-| `patch-webmention-sender-livefetch.mjs` | Always fetch live HTML instead of stored content; rewrite URL for jailed setups; skip (don't mark sent) on fetch failure |
-| `patch-webmention-sender-retry.mjs` | Predecessor to livefetch — only fixed the fetch-failure path. Now a no-op because livefetch runs first and is a superset. Kept for safety in case livefetch fails to apply. |
-| `patch-webmention-sender-reset-stale.mjs` | One-time MongoDB migration: resets posts incorrectly marked as sent with 0/0/0 results. Guarded by `migrations` collection (`webmention-sender-reset-stale-v8`). |
+| `patch-webmention-sender-livefetch.mjs` | **(v2)** Always fetch live HTML; validate it contains `h-entry` (rejects error pages/502s); skip without marking sent on any failure; rewrites URL via `INTERNAL_FETCH_URL` for jailed setups. Upgrades from v1 in-place. |
+| `patch-webmention-sender-retry.mjs` | Predecessor to livefetch — superseded by livefetch v2. Silently skips when livefetch v2 marker is present; logs "already applied" otherwise. Kept so it doesn't error if livefetch fails to apply. |
+| `patch-webmention-sender-reset-stale.mjs` | One-time MongoDB migration (v9): resets posts incorrectly marked as sent with empty results. Matches both old numeric-zero format and new v1.0.6+ empty-array format. Guarded by `migrations` collection (`webmention-sender-reset-stale-v9`). |
 | `patch-webmention-sender-empty-details.mjs` | UI patch: shows "No external links discovered" in the dashboard when a post was processed but had no outbound links (instead of a blank row). |
 
 ### Patch ordering
@@ -277,7 +277,7 @@ Patches run alphabetically via `for patch in scripts/patch-*.mjs`. For webmentio
 1. `patch-webmention-sender-empty-details.mjs` — targets the `.njk` template (independent)
 2. `patch-webmention-sender-livefetch.mjs` — replaces the fetch block in `webmention-sender.js`
 3. `patch-webmention-sender-reset-stale.mjs` — MongoDB migration (independent)
-4. `patch-webmention-sender-retry.mjs` — targets the same fetch block, but it's already gone (livefetch replaced it), so it reports "already applied" and skips
+4. `patch-webmention-sender-retry.mjs` — detects the livefetch v2 marker and silently skips; logs "already applied" (not a misleading "package updated?" warning)
 
 ### Environment variables
 
@@ -293,7 +293,7 @@ Patches run alphabetically via `for patch in scripts/patch-*.mjs`. For webmentio
 ### Troubleshooting
 
 **"No external links discovered in this post"**
-The live page was fetched successfully but no `<a href>` tags with external URLs were found inside the `.h-entry`. Check that the post's Eleventy template renders the microformat links (`u-like-of`, etc.) correctly.
+The live page was fetched, had a valid `.h-entry`, but no `<a href>` tags with external URLs were found. Check that the post's Eleventy template renders the microformat links (`u-like-of`, etc.) correctly. If the post previously processed with 0 results due to an error page (502, redirect), bump the `MIGRATION_ID` in `patch-webmention-sender-reset-stale.mjs` and restart to force a retry.
 
 **502 Bad Gateway on first poll**
 The readiness check (`/webmention-sender/api/status`) should prevent this. If it still happens, the plugin may have registered its routes but MongoDB isn't ready yet. Increase the readiness timeout or check MongoDB connectivity.
@@ -305,7 +305,7 @@ The live page fetch is failing every time. Check:
 3. The post URL actually resolves to a page (not a 404)
 
 **Previously failed posts not retrying**
-Run the stale-reset migration: `node scripts/patch-webmention-sender-reset-stale.mjs`. It resets all posts marked as sent with 0/0/0 results. It's idempotent (guarded by a migration ID in MongoDB).
+Bump the `MIGRATION_ID` in `scripts/patch-webmention-sender-reset-stale.mjs` to a new version string and restart. The migration resets all posts marked as sent with empty results (both numeric-zero and empty-array formats). It is idempotent per ID — bumping the ID forces it to run once more.
 
 ---
 
@@ -521,11 +521,14 @@ Applies several guards to the listening endpoints: scopes Funkwhale history fetc
 
 ### Webmention sender
 
-**`patch-webmention-sender-livefetch.mjs`**
-Forces the webmention sender to always fetch the live published page rather than using the stored post body. Ensures outgoing webmentions contain the full rendered HTML including all microformats. Rewrites the fetch URL via `INTERNAL_FETCH_URL` for jailed setups.
+**`patch-webmention-sender-livefetch.mjs`** (v2)
+Forces the webmention sender to always fetch the live published page. Validates the response contains `h-entry` before using it — rejects error pages and 502 responses that would silently produce zero links. Rewrites the fetch URL via `INTERNAL_FETCH_URL` for jailed setups. Does not fall back to stored content (which lacks template-rendered microformat links). Upgrades from v1 in-place; silently skips if already at v2.
 
-**`patch-webmention-sender-reset-stale.mjs`**
-One-time migration (guarded by a `migrations` MongoDB collection entry) that resets posts incorrectly marked as webmention-sent with empty results because the live page was not yet deployed when the poller first fired.
+**`patch-webmention-sender-retry.mjs`**
+Predecessor to livefetch, now fully superseded. Silently skips when livefetch v2 marker is present so it does not log misleading "package updated?" warnings. Kept in case livefetch fails to find its target (acts as a partial fallback).
+
+**`patch-webmention-sender-reset-stale.mjs`** (v9)
+One-time migration (guarded by a `migrations` MongoDB collection entry, currently `webmention-sender-reset-stale-v9`) that resets posts incorrectly marked as webmention-sent with empty results. Matches both old numeric-zero format and new v1.0.6+ empty-array format. Bump the `MIGRATION_ID` to re-run after future bugs.
 
 ### Bluesky syndicator
 
@@ -659,6 +662,14 @@ Merged 15 upstream commits adding: manual follow approval, custom emoji, FEP-8fc
 **chore: remove 5 obsolete AP patches** — `patch-ap-object-url-trailing-slash`, `patch-ap-normalize-nested-tags`, `patch-ap-like-announce-addressing`, `patch-inbox-skip-view-activity-parse`, `patch-inbox-ignore-view-activity` are now baked into the fork source.
 
 **fix: update patch-ap-allow-private-address for v2.15 comment style** — The upstream `createFederation` block changed its comment format; updated the patch to match.
+
+**fix(webmention): validate live page has .h-entry before processing** (`c4f654fe`)
+Root cause of stuck webmentions: the livefetch got a 200 OK response that was actually an nginx 502 or login-redirect HTML page. No `.h-entry` → `extractLinks` found 0 links → post permanently marked as sent with empty results.
+
+- livefetch upgraded to v2: checks `_html.includes("h-entry\"")` before using the response; rejects error pages instead of processing them; no fallback to stored content (which lacks microformat links for likes/reposts/bookmarks); detects and upgrades v1 patch in-place
+- reset-stale bumped to v9: broadened MongoDB `$or` query to match both old numeric-zero format and new v1.0.6+ empty-array format (`$size: 0`)
+- retry patch: now silently skips when livefetch v2 marker is present (no more misleading "target snippet not found (package updated?)" noise on every startup)
+- start.sh readiness check: now polls `/webmention-sender/api/status` (plugin's own endpoint) instead of `/status` (bare Express), ensuring MongoDB collections and plugin routes are fully initialised before the first poll
 
 ### 2026-03-14
 

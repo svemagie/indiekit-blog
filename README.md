@@ -646,6 +646,9 @@ Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.
 
 ### 2026-03-19
 
+**feat: add soft-delete filter and content-warning support to blog theme** (`d9ac9bf` in svemagie/blog)
+Posts with `deleted: true` are now excluded from all Eleventy collections (supports AP soft-delete). Posts with `contentWarning`/`content_warning` frontmatter show a collapsible warning on post pages and a warning label (hiding content + photos) on listing pages.
+
 **chore: merge upstream rmdes:main v2.13.0–v2.15.4 into fork** (`b99f5fb`)
 Merged 15 upstream commits adding: manual follow approval, custom emoji, FEP-8fcf/fe34 compliance (v2.13.0), server blocking, Redis caching, key refresh, async inbox queue (v2.14.0), outbox failure handling with strike system, reply chain forwarding, reply intelligence in reader (v2.15.0–v2.15.4), CW `content-warning` property, soft-delete filtering, `as:Endpoints` type stripping. Preserved our DM compose path, Like/Announce addressing, draft/unlisted outbox guards.
 

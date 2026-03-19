@@ -74,13 +74,4 @@ jobs:
             sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && NODE_ENV=production node scripts/preflight-production-security.mjs" || true'
             sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && NODE_ENV=production node scripts/preflight-mongo-connection.mjs" || true'
             exit 1
-      # Optionally reload nginx on web jail
-      # - name: Reload nginx
-      #   uses: appleboy/ssh-action@v0.1.10
-      #   with:
-      #     host: ${{ secrets.FREEBSD_WEB_HOST }}
-      #     username: ${{ secrets.FREEBSD_WEB_USER }}
-      #     key: ${{ secrets.FREEBSD_WEB_SSH_KEY }}
-      #     port: ${{ secrets.FREEBSD_WEB_PORT }}
-      #     script: sudo service nginx reload
 

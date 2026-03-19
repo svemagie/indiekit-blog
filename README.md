@@ -12,14 +12,14 @@ Four packages are installed directly from GitHub forks rather than the npm regis
 
 | Dependency | Source | Reason |
 |---|---|---|
-| `@rmdes/indiekit-endpoint-activitypub` | [svemagie/indiekit-endpoint-activitypub](https://github.com/svemagie/indiekit-endpoint-activitypub) | DM support, Like/Announce addressing, draft/unlisted outbox guards, merged with upstream v2.15.4 |
+| `@rmdes/indiekit-endpoint-activitypub` | [svemagie/indiekit-endpoint-activitypub](https://github.com/svemagie/indiekit-endpoint-activitypub) | DM support, likes-as-bookmarks, OG images in AP objects, draft/unlisted outbox guards, merged with upstream v2.15.4 |
 | `@rmdes/indiekit-endpoint-blogroll` | [svemagie/indiekit-endpoint-blogroll#bookmark-import](https://github.com/svemagie/indiekit-endpoint-blogroll/tree/bookmark-import) | Bookmark import feature |
 | `@rmdes/indiekit-endpoint-microsub` | [svemagie/indiekit-endpoint-microsub#bookmarks-import](https://github.com/svemagie/indiekit-endpoint-microsub/tree/bookmarks-import) | Bookmarks import feature |
 | `@rmdes/indiekit-endpoint-youtube` | [svemagie/indiekit-endpoint-youtube](https://github.com/svemagie/indiekit-endpoint-youtube) | OAuth 2.0 liked-videos sync as "like" posts |
 
 In `package.json` these use the `github:owner/repo[#branch]` syntax so npm fetches them directly from GitHub on install.
 
-> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `b99f5fb` (merged upstream v2.13.0–v2.15.4 with DM support, Like/Announce addressing, and draft/unlisted guards).
+> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `45f8ba9` (merged upstream v2.13.0–v2.15.4 with DM support, likes-as-bookmarks, OG images in AP objects, and draft/unlisted guards).
 
 ---
 
@@ -130,8 +130,8 @@ Posts are converted from Indiekit's JF2 format to ActivityStreams 2.0 in two mod
 |---|---|---|---|
 | note | Create | Note | Plain text/HTML content |
 | article | Create | Article | Has `name` (title) and optional `summary` |
-| like | Like | URL | `to: Public, cc: followers` (baked into fork); outbox serves as Note for Mastodon compat |
-| repost | Announce | URL | `to: Public, cc: followers` (baked into fork); outbox serves as Note for Mastodon compat |
+| like | Create | Note | Delivered as bookmark (🔖 emoji + URL, `#bookmark` tag); same as bookmark handling |
+| repost | Announce | URL | `to: Public` (upstream @rmdes addressing); content negotiation serves as Note |
 | bookmark | Create | Note | Content prefixed with bookmark emoji + URL |
 | reply | Create | Note | `inReplyTo` set, author CC'd and Mentioned |
 
@@ -148,6 +148,7 @@ Posts are converted from Indiekit's JF2 format to ActivityStreams 2.0 in two mod
 - Permalink appended to content body
 - Nested hashtags normalized: `on/art/music` → `#music` (Mastodon doesn't support path-style tags)
 - Sensitive posts flagged with `sensitive: true`; summary doubles as CW text for notes
+- Per-post OG image added to Note/Article objects (`/og/{year}-{month}-{day}-{slug}.png`) for fediverse preview cards
 
 ### Express ↔ Fedify bridge
 
@@ -645,6 +646,9 @@ Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.
 ## Changelog
 
 ### 2026-03-19
+
+**feat: deliver likes as bookmarks, revert announce cc, add OG images** (`45f8ba9` in svemagie/indiekit-endpoint-activitypub)
+Likes are now sent as Create/Note with bookmark-style content (🔖 emoji + URL + `#bookmark` tag) instead of Like activities — ensures proper display on Mastodon. Announce activities reverted to upstream @rmdes addressing (`to: Public` only, no `cc: followers`). Both plain JSON-LD and Fedify Note/Article objects now include a per-post OG image derived from the post URL pattern. Removed unused `patch-ap-like-announce-addressing.mjs`.
 
 **feat: add soft-delete filter and content-warning support to blog theme** (`d9ac9bf` in svemagie/blog)
 Posts with `deleted: true` are now excluded from all Eleventy collections (supports AP soft-delete). Posts with `contentWarning`/`content_warning` frontmatter show a collapsible warning on post pages and a warning label (hiding content + photos) on listing pages.

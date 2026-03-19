@@ -9,7 +9,7 @@
 import { MongoClient } from "mongodb";
 import config from "../indiekit.config.mjs";
 
-const MIGRATION_ID = "webmention-sender-reset-stale-v8";
+const MIGRATION_ID = "webmention-sender-reset-stale-v9";
 
 const mongodbUrl = config.application?.mongodbUrl;
 if (!mongodbUrl) {
@@ -32,15 +32,27 @@ try {
     process.exit(0);
   }
 
-  // Find posts marked as webmention-sent with all-zero results.
+  // Find posts marked as webmention-sent with all-zero/empty results.
   // These were silently marked by the bug (failed fetch → empty results).
+  // Match both old format (counts = 0) and new v1.0.6+ format (empty arrays).
   const posts = db.collection("posts");
   const result = await posts.updateMany(
     {
       "properties.webmention-sent": true,
-      "properties.webmention-results.sent": 0,
-      "properties.webmention-results.failed": 0,
-      "properties.webmention-results.skipped": 0,
+      $or: [
+        // Old format: numeric counts all zero
+        {
+          "properties.webmention-results.sent": 0,
+          "properties.webmention-results.failed": 0,
+          "properties.webmention-results.skipped": 0,
+        },
+        // New format: detail arrays all empty
+        {
+          "properties.webmention-results.details.sent": { $size: 0 },
+          "properties.webmention-results.details.failed": { $size: 0 },
+          "properties.webmention-results.details.skipped": { $size: 0 },
+        },
+      ],
     },
     {
       $unset: {

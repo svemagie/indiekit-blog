@@ -20,7 +20,8 @@ import { access, readFile, writeFile } from "node:fs/promises";
 const filePath =
   "node_modules/@rmdes/indiekit-endpoint-webmention-sender/lib/controllers/webmention-sender.js";
 
-const patchMarker = "// [patched:livefetch]";
+const patchMarker = "// [patched:livefetch:v2]";
+const oldPatchMarker = "// [patched:livefetch]";
 
 // Original upstream code
 const originalBlock = `        // If no content, try fetching the published page
@@ -73,7 +74,7 @@ const retryPatchedBlock = `        // If no content, try fetching the published 
           continue;
         }`;
 
-const newBlock = `        // [patched:livefetch] Always fetch the live page so template-rendered links
+const newBlock = `        // [patched:livefetch:v2] Always fetch the live page so template-rendered links
         // (u-in-reply-to, u-like-of, u-bookmark-of, u-repost-of, etc.) are included.
         // Stored content only has the post body, not these microformat links.
         // Rewrite public URL to internal URL for jailed setups where the server
@@ -94,7 +95,15 @@ const newBlock = `        // [patched:livefetch] Always fetch the live page so t
           const pageResponse = await fetch(fetchUrl, { signal: _ac.signal });
           clearTimeout(_timeout);
           if (pageResponse.ok) {
-            contentToProcess = await pageResponse.text();
+            const _html = await pageResponse.text();
+            // Validate the response is a real post page, not an error/502 page.
+            // extractLinks scopes to .h-entry, so if there's no .h-entry the page
+            // is not a valid post (e.g. nginx 502, login redirect, error template).
+            if (_html.includes("h-entry")) {
+              contentToProcess = _html;
+            } else {
+              console.log(\`[webmention] Live page for \${postUrl} has no .h-entry — skipping (error page?)\`);
+            }
           } else {
             console.log(\`[webmention] Live page returned \${pageResponse.status} for \${fetchUrl}\`);
           }
@@ -102,15 +111,11 @@ const newBlock = `        // [patched:livefetch] Always fetch the live page so t
           console.log(\`[webmention] Could not fetch live page for \${postUrl}: \${error.message}\`);
         }
 
-        // Fall back to stored content if live page is unavailable
         if (!contentToProcess) {
-          contentToProcess = postContent;
-        }
-
-        if (!contentToProcess) {
-          // Page not reachable yet (deploy in progress?) — skip without marking sent
-          // so the next poll retries it.
-          console.log(\`[webmention] No content available for \${postUrl}, will retry next poll\`);
+          // Live page missing or invalid — skip without marking sent so the next
+          // poll retries. Don't fall back to stored content because it lacks the
+          // template-rendered microformat links we need.
+          console.log(\`[webmention] No valid page for \${postUrl}, will retry next poll\`);
           continue;
         }`;
 
@@ -131,15 +136,29 @@ if (!(await exists(filePath))) {
 const source = await readFile(filePath, "utf8");
 
 if (source.includes(patchMarker)) {
-  console.log("[patch-webmention-sender-livefetch] Already patched");
+  console.log("[patch-webmention-sender-livefetch] Already patched (v2)");
   process.exit(0);
 }
 
-const targetBlock = source.includes(originalBlock)
-  ? originalBlock
-  : source.includes(retryPatchedBlock)
-    ? retryPatchedBlock
-    : null;
+// If old v1 patch is applied, we need to replace it with v2.
+// Extract the old patched block by matching from its marker to the "continue;" that ends it.
+let oldPatchBlock = null;
+if (source.includes(oldPatchMarker) && !source.includes(patchMarker)) {
+  const startIdx = source.lastIndexOf("        // [patched:livefetch]");
+  const endMarker = "          continue;\n        }";
+  const endSearch = source.indexOf(endMarker, startIdx);
+  if (startIdx !== -1 && endSearch !== -1) {
+    oldPatchBlock = source.slice(startIdx, endSearch + endMarker.length);
+  }
+}
+
+const targetBlock = oldPatchBlock
+  ? oldPatchBlock
+  : source.includes(originalBlock)
+    ? originalBlock
+    : source.includes(retryPatchedBlock)
+      ? retryPatchedBlock
+      : null;
 
 if (!targetBlock) {
   console.warn(

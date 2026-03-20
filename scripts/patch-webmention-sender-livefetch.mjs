@@ -10,9 +10,16 @@
  *    is unreachable (e.g. deploy still in progress). Skip it silently so
  *    the next poll retries it.
  *
- * Handles both the original upstream code and the state left by the older
- * patch-webmention-sender-retry.mjs (which only fixed the fetch-failure
- * path but not the always-fetch-live path).
+ * 3. When fetching via an internal URL (nginx reverse proxy), send the public
+ *    Host header so nginx can route to the correct virtual host.
+ *    Without this, nginx sees the internal IP as Host and may serve the wrong
+ *    vhost, returning a page with no .h-entry.
+ *
+ * 4. Log the actual fetchUrl and response preview when h-entry check fails,
+ *    so the cause (wrong vhost, indiekit page, etc.) is visible in the logs.
+ *
+ * Handles the original upstream code, the older retry patch, the v1 livefetch
+ * patch, and upgrades v2 → v3 (adds Host header + better diagnostics).
  */
 
 import { access, readFile, writeFile } from "node:fs/promises";
@@ -20,7 +27,8 @@ import { access, readFile, writeFile } from "node:fs/promises";
 const filePath =
   "node_modules/@rmdes/indiekit-endpoint-webmention-sender/lib/controllers/webmention-sender.js";
 
-const patchMarker = "// [patched:livefetch:v2]";
+const patchMarker = "// [patched:livefetch:v3]";
+const v2PatchMarker = "// [patched:livefetch:v2]";
 const oldPatchMarker = "// [patched:livefetch]";
 
 // Original upstream code
@@ -74,11 +82,12 @@ const retryPatchedBlock = `        // If no content, try fetching the published 
           continue;
         }`;
 
-const newBlock = `        // [patched:livefetch:v2] Always fetch the live page so template-rendered links
+const newBlock = `        // [patched:livefetch:v3] Always fetch the live page so template-rendered links
         // (u-in-reply-to, u-like-of, u-bookmark-of, u-repost-of, etc.) are included.
         // Stored content only has the post body, not these microformat links.
         // Rewrite public URL to internal URL for jailed setups where the server
         // can't reach its own public HTTPS URL.
+        // Send public Host header on internal fetches so nginx routes to the right vhost.
         let contentToProcess = "";
         try {
           const _wmInternalBase = (() => {
@@ -90,19 +99,29 @@ const newBlock = `        // [patched:livefetch:v2] Always fetch the live page s
           const fetchUrl = (_wmPublicBase && postUrl.startsWith(_wmPublicBase))
             ? _wmInternalBase + postUrl.slice(_wmPublicBase.length)
             : postUrl;
+          if (fetchUrl !== postUrl) {
+            console.log(\`[webmention] Fetching \${postUrl} via internal URL: \${fetchUrl}\`);
+          }
           const _ac = new AbortController();
           const _timeout = setTimeout(() => _ac.abort(), 15000);
-          const pageResponse = await fetch(fetchUrl, { signal: _ac.signal });
+          // When fetching via internal URL (nginx), send the public Host header so
+          // nginx can route to the correct virtual host.
+          // Without this, nginx sees the internal IP as Host and serves the wrong vhost.
+          const _fetchOpts = { signal: _ac.signal };
+          if (fetchUrl !== postUrl && _wmPublicBase) {
+            _fetchOpts.headers = { host: new URL(_wmPublicBase).hostname };
+          }
+          const pageResponse = await fetch(fetchUrl, _fetchOpts);
           clearTimeout(_timeout);
           if (pageResponse.ok) {
             const _html = await pageResponse.text();
             // Validate the response is a real post page, not an error/502 page.
             // extractLinks scopes to .h-entry, so if there's no .h-entry the page
             // is not a valid post (e.g. nginx 502, login redirect, error template).
-            if (_html.includes("h-entry\") || _html.includes("h-entry ")) {
+            if (_html.includes("h-entry") /* [patched:hentry-syntax] */ || _html.includes("h-entry ")) {
               contentToProcess = _html;
             } else {
-              console.log(\`[webmention] Live page for \${postUrl} has no .h-entry — skipping (error page?)\`);
+              console.log(\`[webmention] Live page for \${postUrl} has no .h-entry — skipping (fetched: \${fetchUrl}, host-sent: \${_fetchOpts.headers?.host ?? "(none)"}, preview: \${_html.slice(0, 200).replace(/[\\n\\r]+/g, " ")})\`);
             }
           } else {
             console.log(\`[webmention] Live page returned \${pageResponse.status} for \${fetchUrl}\`);
@@ -118,6 +137,33 @@ const newBlock = `        // [patched:livefetch:v2] Always fetch the live page s
           console.log(\`[webmention] No valid page for \${postUrl}, will retry next poll\`);
           continue;
         }`;
+
+// Lines changed in v2 → v3: fetch call + log message.
+// Match just the fetch call so we can upgrade without re-matching the whole block.
+const v2FetchLine = `          const pageResponse = await fetch(fetchUrl, { signal: _ac.signal });`;
+const v3FetchLines = `          // When fetching via internal URL (nginx), send the public Host header so
+          // nginx can route to the correct virtual host.
+          // Without this, nginx sees the internal IP as Host and serves the wrong vhost.
+          const _fetchOpts = { signal: _ac.signal };
+          if (fetchUrl !== postUrl && _wmPublicBase) {
+            _fetchOpts.headers = { host: new URL(_wmPublicBase).hostname };
+          }
+          const pageResponse = await fetch(fetchUrl, _fetchOpts);`;
+
+const v2DiagLine = `              console.log(\`[webmention] Live page for \${postUrl} has no .h-entry — skipping (error page?)\`);`;
+const v3DiagLine = `              console.log(\`[webmention] Live page for \${postUrl} has no .h-entry — skipping (fetched: \${fetchUrl}, host-sent: \${_fetchOpts.headers?.host ?? "(none)"}, preview: \${_html.slice(0, 200).replace(/[\\n\\r]+/g, " ")})\`);`;
+
+const v2FetchUrlLog = `          const fetchUrl = (_wmPublicBase && postUrl.startsWith(_wmPublicBase))
+            ? _wmInternalBase + postUrl.slice(_wmPublicBase.length)
+            : postUrl;
+          const _ac = new AbortController();`;
+const v3FetchUrlLog = `          const fetchUrl = (_wmPublicBase && postUrl.startsWith(_wmPublicBase))
+            ? _wmInternalBase + postUrl.slice(_wmPublicBase.length)
+            : postUrl;
+          if (fetchUrl !== postUrl) {
+            console.log(\`[webmention] Fetching \${postUrl} via internal URL: \${fetchUrl}\`);
+          }
+          const _ac = new AbortController();`;
 
 async function exists(p) {
   try {
@@ -136,14 +182,32 @@ if (!(await exists(filePath))) {
 const source = await readFile(filePath, "utf8");
 
 if (source.includes(patchMarker)) {
-  console.log("[patch-webmention-sender-livefetch] Already patched (v2)");
+  console.log("[patch-webmention-sender-livefetch] Already patched (v3)");
   process.exit(0);
 }
 
-// If old v1 patch is applied, we need to replace it with v2.
+// Upgrade v2 → v3: apply targeted line replacements within the existing v2 block.
+if (source.includes(v2PatchMarker)) {
+  let upgraded = source
+    .replace(v2PatchMarker, patchMarker)
+    .replace(v2FetchUrlLog, v3FetchUrlLog)
+    .replace(v2FetchLine, v3FetchLines)
+    .replace(v2DiagLine, v3DiagLine);
+
+  if (!upgraded.includes(patchMarker)) {
+    console.warn("[patch-webmention-sender-livefetch] v2→v3 upgrade validation failed, skipping");
+    process.exit(0);
+  }
+
+  await writeFile(filePath, upgraded, "utf8");
+  console.log("[patch-webmention-sender-livefetch] Upgraded v2 → v3 (Host header + diagnostics)");
+  process.exit(0);
+}
+
+// If old v1 patch is applied, we need to replace it with v3.
 // Extract the old patched block by matching from its marker to the "continue;" that ends it.
 let oldPatchBlock = null;
-if (source.includes(oldPatchMarker) && !source.includes(patchMarker)) {
+if (source.includes(oldPatchMarker) && !source.includes(v2PatchMarker)) {
   const startIdx = source.lastIndexOf("        // [patched:livefetch]");
   const endMarker = "          continue;\n        }";
   const endSearch = source.indexOf(endMarker, startIdx);
@@ -175,4 +239,4 @@ if (!patched.includes(patchMarker)) {
 }
 
 await writeFile(filePath, patched, "utf8");
-console.log("[patch-webmention-sender-livefetch] Patched successfully");
+console.log("[patch-webmention-sender-livefetch] Patched successfully (v3)");

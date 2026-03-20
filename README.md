@@ -160,14 +160,24 @@ Posts are converted from Indiekit's JF2 format to ActivityStreams 2.0 in two mod
 
 ### AP-specific patches
 
-These patches are applied to `node_modules` via postinstall and at serve startup. They're needed because the lockfile pins the fork to v2.10.1 which predates some fixes, and because some fixes cannot be upstreamed.
+These patches are applied to `node_modules` via postinstall and at serve startup. They're needed because some fixes cannot be upstreamed or because they adapt upstream behaviour to this blog's specific URL structure.
 
 | Patch | Target | What it does |
 |---|---|---|
 | `patch-ap-allow-private-address` | federation-setup.js | Adds `signatureTimeWindow` and `allowPrivateAddress` to `createFederation()` |
 | `patch-ap-url-lookup-api` | Adds new route | Public `GET /activitypub/api/ap-url` resolves blog URL → AP object URL |
+| `patch-ap-og-image` | jf2-to-as2.js | Fixes OG image URL generation — see below |
 | `patch-federation-unlisted-guards` | endpoint-syndicate | Prevents unlisted posts from being re-syndicated (AP fork has this natively) |
 | `patch-endpoint-activitypub-locales` | locales | Injects German (`de`) translations for the AP endpoint UI |
+
+**`patch-ap-og-image.mjs`**
+The fork (both 842fc5af and 45f8ba9) attempts to derive the OG image path by matching a date-based URL pattern like `/articles/2024/01/15/slug/`. This blog uses flat URLs (`/articles/slug/`) with no date component, so the regex never matches and no `image` property is set on ActivityPub objects — Mastodon and other clients never show a preview card.
+
+The patch replaces the URL-pattern extraction with:
+1. Slug from the last URL path segment.
+2. Date from `properties.published` (ISO-8601 string).
+
+This produces the correct `/og/{year}-{month}-{day}-{slug}.png` filename that the Eleventy build generates for per-post OG images. Applied to both `jf2ToActivityStreams()` (plain JSON-LD) and `jf2ToAS2Activity()` (Fedify vocab objects).
 
 ### AP environment variables
 
@@ -648,6 +658,7 @@ Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.
 
 ## Changelog
 
+<<<<<<< HEAD
 ### 2026-03-21
 
 **chore(deps): merge upstream activitypub v3.7.1–v3.7.5 into fork** (`97a902b` in svemagie/indiekit-endpoint-activitypub)
@@ -687,6 +698,9 @@ New `patch-endpoint-github-contributions-log.mjs` suppresses the noisy per-contr
 ---
 
 ### 2026-03-20
+
+**fix(ap): fix OG image not included in ActivityPub activities**
+The fork's OG image code expected date-based URLs (`/articles/YYYY/MM/DD/slug/`) but this blog uses flat URLs (`/articles/slug/`). The regex never matched so no `image` property was set and Mastodon/fediverse clients showed no preview card. Added `patch-ap-og-image.mjs` which extracts the slug from the URL's last path segment and constructs the correct `/og/{slug}.png` filename.
 
 **fix(ap): include commentary in repost ActivityPub activities** (`b53afe2e`)
 Reposts with a body were silently broken in two ways: (1) `jf2ToAS2Activity()` always emitted a bare `Announce` pointing at an external URL that doesn't serve AP JSON, so Mastodon dropped the activity from followers' timelines; (2) `jf2ToActivityStreams()` hard-coded Note content to `🔁 <url>`, ignoring `properties.content`. New `patch-ap-repost-commentary.mjs` (4 targeted replacements): skips the `Announce` early-return when commentary is present and falls through to `Create(Note)` instead; formats Note as `<commentary>\n\n🔁 <url>`; extracts commentary in the content-negotiation path. Pure reposts (no body) keep the `Announce` behaviour unchanged.

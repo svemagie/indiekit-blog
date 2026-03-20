@@ -207,10 +207,6 @@ export default {
         },
         fields: {
           gardenStage: {},
-          aiTextLevel: {},
-          aiCodeLevel: {},
-          aiTools: {},
-          aiDescription: {},
         },
       },
       note: {
@@ -221,10 +217,6 @@ export default {
         },
         fields: {
           gardenStage: {},
-          aiTextLevel: {},
-          aiCodeLevel: {},
-          aiTools: {},
-          aiDescription: {},
         },
       },
       bookmark: {
@@ -235,10 +227,6 @@ export default {
         },
         fields: {
           gardenStage: {},
-          aiTextLevel: {},
-          aiCodeLevel: {},
-          aiTools: {},
-          aiDescription: {},
         },
       },
       like: {
@@ -259,10 +247,6 @@ export default {
         },
         fields: {
           gardenStage: {},
-          aiTextLevel: {},
-          aiCodeLevel: {},
-          aiTools: {},
-          aiDescription: {},
         },
       },
       photo: {
@@ -277,10 +261,6 @@ export default {
         },
         fields: {
           gardenStage: {},
-          aiTextLevel: {},
-          aiCodeLevel: {},
-          aiTools: {},
-          aiDescription: {},
         },
       },
       reply: {
@@ -291,10 +271,6 @@ export default {
         },
         fields: {
           gardenStage: {},
-          aiTextLevel: {},
-          aiCodeLevel: {},
-          aiTools: {},
-          aiDescription: {},
         },
       },
       page: {
@@ -305,10 +281,6 @@ export default {
         },
         fields: {
           gardenStage: {},
-          aiTextLevel: {},
-          aiCodeLevel: {},
-          aiTools: {},
-          aiDescription: {},
         },
       },
     },

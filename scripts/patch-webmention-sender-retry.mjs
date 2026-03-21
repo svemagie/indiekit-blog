@@ -91,9 +91,9 @@ for (const filePath of candidates) {
   }
 
   if (!source.includes(oldSnippet)) {
-    // livefetch v2 replaces the same block — this patch is intentionally superseded.
-    if (source.includes("[patched:livefetch:v2]")) {
-      continue; // silently skip; livefetch v2 is a superset of this patch
+    // Any livefetch version replaces the same block — this patch is superseded.
+    if (/\[patched:livefetch(?::v\d+)?\]/.test(source)) {
+      continue; // silently skip; livefetch is a superset of this patch
     }
     console.log(`[patch] webmention-sender-retry: target snippet not found in ${filePath} (package updated?)`);
     continue;

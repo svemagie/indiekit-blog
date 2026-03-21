@@ -93,6 +93,11 @@ for (const filePath of candidates) {
     continue;
   }
 
+  // Ensure Like is imported from @fedify/fedify/vocab (may be absent on fresh installs)
+  if (!source.includes("  Like,")) {
+    source = source.replace("  Note,", "  Like,\n  Note,");
+  }
+
   source = source.replace(OLD_SNIPPET, NEW_SNIPPET);
   await writeFile(filePath, source, "utf8");
   patched += 1;

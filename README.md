@@ -12,14 +12,14 @@ Four packages are installed directly from GitHub forks rather than the npm regis
 
 | Dependency | Source | Reason |
 |---|---|---|
-| `@rmdes/indiekit-endpoint-activitypub` | [svemagie/indiekit-endpoint-activitypub](https://github.com/svemagie/indiekit-endpoint-activitypub) | DM support, likes-as-bookmarks, OG images in AP objects, draft/unlisted outbox guards, merged with upstream v2.15.4 |
+| `@rmdes/indiekit-endpoint-activitypub` | [svemagie/indiekit-endpoint-activitypub](https://github.com/svemagie/indiekit-endpoint-activitypub) | DM support, likes-as-bookmarks, OG images in AP objects, draft/unlisted outbox guards, merged with upstream v3.7.5 |
 | `@rmdes/indiekit-endpoint-blogroll` | [svemagie/indiekit-endpoint-blogroll#bookmark-import](https://github.com/svemagie/indiekit-endpoint-blogroll/tree/bookmark-import) | Bookmark import feature |
 | `@rmdes/indiekit-endpoint-microsub` | [svemagie/indiekit-endpoint-microsub#bookmarks-import](https://github.com/svemagie/indiekit-endpoint-microsub/tree/bookmarks-import) | Bookmarks import feature |
 | `@rmdes/indiekit-endpoint-youtube` | [svemagie/indiekit-endpoint-youtube](https://github.com/svemagie/indiekit-endpoint-youtube) | OAuth 2.0 liked-videos sync as "like" posts |
 
 In `package.json` these use the `github:owner/repo[#branch]` syntax so npm fetches them directly from GitHub on install.
 
-> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `45f8ba9` (merged upstream v2.13.0–v2.15.4 with DM support, likes-as-bookmarks, OG images in AP objects, and draft/unlisted guards).
+> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `97a902b` (merged upstream v3.7.1–v3.7.5: async signed→unsigned lookup fallback, enrichAccountStats for embedded account objects, URL/mention linkification in statuses, domain_blocking in relationships, real domain_blocks endpoint, Moderation section in federation mgmt dashboard).
 
 ---
 
@@ -649,6 +649,15 @@ Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.
 ## Changelog
 
 ### 2026-03-21
+
+**chore(deps): merge upstream activitypub v3.7.1–v3.7.5 into fork** (`97a902b` in svemagie/indiekit-endpoint-activitypub)
+All five 3.7.x releases published upstream on 2026-03-21:
+- `lookupWithSecurity` is now async with a signed→unsigned fallback — servers like tags.pub that return 400 on signed GETs now resolve correctly instead of returning null
+- `enrichAccountStats()` (new `lib/mastodon/helpers/enrich-accounts.js`): enriches embedded account objects in timeline responses with real follower/following/post counts resolved via Fedify. Fixes 0/0/0 counts in Phanpy, which never calls `/accounts/:id` and trusts embedded data
+- Status content processing: `processStatusContent()` linkifies bare URLs and converts `@user@domain` mentions to `<a>` links; `extractMentions()` populates the `mentions` array. Timeline date lookup now handles both `.000Z` and bare `Z` ISO suffixes
+- `/api/v1/relationships`: `domain_blocking` is now computed from `ap_blocked_servers` instead of always returning `false`; `resolveActorUrl` falls back to the account cache for timeline-author resolution
+- `/api/v1/domain_blocks`: returns real blocked server hostnames from `ap_blocked_servers` instead of `[]`
+- Federation management dashboard: new Moderation section listing blocked servers, blocked accounts, and muted accounts with timestamps
 
 **chore(deps): update activitypub fork to v3.6.8** (`fad383dfe`)
 Pulls the merged upstream `feat/mastodon-client-api` branch into svemagie/indiekit-endpoint-activitypub (`f029c31`). Ships a full Mastodon Client API compatibility layer (`lib/mastodon/`), 13 additional locale files, and builds `signatureTimeWindow`/`allowPrivateAddress` directly into `federation-setup.js` — `patch-ap-allow-private-address` now cleanly detects "already up to date".

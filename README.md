@@ -12,14 +12,14 @@ Four packages are installed directly from GitHub forks rather than the npm regis
 
 | Dependency | Source | Reason |
 |---|---|---|
-| `@rmdes/indiekit-endpoint-activitypub` | [svemagie/indiekit-endpoint-activitypub](https://github.com/svemagie/indiekit-endpoint-activitypub) | DM support, likes-as-bookmarks, OG images in AP objects, draft/unlisted outbox guards, merged with upstream v2.15.4 |
+| `@rmdes/indiekit-endpoint-activitypub` | [svemagie/indiekit-endpoint-activitypub](https://github.com/svemagie/indiekit-endpoint-activitypub) | DM support, likes-as-bookmarks, OG images in AP objects, draft/unlisted outbox guards, merged with upstream v3.7.5 |
 | `@rmdes/indiekit-endpoint-blogroll` | [svemagie/indiekit-endpoint-blogroll#bookmark-import](https://github.com/svemagie/indiekit-endpoint-blogroll/tree/bookmark-import) | Bookmark import feature |
 | `@rmdes/indiekit-endpoint-microsub` | [svemagie/indiekit-endpoint-microsub#bookmarks-import](https://github.com/svemagie/indiekit-endpoint-microsub/tree/bookmarks-import) | Bookmarks import feature |
 | `@rmdes/indiekit-endpoint-youtube` | [svemagie/indiekit-endpoint-youtube](https://github.com/svemagie/indiekit-endpoint-youtube) | OAuth 2.0 liked-videos sync as "like" posts |
 
 In `package.json` these use the `github:owner/repo[#branch]` syntax so npm fetches them directly from GitHub on install.
 
-> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `45f8ba9` (merged upstream v2.13.0–v2.15.4 with DM support, likes-as-bookmarks, OG images in AP objects, and draft/unlisted guards).
+> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `97a902b` (merged upstream v3.7.1–v3.7.5: async signed→unsigned lookup fallback, enrichAccountStats for embedded account objects, URL/mention linkification in statuses, domain_blocking in relationships, real domain_blocks endpoint, Moderation section in federation mgmt dashboard).
 
 ---
 
@@ -654,10 +654,71 @@ Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.
 
 ## Changelog
 
+### 2026-03-21
+
+**chore(deps): merge upstream activitypub v3.7.1–v3.7.5 into fork** (`97a902b` in svemagie/indiekit-endpoint-activitypub)
+All five 3.7.x releases published upstream on 2026-03-21:
+- `lookupWithSecurity` is now async with a signed→unsigned fallback — servers like tags.pub that return 400 on signed GETs now resolve correctly instead of returning null
+- `enrichAccountStats()` (new `lib/mastodon/helpers/enrich-accounts.js`): enriches embedded account objects in timeline responses with real follower/following/post counts resolved via Fedify. Fixes 0/0/0 counts in Phanpy, which never calls `/accounts/:id` and trusts embedded data
+- Status content processing: `processStatusContent()` linkifies bare URLs and converts `@user@domain` mentions to `<a>` links; `extractMentions()` populates the `mentions` array. Timeline date lookup now handles both `.000Z` and bare `Z` ISO suffixes
+- `/api/v1/relationships`: `domain_blocking` is now computed from `ap_blocked_servers` instead of always returning `false`; `resolveActorUrl` falls back to the account cache for timeline-author resolution
+- `/api/v1/domain_blocks`: returns real blocked server hostnames from `ap_blocked_servers` instead of `[]`
+- Federation management dashboard: new Moderation section listing blocked servers, blocked accounts, and muted accounts with timestamps
+
+**chore(deps): update activitypub fork to v3.6.8** (`fad383dfe`)
+Pulls the merged upstream `feat/mastodon-client-api` branch into svemagie/indiekit-endpoint-activitypub (`f029c31`). Ships a full Mastodon Client API compatibility layer (`lib/mastodon/`), 13 additional locale files, and builds `signatureTimeWindow`/`allowPrivateAddress` directly into `federation-setup.js` — `patch-ap-allow-private-address` now cleanly detects "already up to date".
+
+**fix(activitypub): serve AP-likes with canonical id and proper Like dispatcher** (`99d2e380`)
+Replaces the fake-Note approach with strict AP protocol compliance. Four new patch scripts:
+- `patch-ap-like-note-dispatcher`: reverts the fake-Note block
+- `patch-ap-like-activity-id`: adds canonical `id` URI to Like activities (AP §6.2.1)
+- `patch-ap-like-activity-dispatcher`: registers `setObjectDispatcher(Like, …)` so `/activitypub/activities/like/{id}` is dereferenceable (AP §3.1)
+- `patch-ap-url-lookup-api-like`: `/api/ap-url` now returns the `likeOf` URL for AP-likes so the "Also on: Fediverse" widget's `authorize_interaction` flow opens the original post on the remote instance
+
+**fix(activitypub): add Like vocab import in activity dispatcher patch** (`535e6f5e`)
+On fresh installs where the old wrong patch was never applied, `Like` was absent from the `@fedify/fedify/vocab` import block, causing a `ReferenceError` at startup. The dispatcher patch now adds `Like` to the import if missing.
+
+**fix(syndicate): normalize syndication property to array before dedup check** (`34d5fde5`)
+Micropub's `replaceEntries()` stores single-value arrays as plain strings. Spreading a string into `[...str]` gives individual characters, so `hasSyndicationUrl()` never matched and `alreadySyndicated` was always false — causing re-syndication on every webhook trigger. Fix: use `[].concat()` which safely handles both string and array values.
+
+**feat(deploy): trigger syndication webhook after successful deployment** (`b16c60ad`)
+Added a `workflow_dispatch`-compatible step to `.github/workflows/deploy.yml` that fires a configurable webhook URL after a successful deploy. Subsequently reverted (`9668485b`) and moved to the blog repo.
+
+**fix(activitypub): remove federation-diag inbox logging** (`109d39dd`)
+New `patch-ap-remove-federation-diag.mjs` strips the verbose federation diagnostics log added during debugging.
+
+**chore: silence github contribution log** (`25488257`)
+New `patch-endpoint-github-contributions-log.mjs` suppresses the noisy per-contribution log line from the GitHub store endpoint.
+
+---
+
 ### 2026-03-20
 
-**fix(ap): fix OG image not included in ActivityPub activities**
-The fork's OG image code expected date-based URLs (`/articles/YYYY/MM/DD/slug/`) but this blog uses flat URLs (`/articles/slug/`). The regex never matched so no `image` property was set and Mastodon/fediverse clients showed no preview card. Added `patch-ap-og-image.mjs` which extracts the slug from the URL's last path segment and constructs `/og/{slug}.png` — the actual Eleventy OG filename format (e.g. `/og/2615b.png`). Also updated `package-lock.json` to pull the `45f8ba9` fork commit (likes-as-bookmarks, announce cc reverted).
+**fix(ap): include commentary in repost ActivityPub activities** (`b53afe2e`)
+Reposts with a body were silently broken in two ways: (1) `jf2ToAS2Activity()` always emitted a bare `Announce` pointing at an external URL that doesn't serve AP JSON, so Mastodon dropped the activity from followers' timelines; (2) `jf2ToActivityStreams()` hard-coded Note content to `🔁 <url>`, ignoring `properties.content`. New `patch-ap-repost-commentary.mjs` (4 targeted replacements): skips the `Announce` early-return when commentary is present and falls through to `Create(Note)` instead; formats Note as `<commentary>\n\n🔁 <url>`; extracts commentary in the content-negotiation path. Pure reposts (no body) keep the `Announce` behaviour unchanged.
+
+**chore(ai): remove custom AI patches superseded by upstream endpoint-posts@beta.44** (`fe0f347e`)
+Removed 6 patch scripts now handled natively by upstream:
+- `patch-preset-eleventy-ai-frontmatter` — upstream writes AI frontmatter with hyphenated keys natively
+- `patch-endpoint-posts-ai-cleanup` — upstream beta.44 removes empty AI fields natively
+- `patch-endpoint-posts-ai-fields` — upstream beta.44 has AI form UI inline in `post-form.njk`
+- `patch-micropub-ai-block-resync` — one-time stale-block migration, no longer relevant
+- `patch-endpoint-posts-prefill-url` — upstream beta.44 has native prefill from query params
+- `patch-endpoint-posts-search-tags` — upstream beta.44 has native search/filter/sort UI
+
+Also bumped `@rmdes/indiekit-endpoint-posts` beta.25→beta.44 and removed `camelCase` AI field names from all `postTypes.fields` in `indiekit.config.mjs`.
+
+**fix(webmention): livefetch evolution v3→v5** (`11d600058`, `7f9f02bc3`, `17b93b3a2`)
+Three successive fixes to the webmention sender livefetch patch, driven by split-DNS and jail networking constraints:
+
+- **v3** (`11d600058`): Send `Host: blog.giersig.eu` on internal fetches so nginx routes to the correct vhost; add `fetchUrl` diagnostics and response body preview on h-entry check failure
+- **v4** (`7f9f02bc3`): Remove `INTERNAL_FETCH_URL` rewrite for live page fetches — post URLs require authentication on the internal nginx vhost (returns login page). Fetch from `postUrl` (public URL) directly. Add `WEBMENTION_LIVEFETCH_URL` as an opt-in override
+- **v5** (`17b93b3a2`): Replace live page fetch entirely with a synthetic h-entry HTML snippet built from `post.properties` stored in MongoDB (`in-reply-to`, `like-of`, `bookmark-of`, `repost-of`, `content.html`). No network fetch required — eliminates all split-DNS / auth reliability issues
+
+**fix: h-entry double-quote typo in livefetch patch** (`750267b17`)
+Removed a stray extra closing quote (`h-entry""`) introduced in the v2 patch, which broke the string match on case-sensitive systems.
+
+---
 
 ### 2026-03-19
 
@@ -673,6 +734,14 @@ Merged 15 upstream commits adding: manual follow approval, custom emoji, FEP-8fc
 **chore: remove 5 obsolete AP patches** — `patch-ap-object-url-trailing-slash`, `patch-ap-normalize-nested-tags`, `patch-ap-like-announce-addressing`, `patch-inbox-skip-view-activity-parse`, `patch-inbox-ignore-view-activity` are now baked into the fork source.
 
 **fix: update patch-ap-allow-private-address for v2.15 comment style** — The upstream `createFederation` block changed its comment format; updated the patch to match.
+
+**fix: patch webmention-sender syntax error** (`c6b0e702`)
+`@rmdes/indiekit-endpoint-webmention-sender@1.0.8` shipped with a typo: `_html.includes("h-entry"")` — the extra closing quote causes a `SyntaxError` at startup and prevents the background sync from ever running. New `patch-webmention-sender-hentry-syntax.mjs` fixes the typo before any other webmention-sender patches run.
+
+**fix: livefetch v2 patch improvements** (`711958b8`)
+- retry patch: silently skips when livefetch v2 marker is present (no more misleading "target snippet not found (package updated?)" noise on every startup)
+- livefetch: match `h-entry"` or `h-entry ` instead of bare `h-entry` to avoid false positives from body text containing the string
+- reset-stale: update comment to reference livefetch v2 as the patch that prevents recurrence
 
 **fix(webmention): validate live page has .h-entry before processing** (`c4f654fe`)
 Root cause of stuck webmentions: the livefetch got a 200 OK response that was actually an nginx 502 or login-redirect HTML page. No `.h-entry` → `extractLinks` found 0 links → post permanently marked as sent with empty results.

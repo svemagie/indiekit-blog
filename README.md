@@ -148,7 +148,7 @@ Posts are converted from Indiekit's JF2 format to ActivityStreams 2.0 in two mod
 - Permalink appended to content body
 - Nested hashtags normalized: `on/art/music` → `#music` (Mastodon doesn't support path-style tags)
 - Sensitive posts flagged with `sensitive: true`; summary doubles as CW text for notes
-- Per-post OG image added to Note/Article objects (`/og/{year}-{month}-{day}-{slug}.png`) for fediverse preview cards
+- Per-post OG image added to Note/Article objects (`/og/{slug}.png`) for fediverse preview cards
 
 ### Express ↔ Fedify bridge
 
@@ -160,14 +160,20 @@ Posts are converted from Indiekit's JF2 format to ActivityStreams 2.0 in two mod
 
 ### AP-specific patches
 
-These patches are applied to `node_modules` via postinstall and at serve startup. They're needed because the lockfile pins the fork to v2.10.1 which predates some fixes, and because some fixes cannot be upstreamed.
+These patches are applied to `node_modules` via postinstall and at serve startup. They're needed because some fixes cannot be upstreamed or because they adapt upstream behaviour to this blog's specific URL structure.
 
 | Patch | Target | What it does |
 |---|---|---|
 | `patch-ap-allow-private-address` | federation-setup.js | Adds `signatureTimeWindow` and `allowPrivateAddress` to `createFederation()` |
 | `patch-ap-url-lookup-api` | Adds new route | Public `GET /activitypub/api/ap-url` resolves blog URL → AP object URL |
+| `patch-ap-og-image` | jf2-to-as2.js | Fixes OG image URL generation — see below |
 | `patch-federation-unlisted-guards` | endpoint-syndicate | Prevents unlisted posts from being re-syndicated (AP fork has this natively) |
 | `patch-endpoint-activitypub-locales` | locales | Injects German (`de`) translations for the AP endpoint UI |
+
+**`patch-ap-og-image.mjs`**
+The fork (both 842fc5af and 45f8ba9) attempts to derive the OG image path by matching a date-based URL pattern like `/articles/2024/01/15/slug/`. This blog uses flat URLs (`/articles/slug/`) with no date component, so the regex never matches and no `image` property is set on ActivityPub objects — Mastodon and other clients never show a preview card.
+
+The patch replaces the broken date-from-URL regex with a simple last-path-segment extraction, producing `/og/{slug}.png` — the actual filename the Eleventy build generates (e.g. `/og/2615b.png`). Applied to both `jf2ToActivityStreams()` (plain JSON-LD) and `jf2ToAS2Activity()` (Fedify vocab objects).
 
 ### AP environment variables
 

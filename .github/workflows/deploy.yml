@@ -75,23 +75,4 @@ jobs:
             sudo bastille cmd node sh -lc 'su -l indiekit -c "cd /usr/local/indiekit && NODE_ENV=production node scripts/preflight-mongo-connection.mjs" || true'
             exit 1
 
-      - name: Trigger syndication webhook
-        env:
-          SECRET: ${{ secrets.SECRET }}
-          INDIEKIT_URL: ${{ secrets.INDIEKIT_URL }}
-        run: |
-          TOKEN=$(node --input-type=commonjs <<'EOF'
-          const jwt = require('./node_modules/jsonwebtoken');
-          const token = jwt.sign(
-            { me: process.env.INDIEKIT_URL, scope: 'update' },
-            process.env.SECRET,
-            { expiresIn: '10m' }
-          );
-          process.stdout.write(token);
-          EOF
-          )
-          curl -sf -X POST \
-            -H "Content-Type: application/json" \
-            -d "{\"access_token\": \"$TOKEN\"}" \
-            "$INDIEKIT_URL/syndicate"
 

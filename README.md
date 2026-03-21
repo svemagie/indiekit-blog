@@ -148,7 +148,7 @@ Posts are converted from Indiekit's JF2 format to ActivityStreams 2.0 in two mod
 - Permalink appended to content body
 - Nested hashtags normalized: `on/art/music` → `#music` (Mastodon doesn't support path-style tags)
 - Sensitive posts flagged with `sensitive: true`; summary doubles as CW text for notes
-- Per-post OG image added to Note/Article objects (`/og/{year}-{month}-{day}-{slug}.png`) for fediverse preview cards
+- Per-post OG image added to Note/Article objects (`/og/{slug}.png`) for fediverse preview cards
 
 ### Express ↔ Fedify bridge
 
@@ -173,11 +173,7 @@ These patches are applied to `node_modules` via postinstall and at serve startup
 **`patch-ap-og-image.mjs`**
 The fork (both 842fc5af and 45f8ba9) attempts to derive the OG image path by matching a date-based URL pattern like `/articles/2024/01/15/slug/`. This blog uses flat URLs (`/articles/slug/`) with no date component, so the regex never matches and no `image` property is set on ActivityPub objects — Mastodon and other clients never show a preview card.
 
-The patch replaces the URL-pattern extraction with:
-1. Slug from the last URL path segment.
-2. Date from `properties.published` (ISO-8601 string).
-
-This produces the correct `/og/{year}-{month}-{day}-{slug}.png` filename that the Eleventy build generates for per-post OG images. Applied to both `jf2ToActivityStreams()` (plain JSON-LD) and `jf2ToAS2Activity()` (Fedify vocab objects).
+The patch replaces the broken date-from-URL regex with a simple last-path-segment extraction, producing `/og/{slug}.png` — the actual filename the Eleventy build generates (e.g. `/og/2615b.png`). Applied to both `jf2ToActivityStreams()` (plain JSON-LD) and `jf2ToAS2Activity()` (Fedify vocab objects).
 
 ### AP environment variables
 
@@ -661,7 +657,7 @@ Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.
 ### 2026-03-20
 
 **fix(ap): fix OG image not included in ActivityPub activities**
-The fork's OG image code expected date-based URLs (`/articles/YYYY/MM/DD/slug/`) but this blog uses flat URLs (`/articles/slug/`). The regex never matched so no `image` property was set and Mastodon/fediverse clients showed no preview card. Added `patch-ap-og-image.mjs` which extracts the slug from the URL's last path segment and the date from `properties.published`, producing the correct `/og/{year}-{month}-{day}-{slug}.png` filename. Also updated `package-lock.json` to pull the `45f8ba9` fork commit (likes-as-bookmarks + correct date+slug OG filename format).
+The fork's OG image code expected date-based URLs (`/articles/YYYY/MM/DD/slug/`) but this blog uses flat URLs (`/articles/slug/`). The regex never matched so no `image` property was set and Mastodon/fediverse clients showed no preview card. Added `patch-ap-og-image.mjs` which extracts the slug from the URL's last path segment and constructs `/og/{slug}.png` — the actual Eleventy OG filename format (e.g. `/og/2615b.png`). Also updated `package-lock.json` to pull the `45f8ba9` fork commit (likes-as-bookmarks, announce cc reverted).
 
 ### 2026-03-19
 

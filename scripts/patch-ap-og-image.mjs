@@ -3,17 +3,15 @@
  *
  * Root cause:
  *   Both 842fc5af and 45f8ba9 versions of jf2-to-as2.js try to extract the
- *   post date from the URL using a regex that expects date-based URLs like
+ *   post slug from the URL using a regex that expects date-based URLs like
  *   /articles/2024/01/15/slug/ but this blog uses flat URLs like /articles/slug/.
  *   The regex never matches so the `image` property is never set — no OG image
  *   preview card reaches Mastodon or other fediverse servers.
  *
  * Fix:
- *   Replace the date-from-URL regex with an approach that:
- *     1. Extracts the slug from the last path segment of the post URL.
- *     2. Reads the date from properties.published (ISO-8601 string).
- *   Constructs /og/{year}-{month}-{day}-{slug}.png — the filename pattern that
- *   the Eleventy build generates for static OG preview images.
+ *   Replace the date-from-URL regex with a simple last-path-segment extraction.
+ *   Constructs /og/{slug}.png — the actual filename pattern the Eleventy build
+ *   generates for static OG preview images (e.g. /og/2615b.png).
  *
  *   Both jf2ToActivityStreams() (plain JSON-LD) and jf2ToAS2Activity() (Fedify
  *   vocab objects) are patched. Both 842fc5af and 45f8ba9 variants are handled
@@ -44,30 +42,27 @@ const AS2_BLOCK_RE =
   /  const ogMatchF = postUrl && postUrl\.match\([^\n]+\n  if \(ogMatchF\) \{[\s\S]*?\n  \}/;
 
 // ---------------------------------------------------------------------------
-// Replacement: extract slug from URL last segment, date from published ISO string.
-// Build /og/{year}-{month}-{day}-{slug}.png to match the Eleventy OG filenames.
+// Replacement: extract slug from last URL path segment.
+// Build /og/{slug}.png to match the Eleventy OG filenames (e.g. /og/2615b.png).
 //
-// Template literal note: backslashes in regex literals inside the injected code
-// are doubled here so they survive the template literal → string conversion:
+// Template literal note: backslashes inside the injected regex are doubled so
+// they survive the template literal → string conversion:
 //   \\\/ → \/ (escaped slash in regex)
-//   \\d  → \d (digit class)
 //   [\\\w-] → [\w-] (word char class)
 // ---------------------------------------------------------------------------
 const NEW_CN = `  const ogSlug = postUrl && postUrl.match(/\\/([\\\w-]+)\\/?$/)?.[1]; // og-image fix
-  const ogPub = properties.published && properties.published.match(/^(\\d{4})-(\\d{2})-(\\d{2})/); // og-image fix
-  if (ogSlug && ogPub) { // og-image fix
+  if (ogSlug) { // og-image fix
     object.image = {
       type: "Image",
-      url: \`\${publicationUrl.replace(/\\/$/, "")}/og/\${ogPub[1]}-\${ogPub[2]}-\${ogPub[3]}-\${ogSlug}.png\`, // og-image fix
+      url: \`\${publicationUrl.replace(/\\/$/, "")}/og/\${ogSlug}.png\`, // og-image fix
       mediaType: "image/png",
     };
   }`;
 
 const NEW_AS2 = `  const ogSlugF = postUrl && postUrl.match(/\\/([\\\w-]+)\\/?$/)?.[1]; // og-image fix
-  const ogPubF = properties.published && properties.published.match(/^(\\d{4})-(\\d{2})-(\\d{2})/); // og-image fix
-  if (ogSlugF && ogPubF) { // og-image fix
+  if (ogSlugF) { // og-image fix
     noteOptions.image = new Image({
-      url: new URL(\`\${publicationUrl.replace(/\\/$/, "")}/og/\${ogPubF[1]}-\${ogPubF[2]}-\${ogPubF[3]}-\${ogSlugF}.png\`), // og-image fix
+      url: new URL(\`\${publicationUrl.replace(/\\/$/, "")}/og/\${ogSlugF}.png\`), // og-image fix
       mediaType: "image/png",
     });
   }`;

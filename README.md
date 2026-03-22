@@ -19,7 +19,7 @@ Four packages are installed directly from GitHub forks rather than the npm regis
 
 In `package.json` these use the `github:owner/repo[#branch]` syntax so npm fetches them directly from GitHub on install.
 
-> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `a37bece` (synced with upstream post-3.8.1: tags.pub hashtag discovery, AP JSON content negotiation fix, RSA Multikey removal, direct follow workaround for tags.pub identity/v1 context rejection; merge artifacts removed).
+> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `ed18446` (synced with upstream post-3.8.1: tags.pub hashtag discovery, AP JSON content negotiation fix, RSA Multikey removal, direct follow workaround for tags.pub identity/v1 context rejection; merge artifacts removed; DM from Mastodon client no longer creates public blog post; remote profile resolution uses lookupWithSecurity with timeouts).
 
 ---
 
@@ -655,6 +655,9 @@ Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.
 ## Changelog
 
 ### 2026-03-22
+
+**fix(mastodon): remote profile pictures and follower stats missing in Mastodon client** (`ed18446` in svemagie/indiekit-endpoint-activitypub)
+`resolveRemoteAccount()` in `lib/mastodon/helpers/resolve-account.js` called `ctx.lookupObject()` directly. Servers that return 400/403 for signed GETs (e.g. some Mastodon/Pleroma instances) caused the lookup to throw, so the function returned `null` — making profile pages show no avatar and zero follower/following/statuses counts. Fix: replace with `lookupWithSecurity()` (the same signed→unsigned fallback wrapper used everywhere else in the codebase) and obtain a `documentLoader` first so the signed attempt can attach the actor's HTTP signature. Additionally wrapped `getFollowers()`, `getFollowing()`, and `getOutbox()` collection fetches in a 5-second `Promise.race` timeout so slow remote servers no longer block the profile response indefinitely.
 
 **fix(mastodon-api): DM sent from Mastodon client created a public blog post** (`99964e9` in svemagie/indiekit-endpoint-activitypub)
 `POST /api/v1/statuses` with `visibility="direct"` fell through to the Micropub pipeline, which has no concept of Mastodon's `"direct"` visibility — so it created a normal public blog post. Fix: intercept `visibility === "direct"` before Micropub: resolve the `@user@domain` mention via WebFinger (Fedify lookup as fallback), build a `Create/Note` AP activity addressed only to the recipient (no public/followers `cc`), send via `ctx.sendActivity()`, store in `ap_notifications` for the DM thread view, return a minimal status JSON to the client. No blog post is created.

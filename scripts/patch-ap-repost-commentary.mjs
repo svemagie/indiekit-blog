@@ -34,6 +34,8 @@ const candidates = [
 ];
 
 const MARKER = "// repost-commentary fix";
+// Also present when the fork has this change baked in natively (no comment marker needed)
+const NATIVE_MARKER = '} else if (postType === "repost") {';
 
 // ---------------------------------------------------------------------------
 // Fix A – jf2ToActivityStreams(): add commentary variable before the return
@@ -123,7 +125,7 @@ for (const filePath of candidates) {
   checked += 1;
   let source = await readFile(filePath, "utf8");
 
-  if (source.includes(MARKER)) {
+  if (source.includes(MARKER) || source.includes(NATIVE_MARKER)) {
     console.log(`[postinstall] patch-ap-repost-commentary: already applied to ${filePath}`);
     continue;
   }

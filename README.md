@@ -656,6 +656,9 @@ Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.
 
 ### 2026-03-22
 
+**fix(mastodon-api): DM sent from Mastodon client created a public blog post** (`99964e9` in svemagie/indiekit-endpoint-activitypub)
+`POST /api/v1/statuses` with `visibility="direct"` fell through to the Micropub pipeline, which has no concept of Mastodon's `"direct"` visibility — so it created a normal public blog post. Fix: intercept `visibility === "direct"` before Micropub: resolve the `@user@domain` mention via WebFinger (Fedify lookup as fallback), build a `Create/Note` AP activity addressed only to the recipient (no public/followers `cc`), send via `ctx.sendActivity()`, store in `ap_notifications` for the DM thread view, return a minimal status JSON to the client. No blog post is created.
+
 **fix(activitypub): like/reblog from Mastodon client throws "collection.get is not a function"** (`0a686d7` in svemagie/indiekit-endpoint-activitypub)
 `resolveAuthor()` in `lib/resolve-author.js` called `collections.get("ap_timeline")` assuming a `Map` (correct for the native AP inbox path), but the Mastodon Client API passes `req.app.locals.mastodonCollections` as a plain object. Every favourite/reblog action from Phanpy, Elk, or any other Mastodon client hit this error. Fix: `typeof collections.get === "function"` guard selects between Map-style and object-style access so both paths work.
 

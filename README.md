@@ -656,6 +656,22 @@ Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.
 
 ### 2026-03-22
 
+**chore(patches): remove 11 obsolete AP patch scripts** (`18a946c9e`)
+All of the following features are now baked into `svemagie/indiekit-endpoint-activitypub` natively; the patch scripts were either no-ops or (in the case of `patch-ap-repost-commentary`) actively harmful (inserting a duplicate `else if` block on every deploy, preventing startup). Root cause: upstream merges absorbed our custom commits, leaving the OLD snippets absent from the source so patches silently skipped — except Fix D of repost-commentary which still matched a generic `} else {` block and corrupted `jf2-to-as2.js`.
+- `patch-ap-repost-commentary` — repost commentary in AP output (Create/Note with commentary)
+- `patch-ap-url-lookup-api` — `/api/ap-url` endpoint
+- `patch-ap-allow-private-address` — `allowPrivateAddress: true` in `createFederation`
+- `patch-ap-like-note-dispatcher` — reverted fake-Note approach for likes
+- `patch-ap-like-activity-id` — canonical `id` URI on Like activities (AP §6.2.1)
+- `patch-ap-like-activity-dispatcher` — `setObjectDispatcher(Like, …)` for dereferenceable like URLs (AP §3.1)
+- `patch-ap-url-lookup-api-like` — `/api/ap-url` returns `likeOf` URL for AP-likes
+- `patch-ap-remove-federation-diag` — removed verbose federation diagnostics inbox log
+- `patch-ap-normalize-nested-tags` — `cat.split("/").at(-1)` to strip nested tag prefixes
+- `patch-ap-object-url-trailing-slash` — trailing-slash normalisation on AP object URLs (3 orphan scripts not in `package.json`)
+- `patch-ap-og-image` — OG image in AP objects (orphan; feature remains undeployed)
+
+`patch-ap-skip-draft-syndication` kept — draft guard in `syndicate()` not yet in fork.
+
 **chore(deps): sync activitypub fork with upstream post-3.8.1** (`a37bece` in svemagie/indiekit-endpoint-activitypub)
 Four upstream fixes merged since 3.8.1, plus resolution of merge artifacts introduced by the upstream sync:
 - `9a0d6d20`: serve AP JSON for actor URLs received without an explicit `text/html` Accept header — fixes content negotiation for clients that omit Accept

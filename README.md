@@ -12,14 +12,14 @@ Four packages are installed directly from GitHub forks rather than the npm regis
 
 | Dependency | Source | Reason |
 |---|---|---|
-| `@rmdes/indiekit-endpoint-activitypub` | [svemagie/indiekit-endpoint-activitypub](https://github.com/svemagie/indiekit-endpoint-activitypub) | DM support, likes-as-bookmarks, OG images in AP objects, draft/unlisted outbox guards, merged with upstream v3.7.5 |
+| `@rmdes/indiekit-endpoint-activitypub` | [svemagie/indiekit-endpoint-activitypub](https://github.com/svemagie/indiekit-endpoint-activitypub) | DM support, likes-as-bookmarks, OG images in AP objects, draft/unlisted outbox guards, merged with upstream post-3.8.1 |
 | `@rmdes/indiekit-endpoint-blogroll` | [svemagie/indiekit-endpoint-blogroll#bookmark-import](https://github.com/svemagie/indiekit-endpoint-blogroll/tree/bookmark-import) | Bookmark import feature |
 | `@rmdes/indiekit-endpoint-microsub` | [svemagie/indiekit-endpoint-microsub#bookmarks-import](https://github.com/svemagie/indiekit-endpoint-microsub/tree/bookmarks-import) | Bookmarks import feature |
 | `@rmdes/indiekit-endpoint-youtube` | [svemagie/indiekit-endpoint-youtube](https://github.com/svemagie/indiekit-endpoint-youtube) | OAuth 2.0 liked-videos sync as "like" posts |
 
 In `package.json` these use the `github:owner/repo[#branch]` syntax so npm fetches them directly from GitHub on install.
 
-> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `97a902b` (merged upstream v3.7.1–v3.7.5: async signed→unsigned lookup fallback, enrichAccountStats for embedded account objects, URL/mention linkification in statuses, domain_blocking in relationships, real domain_blocks endpoint, Moderation section in federation mgmt dashboard).
+> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `a37bece` (synced with upstream post-3.8.1: tags.pub hashtag discovery, AP JSON content negotiation fix, RSA Multikey removal, direct follow workaround for tags.pub identity/v1 context rejection; merge artifacts removed).
 
 ---
 
@@ -653,6 +653,15 @@ Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.
 ---
 
 ## Changelog
+
+### 2026-03-22
+
+**chore(deps): sync activitypub fork with upstream post-3.8.1** (`a37bece` in svemagie/indiekit-endpoint-activitypub)
+Four upstream fixes merged since 3.8.1, plus resolution of merge artifacts introduced by the upstream sync:
+- `9a0d6d20`: serve AP JSON for actor URLs received without an explicit `text/html` Accept header — fixes content negotiation for clients that omit Accept
+- `4495667e`: remove RSA Multikey from `assertionMethod` in the actor document — was causing tags.pub signature verification failures
+- `c71fd691`: direct follow workaround for tags.pub `identity/v1` JSON-LD context rejection — tags.pub rejects the W3C identity context on incoming follows; new `lib/direct-follow.js` sends follows without that context
+- Merge artifacts removed: duplicate `import { getActorUrlFromId }` in `accounts.js`, duplicate `const cachedUrl` declaration in `resolveActorUrl`, and a stray extra `import { remoteActorId }` in `account-cache.js` — all introduced when cherry-picked commits were merged back against upstream's copy of the same changes
 
 ### 2026-03-21
 

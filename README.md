@@ -656,6 +656,9 @@ Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.
 
 ### 2026-03-22
 
+**fix(activitypub): like/reblog from Mastodon client throws "collection.get is not a function"** (`0a686d7` in svemagie/indiekit-endpoint-activitypub)
+`resolveAuthor()` in `lib/resolve-author.js` called `collections.get("ap_timeline")` assuming a `Map` (correct for the native AP inbox path), but the Mastodon Client API passes `req.app.locals.mastodonCollections` as a plain object. Every favourite/reblog action from Phanpy, Elk, or any other Mastodon client hit this error. Fix: `typeof collections.get === "function"` guard selects between Map-style and object-style access so both paths work.
+
 **chore(patches): remove 11 obsolete AP patch scripts** (`18a946c9e`)
 All of the following features are now baked into `svemagie/indiekit-endpoint-activitypub` natively; the patch scripts were either no-ops or (in the case of `patch-ap-repost-commentary`) actively harmful (inserting a duplicate `else if` block on every deploy, preventing startup). Root cause: upstream merges absorbed our custom commits, leaving the OLD snippets absent from the source so patches silently skipped — except Fix D of repost-commentary which still matched a generic `} else {` block and corrupted `jf2-to-as2.js`.
 - `patch-ap-repost-commentary` — repost commentary in AP output (Create/Note with commentary)

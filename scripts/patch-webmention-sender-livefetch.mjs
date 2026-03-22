@@ -22,7 +22,7 @@ import { access, readFile, writeFile } from "node:fs/promises";
 const filePath =
   "node_modules/@rmdes/indiekit-endpoint-webmention-sender/lib/controllers/webmention-sender.js";
 
-const patchMarker = "// [patched:livefetch:v5]";
+const patchMarker = "// [patched:livefetch:v6]";
 
 // Original upstream code
 const originalBlock = `        // If no content, try fetching the published page
@@ -64,6 +64,8 @@ const retryPatchedBlock = `        // If no content, try fetching the published 
 
         if (!contentToProcess) {
           if (fetchFailed) {
+            // Page not yet available — skip and retry on next poll rather than
+            // permanently marking this post as sent with zero webmentions.
             console.log(\`[webmention] Page not yet available for \${postUrl}, will retry next poll\`);
             continue;
           }
@@ -72,7 +74,7 @@ const retryPatchedBlock = `        // If no content, try fetching the published 
           continue;
         }`;
 
-const newBlock = `        // [patched:livefetch:v5] Build synthetic h-entry HTML from stored post properties.
+const newBlock = `        // [patched:livefetch:v6] Build synthetic h-entry HTML from stored post properties.
         // The stored properties already contain all microformat target URLs
         // (in-reply-to, like-of, bookmark-of, repost-of) and content.html has inline
         // links — no live page fetch needed, and no exposure to internal DNS issues.
@@ -95,7 +97,8 @@ const newBlock = `        // [patched:livefetch:v5] Build synthetic h-entry HTML
           }
         }
         const _bodyHtml = post.properties.content?.html || post.properties.content?.value || "";
-        const contentToProcess = \`<div class="h-entry">\${_anchors.join("")}\${_bodyHtml ? \`<div class="e-content">\${_bodyHtml}</div>\` : ""}</div>\`;`;
+        const contentToProcess = \`<div class="h-entry">\${_anchors.join("")}\${_bodyHtml ? \`<div class="e-content">\${_bodyHtml}</div>\` : ""}</div>\`;
+        console.log(\`[webmention] Built synthetic h-entry for \${postUrl}: \${_anchors.length} prop link(s) [\${Object.entries(_propLinks).filter(([p]) => post.properties[p]).map(([p]) => p).join(", ") || "none"}]\`);`;
 
 async function exists(p) {
   try {
@@ -114,21 +117,26 @@ if (!(await exists(filePath))) {
 const source = await readFile(filePath, "utf8");
 
 if (source.includes(patchMarker)) {
-  console.log("[patch-webmention-sender-livefetch] Already patched (v5)");
+  console.log("[patch-webmention-sender-livefetch] Already patched (v6)");
   process.exit(0);
 }
 
-// For v1–v4: extract the old patched block by finding the marker and the
-// closing "continue;\n        }" that ends the if (!contentToProcess) block.
-const priorMarkers = [
+// Extract the old patched block by finding the marker and the end of the block.
+// v1–v4 end with "continue;\n        }" (the if (!contentToProcess) block).
+// v5+ end with the contentToProcess assignment line (no continue block).
+const priorMarkersWithContinue = [
   "// [patched:livefetch:v4]",
   "// [patched:livefetch:v3]",
   "// [patched:livefetch:v2]",
   "// [patched:livefetch]",
 ];
+const priorMarkersNoContinue = [
+  "// [patched:livefetch:v5]",
+];
 
 let oldPatchBlock = null;
-for (const marker of priorMarkers) {
+
+for (const marker of priorMarkersWithContinue) {
   if (!source.includes(marker)) continue;
   const startIdx = source.lastIndexOf(`        ${marker}`);
   const endMarker = "          continue;\n        }";
@@ -136,6 +144,21 @@ for (const marker of priorMarkers) {
   if (startIdx !== -1 && endSearch !== -1) {
     oldPatchBlock = source.slice(startIdx, endSearch + endMarker.length);
     break;
+  }
+}
+
+if (!oldPatchBlock) {
+  for (const marker of priorMarkersNoContinue) {
+    if (!source.includes(marker)) continue;
+    const startIdx = source.lastIndexOf(`        ${marker}`);
+    // v5 block ends with the contentToProcess = `...`; line
+    // Find the semicolon that closes the last template literal on that line
+    const endMarker = '""}</div>`;\n';
+    const endSearch = source.indexOf(endMarker, startIdx);
+    if (startIdx !== -1 && endSearch !== -1) {
+      oldPatchBlock = source.slice(startIdx, endSearch + endMarker.length);
+      break;
+    }
   }
 }
 
@@ -162,4 +185,4 @@ if (!patched.includes(patchMarker)) {
 }
 
 await writeFile(filePath, patched, "utf8");
-console.log("[patch-webmention-sender-livefetch] Patched successfully (v5)");
+console.log("[patch-webmention-sender-livefetch] Patched successfully (v6)");

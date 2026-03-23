@@ -656,6 +656,9 @@ Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.
 
 ### 2026-03-22
 
+**fix(mastodon-api): follower/following accounts show wrong created_at; URL-type AP lookup** (`6c13eb8` in svemagie/indiekit-endpoint-activitypub)
+All places in `accounts.js` that build actor objects from `ap_followers`/`ap_following` documents were omitting the `createdAt` field. `serializeAccount()` fell back to `new Date().toISOString()`, so every follower and following account appeared to have joined "just now" in the Mastodon client. Fix: pass `createdAt: f.createdAt || undefined` in all five locations — the `/followers`, `/following`, `/lookup` endpoints and both branches of `resolveActorData()`. Additionally, HTTP actor URLs in `resolve-account.js` are now passed to `lookupWithSecurity()` as native `URL` objects instead of bare strings (matching Fedify's preferred type); the `acct:user@domain` WebFinger path stays as a string since WHATWG `new URL()` misparses the `@` as a user-info separator.
+
 **fix(mastodon): remote profile pictures and follower stats missing in Mastodon client** (`ed18446` in svemagie/indiekit-endpoint-activitypub)
 `resolveRemoteAccount()` in `lib/mastodon/helpers/resolve-account.js` called `ctx.lookupObject()` directly. Servers that return 400/403 for signed GETs (e.g. some Mastodon/Pleroma instances) caused the lookup to throw, so the function returned `null` — making profile pages show no avatar and zero follower/following/statuses counts. Fix: replace with `lookupWithSecurity()` (the same signed→unsigned fallback wrapper used everywhere else in the codebase) and obtain a `documentLoader` first so the signed attempt can attach the actor's HTTP signature. Additionally wrapped `getFollowers()`, `getFollowing()`, and `getOutbox()` collection fetches in a 5-second `Promise.race` timeout so slow remote servers no longer block the profile response indefinitely.
 

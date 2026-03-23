@@ -19,7 +19,7 @@ Four packages are installed directly from GitHub forks rather than the npm regis
 
 In `package.json` these use the `github:owner/repo[#branch]` syntax so npm fetches them directly from GitHub on install.
 
-> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `b33932f` (all upstream fixes through 2026-03-23 merged; DM support; favourite/reblog timeout guard; raw signed fetch fallback for non-standard AP servers; remote profile resolution via lookupWithSecurity with timeouts).
+> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `2660a1a` (all upstream fixes through 2026-03-23 merged; DM support; favourite/reblog timeout guard; raw signed fetch fallback for non-standard AP servers; timezone-aware status lookup for pre-UTC-normalization timeline items; remote profile resolution via lookupWithSecurity with timeouts).
 
 ---
 
@@ -655,6 +655,9 @@ Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.
 ## Changelog
 
 ### 2026-03-23
+
+**fix(mastodon-api): favourite still fails for timeline items stored with non-UTC timezone offsets** (`2660a1a` in svemagie/indiekit-endpoint-activitypub)
+`findTimelineItemById` converts the cursor ID (ms-since-epoch) to a UTC ISO string via `decodeCursor`, then tries exact string match against `published` in MongoDB. The UTC normalization fix in `a259c79` / `extractObjectData` ensures NEW inbox items are stored as UTC. But items already in the database from before that deploy still carry the original server's timezone offset (e.g., `"2026-03-21T16:33:50+01:00"`). The final fallback was a `$gte`/`$lte` range query on the string representation — which fails because `"16:33:50+01:00"` is lexicographically outside the UTC range `["15:33:50Z", "15:33:51Z"]`. Fix: replace the string range query with a `$or` that covers both storage formats: (1) BSON Date direct range comparison for Micropub-generated items, and (2) MongoDB `$dateFromString` + `$toLong` numeric range for string-stored dates. `$dateFromString` parses any ISO 8601 format including timezone offsets and returns a UTC Date; `$toLong` converts to ms-since-epoch; the numeric ±1 s window always matches regardless of how the original timezone was encoded.
 
 **merge: upstream raw signed fetch fallback for author resolution** (`c2920ca` merged into svemagie/indiekit-endpoint-activitypub as `b33932f`)
 Upstream added Strategy 1b to `resolveAuthor`: a raw signed HTTP fetch for servers (e.g. wafrn) that return ActivityPub JSON without `@context`, which Fedify's JSON-LD processor rejects and which `lookupWithSecurity` therefore cannot handle. The raw fetch extracts `attributedTo`/`actor` from the plain JSON, then resolves the actor URL via `lookupWithSecurity` as normal. Resolution: combined with our existing 5-second `Promise.race` timeout — `likePost`/`unlikePost`/`boostPost` now pass `privateKey`/`keyId` to `resolveAuthor` so the signed raw fetch can attach an HTTP Signature, while the timeout still guards all three resolution strategies against slow/unreachable remotes.

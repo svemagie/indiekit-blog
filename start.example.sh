@@ -104,6 +104,6 @@ WEBMENTION_ORIGIN="${PUBLICATION_URL:-${SITE_URL:-}}"
 ) &
 POLLER_PID="$!"
 
-trap 'kill "${POLLER_PID}" 2>/dev/null || true' EXIT INT TERM
+trap 'kill "${INDIEKIT_PID}" "${POLLER_PID}" 2>/dev/null || true; wait "${INDIEKIT_PID}" 2>/dev/null || true' EXIT INT TERM
 
 wait "${INDIEKIT_PID}"

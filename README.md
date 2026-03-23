@@ -654,6 +654,14 @@ Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.
 
 ## Changelog
 
+### 2026-03-23
+
+**fix(mastodon-api): favourite/like returns "failed to load post" (404)** (`a259c79` in svemagie/indiekit-endpoint-activitypub)
+`POST /api/v1/statuses/:id/favourite` uses `findTimelineItemById` to resolve the status by its cursor ID (ms-since-epoch). Three failure modes were found: (1) Items written through the Micropub pipeline store `published` as a JavaScript `Date` → MongoDB BSON Date; a string comparison against `decodeCursor()`'s ISO output never matches. (2) Some AP servers emit `published` with a timezone offset (`+01:00`); `String(Temporal.Instant)` preserves the offset, so the stored string and the lookup key differ. (3) Items with an invalid or missing `published` date had their cursor set to `"0"` (truthy in JS) so `serializeStatus` used `"0"` as the ID instead of falling back to `item._id.toString()`, making them permanently un-lookupable. Fixes: `encodeCursor` now returns `""` (falsy) for invalid dates; `findTimelineItemById` adds a BSON Date fallback and a ±1 s ISO range query; `extractObjectData` in `timeline-store.js` now normalises `published` to UTC ISO before storing, so future items always match the exact-string lookup.
+
+**fix(mastodon): profile avatars disappear after first page load; actor created_at wrong timezone** (`da89554` in svemagie/indiekit-endpoint-activitypub)
+Two profile display regressions fixed: (1) `resolveRemoteAccount` fetched the correct avatar URL via `lookupWithSecurity` and applied it to the in-memory serialised status — but never stored it in the account cache. On the next request `serializeStatus` rebuilt the account from `item.author.photo` (empty for actors that were on a Secure Mode server when the timeline item was originally received), counts came from the in-memory cache so `enrichAccountStats`/`collectAccount` skipped re-fetching, and the avatar reverted to the default SVG. Fix: `cacheAccountStats` now stores `avatarUrl`; `collectAccount` always checks the cache first (before the "counts already populated" early-return) and applies `avatarUrl` + `createdAt`. (2) `actor.published` is a `Temporal.Instant`; `String()` on it preserves the original timezone offset (e.g. `+01:00`), so `created_at` in the Mastodon account entity could show a non-UTC timestamp that some clients refuse to parse. Fix: wrap in `new Date(String(...)).toISOString()` in both `resolve-account.js` and `timeline-store.js`.
+
 ### 2026-03-22
 
 **fix(mastodon-api): follower/following accounts show wrong created_at; URL-type AP lookup** (`6c13eb8` in svemagie/indiekit-endpoint-activitypub)

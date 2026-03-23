@@ -19,7 +19,7 @@ Four packages are installed directly from GitHub forks rather than the npm regis
 
 In `package.json` these use the `github:owner/repo[#branch]` syntax so npm fetches them directly from GitHub on install.
 
-> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `b5ebf6a` (all upstream fixes through 2026-03-23 merged; DM support; pin/unpin status; favourite/reblog timeout guard; raw signed fetch fallback for non-standard AP servers; timezone-aware status lookup for pre-UTC-normalization timeline items; remote profile resolution via lookupWithSecurity with timeouts).
+> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `e319c34` (all upstream fixes through 2026-03-23 merged; DM support; pin/unpin status; favourite/reblog timeout guard; raw signed fetch fallback for non-standard AP servers; timezone-aware status lookup for pre-UTC-normalization timeline items; remote profile resolution via lookupWithSecurity with timeouts).
 
 ---
 
@@ -655,6 +655,9 @@ Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.
 ## Changelog
 
 ### 2026-03-23
+
+**feat(mastodon-api): implement PUT /api/v1/statuses/:id (edit post)** (`e319c34` in svemagie/indiekit-endpoint-activitypub)
+`PUT /api/v1/statuses/:id` was not implemented, so "Beitrag bearbeiten" always failed. Route added to `lib/mastodon/routes/statuses.js`. Flow: (1) look up timeline item by cursor ID, 403 if not the local actor's own post; (2) build a Micropub `replace` operation for `content`, `summary`, `sensitive`, and `mp-language` and call `postData.update()` + `postContent.update()` to update the MongoDB posts collection and content file on disk; (3) patch the `ap_timeline` document in-place (`content`, `summary`, `sensitive`, `updatedAt`) — `serializeStatus` reads `updatedAt` → `edited_at`; (4) broadcast `Update(Note)` to all followers via shared inbox so remote servers display the edit pencil indicator; (5) return the serialized status. `Update` added to the top-level `@fedify/fedify/vocab` import.
 
 **feat(mastodon-api): implement pin/unpin status** (`b5ebf6a` in svemagie/indiekit-endpoint-activitypub)
 `POST /api/v1/statuses/:id/pin` and `POST /api/v1/statuses/:id/unpin` were returning 501 "Not implemented", so "In Profil anheften" always failed in Phanpy/Elk. Fix: both routes are now implemented in `lib/mastodon/routes/statuses.js`. Pin upserts a document into `ap_featured` (the same collection the admin UI uses), enforces the existing 5-post maximum, and calls `broadcastActorUpdate()` so remote servers re-fetch the AP featured collection immediately. Unpin deletes from `ap_featured` and broadcasts the same update. `loadItemInteractions()` now also queries `ap_featured` and returns a `pinnedIds` set, so `GET /api/v1/statuses/:id` correctly reflects pin state. `broadcastActorUpdate` wired into mastodon `pluginOptions` in `index.js`.

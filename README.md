@@ -19,7 +19,7 @@ Four packages are installed directly from GitHub forks rather than the npm regis
 
 In `package.json` these use the `github:owner/repo[#branch]` syntax so npm fetches them directly from GitHub on install.
 
-> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `ed18446` (synced with upstream post-3.8.1: tags.pub hashtag discovery, AP JSON content negotiation fix, RSA Multikey removal, direct follow workaround for tags.pub identity/v1 context rejection; merge artifacts removed; DM from Mastodon client no longer creates public blog post; remote profile resolution uses lookupWithSecurity with timeouts).
+> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `b33932f` (all upstream fixes through 2026-03-23 merged; DM support; favourite/reblog timeout guard; raw signed fetch fallback for non-standard AP servers; remote profile resolution via lookupWithSecurity with timeouts).
 
 ---
 
@@ -655,6 +655,9 @@ Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.
 ## Changelog
 
 ### 2026-03-23
+
+**merge: upstream raw signed fetch fallback for author resolution** (`c2920ca` merged into svemagie/indiekit-endpoint-activitypub as `b33932f`)
+Upstream added Strategy 1b to `resolveAuthor`: a raw signed HTTP fetch for servers (e.g. wafrn) that return ActivityPub JSON without `@context`, which Fedify's JSON-LD processor rejects and which `lookupWithSecurity` therefore cannot handle. The raw fetch extracts `attributedTo`/`actor` from the plain JSON, then resolves the actor URL via `lookupWithSecurity` as normal. Resolution: combined with our existing 5-second `Promise.race` timeout — `likePost`/`unlikePost`/`boostPost` now pass `privateKey`/`keyId` to `resolveAuthor` so the signed raw fetch can attach an HTTP Signature, while the timeout still guards all three resolution strategies against slow/unreachable remotes.
 
 **fix(mastodon-api): favourite/reblog blocks on unbound resolveAuthor requests → client timeout** (`01f6f81` in svemagie/indiekit-endpoint-activitypub)
 `likePost`, `unlikePost`, and `boostPost` in `lib/mastodon/helpers/interactions.js` all called `resolveAuthor()` — which makes up to 3 signed HTTP requests to the remote server (post fetch → actor fetch → `getAttributedTo()`) — with no timeout. If the remote server is slow or unreachable, the favourite/reblog HTTP response hangs until Node.js's socket default fires (~2 min). Mastodon clients (Phanpy, Elk) have their own shorter timeout and give up with "Failed to load post … Please try again later". Fix: wrap every `resolveAuthor()` call in `Promise.race()` with a 5 s cap. The interaction is still recorded in `ap_interactions` and the `Like`/`Announce` activity is still delivered when resolution succeeds within the window; on timeout, AP delivery is silently skipped but the client receives a correct 200 with the updated status (⭐ shows as toggled).

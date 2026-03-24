@@ -19,7 +19,7 @@ Four packages are installed directly from GitHub forks rather than the npm regis
 
 In `package.json` these use the `github:owner/repo[#branch]` syntax so npm fetches them directly from GitHub on install.
 
-> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `e319c34` (all upstream fixes through 2026-03-23 merged; DM support; pin/unpin status; favourite/reblog timeout guard; raw signed fetch fallback for non-standard AP servers; timezone-aware status lookup for pre-UTC-normalization timeline items; remote profile resolution via lookupWithSecurity with timeouts).
+> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `bd3a623` (all upstream fixes through 2026-03-23 merged; DM support; pin/unpin status; favourite/reblog timeout guard; raw signed fetch fallback for non-standard AP servers; timezone-aware status lookup for pre-UTC-normalization timeline items; remote profile resolution via lookupWithSecurity with timeouts).
 
 ---
 
@@ -653,6 +653,11 @@ Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.
 ---
 
 ## Changelog
+
+### 2026-03-24
+
+**fix(linkify): trailing punctuation included in auto-linked URLs** (`bd3a623` in svemagie/indiekit-endpoint-activitypub)
+URLs at the end of a sentence (e.g. `"See https://example.com."`) had the trailing period captured as part of the URL, producing a broken link (`https://example.com.` → 404). Root cause: the regex `[^\s<"]+` in `linkifyUrls()` (`lib/jf2-to-as2.js`) and `/(https?:\/\/[^\s<>"')\]]+)/g` in `processStatusContent()` (`lib/mastodon/routes/statuses.js`) both match until whitespace or tag-open, but `.`, `,`, `;`, `:`, `!`, `?` are common sentence-ending characters that follow URLs. Fix: replace the string template in both replace calls with a callback that strips `/[.,;:!?)\]'"]+$/` from the captured URL before inserting into the `<a>` tag. Applies to AP federation (outbox Notes) and Mastodon Client API post creation.
 
 ### 2026-03-23
 

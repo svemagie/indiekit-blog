@@ -19,7 +19,7 @@ Four packages are installed directly from GitHub forks rather than the npm regis
 
 In `package.json` these use the `github:owner/repo[#branch]` syntax so npm fetches them directly from GitHub on install.
 
-> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `bd3a623` (all upstream fixes through 2026-03-23 merged; DM support; pin/unpin status; favourite/reblog timeout guard; raw signed fetch fallback for non-standard AP servers; timezone-aware status lookup for pre-UTC-normalization timeline items; remote profile resolution via lookupWithSecurity with timeouts).
+> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm install github:svemagie/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `42f8c2d` (all upstream fixes through 2026-03-23 merged; DM support; pin/unpin status; favourite/reblog timeout guard; raw signed fetch fallback for non-standard AP servers; timezone-aware status lookup for pre-UTC-normalization timeline items; own Micropub posts mirrored into ap_timeline so context/statuses endpoints work for website-authored posts).
 
 ---
 
@@ -598,35 +598,133 @@ All of these use a shared `_toInternalUrl()` helper (injected by patch scripts) 
 INTERNAL_FETCH_URL=http://10.100.0.10
 ```
 
-### nginx port 80 configuration
+### nginx configuration (`/usr/local/etc/nginx/sites/blog.giersig.eu.conf`)
 
-The internal HTTP listener must:
+The full vhost config lives in the web jail. Key design points:
 
-1. **Serve content directly** (not redirect to HTTPS)
-2. **Set `X-Forwarded-Proto: https`** so Indiekit's `force-https` middleware does not redirect internal requests back to HTTPS
-3. Proxy dynamic routes to the node jail, serve static files from the Eleventy build output
+- **ActivityPub content negotiation** — a `map` block (in `http {}`) detects AP clients by `Accept` header and routes them directly to Indiekit, bypassing `try_files`.
+- **Static-first serving** — browsers hit `try_files` in `location /`; static files are served from `/usr/local/www/blog` (Eleventy `_site/` output, rsynced on deploy). Unmatched paths fall through to `@indiekit`.
+- **Custom 404** — `error_page 404 /404.html` at the server level catches missing static files. `proxy_intercept_errors on` in `@indiekit` catches 404s from the Node upstream. Both serve Eleventy's generated `/404.html`.
+- **Internal listener** (`10.100.0.10:80`) — used by Indiekit for self-fetches only (not internet-facing). Must not intercept errors or redirect; must set `X-Forwarded-Proto: https` so Indiekit's force-https middleware doesn't redirect.
 
 ```nginx
-# Internal HTTP listener — used by Indiekit for self-fetches.
-# Not exposed to the internet (firewall blocks external port 80).
+# ActivityPub content negotiation — place in http {} block
+map $http_accept $is_activitypub {
+    default 0;
+    "~*application/activity\+json" 1;
+    "~*application/ld\+json" 1;
+}
+
+# ── 1. Internal HTTP listener (Indiekit self-fetches only) ──────────────────
+# Bound to jail IP, not exposed to the internet.
+# Passes responses through unmodified — no error interception.
 server {
     listen 10.100.0.10:80;
     server_name blog.giersig.eu;
 
-    # Tell Indiekit this is the real domain (not 10.100.0.10) and
-    # that TLS was terminated upstream so force-https doesn't redirect.
-    proxy_set_header Host blog.giersig.eu;
+    # Hardcode Host so Indiekit sees the real domain, not the jail IP.
+    # X-Forwarded-Proto https prevents force-https from redirecting.
+    proxy_set_header Host              blog.giersig.eu;
     proxy_set_header X-Forwarded-Proto https;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
 
-    # Static files from Eleventy build (rsynced to /usr/local/www/blog)
     location /images/ { root /usr/local/www/blog; }
     location /og/     { root /usr/local/www/blog; }
 
-    # Everything else → Indiekit
     location / {
         proxy_pass http://10.100.0.20:3000;
+    }
+}
+
+# ── 2. HTTP: giersig.eu + www → blog.giersig.eu ─────────────────────────────
+server {
+    listen 80;
+    server_name giersig.eu www.giersig.eu;
+    return 301 https://blog.giersig.eu$request_uri;
+}
+
+# ── 3. HTTP: blog.giersig.eu (ACME challenge + HTTPS redirect) ──────────────
+server {
+    listen 80;
+    server_name blog.giersig.eu;
+
+    location /.well-known/acme-challenge/ {
+        root /usr/local/www/letsencrypt;
+    }
+    location / {
+        return 301 https://blog.giersig.eu$request_uri;
+    }
+}
+
+# ── 4. HTTPS: giersig.eu + www → blog.giersig.eu ────────────────────────────
+server {
+    listen 443 ssl;
+    server_name giersig.eu www.giersig.eu;
+    ssl_certificate     /usr/local/etc/letsencrypt/live/giersig.eu/fullchain.pem;
+    ssl_certificate_key /usr/local/etc/letsencrypt/live/giersig.eu/privkey.pem;
+    include             /usr/local/etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam         /usr/local/etc/letsencrypt/ssl-dhparams.pem;
+    return 301 https://blog.giersig.eu$request_uri;
+}
+
+# ── 5. HTTPS: blog.giersig.eu (main) ────────────────────────────────────────
+server {
+    listen 443 ssl;
+    http2  on;
+    server_name blog.giersig.eu;
+    ssl_certificate     /usr/local/etc/letsencrypt/live/blog.giersig.eu/fullchain.pem;
+    ssl_certificate_key /usr/local/etc/letsencrypt/live/blog.giersig.eu/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache   shared:SSL:10m;
+
+    add_header X-Bridgy-Opt-Out          "yes" always;
+    add_header Strict-Transport-Security "max-age=63072000" always;
+
+    include /usr/local/etc/nginx/bots.d/ddos.conf;
+    include /usr/local/etc/nginx/bots.d/blockbots.conf;
+
+    root  /usr/local/www/blog;
+    index index.html;
+
+    # Custom 404 — served from Eleventy build output.
+    # proxy_intercept_errors in @indiekit ensures upstream 404s also use this.
+    error_page 404 /404.html;
+    location = /404.html {
+        root /usr/local/www/blog;
+        internal;
+    }
+
+    location = /contact {
+        return 301 /hello;
+    }
+
+    location / {
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # AP clients → proxy directly (bypasses try_files / static serving)
+        if ($is_activitypub) {
+            proxy_pass http://10.100.0.20:3000;
+        }
+
+        # Browsers → static file, then directory index, then .html extension,
+        # then fall through to Indiekit for dynamic routes.
+        try_files $uri $uri/ $uri.html @indiekit;
+    }
+
+    location @indiekit {
+        proxy_pass          http://10.100.0.20:3000;
+        proxy_set_header    Host              $host;
+        proxy_set_header    X-Real-IP         $remote_addr;
+        proxy_set_header    X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header    X-Forwarded-Proto $scheme;
+        # Intercept 404s from Node so error_page 404 above fires.
+        proxy_intercept_errors on;
     }
 }
 ```
@@ -655,6 +753,9 @@ Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.
 ## Changelog
 
 ### 2026-03-24
+
+**fix(syndicate): own Micropub posts missing from ap_timeline** (`42f8c2d` in svemagie/indiekit-endpoint-activitypub)
+`GET /api/v1/statuses/:id/context` returned 404 for replies and notes authored via the website admin (Micropub pipeline). Root cause: `addTimelineItem` was only called from inbox handlers (incoming AP) and the Mastodon Client API `POST /api/v1/statuses` route (posts created through Phanpy/Elk). Posts created through Micropub (`syndicate()` in `index.js`) were sent as `Create(Note)` activities to followers but never inserted into `ap_timeline`, so the Mastodon Client API had no record to look up by ID or cursor. Fix: after `logActivity` in `syndicate()`, when the activity type is `Create`, insert the post into `ap_timeline` by mapping JF2 properties (content, summary, sensitive, visibility, inReplyTo, published, author, photo/video/audio, categories) to the timeline item shape. Uses `$setOnInsert` (atomic upsert) so re-syndication of the same URL is idempotent.
 
 **fix(linkify): trailing punctuation included in auto-linked URLs** (`bd3a623` in svemagie/indiekit-endpoint-activitypub)
 URLs at the end of a sentence (e.g. `"See https://example.com."`) had the trailing period captured as part of the URL, producing a broken link (`https://example.com.` → 404). Root cause: the regex `[^\s<"]+` in `linkifyUrls()` (`lib/jf2-to-as2.js`) and `/(https?:\/\/[^\s<>"')\]]+)/g` in `processStatusContent()` (`lib/mastodon/routes/statuses.js`) both match until whitespace or tag-open, but `.`, `,`, `;`, `:`, `!`, `?` are common sentence-ending characters that follow URLs. Fix: replace the string template in both replace calls with a callback that strips `/[.,;:!?)\]'"]+$/` from the captured URL before inserting into the `<a>` tag. Applies to AP federation (outbox Notes) and Mastodon Client API post creation.

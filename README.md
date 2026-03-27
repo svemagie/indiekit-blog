@@ -19,7 +19,7 @@ Four packages are installed directly from GitHub forks rather than the npm regis
 
 In `package.json` these use the `github:owner/repo[#branch]` syntax so npm fetches them directly from GitHub on install.
 
-> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm install github:svemagie/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `230bfd1` (upstream v3.9.x merged: Fedify 2.1.0, 5 FEPs — Tombstone/soft-delete, Activity Intents, indexable actor, NodeInfo enrichment, Collection Sync; security audit — XSS/CSRF/OAuth scope enforcement, rate limiting, token expiry, secret hashing; architecture refactor — syndicator.js, batch-broadcast.js, init-indexes.js, CSS split into 15 files; plus all fork patches: DM support, pin/unpin status, edit post, favourite/reblog timeout guard, raw signed fetch fallback, timezone-aware status lookup, own Micropub posts mirrored into ap_timeline).
+> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm install github:svemagie/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `69ae731` (upstream v3.9.x merged: Fedify 2.1.0, 5 FEPs — Tombstone/soft-delete, Activity Intents, indexable actor, NodeInfo enrichment, Collection Sync; security audit — XSS/CSRF/OAuth scope enforcement, rate limiting, token expiry, secret hashing; architecture refactor — syndicator.js, batch-broadcast.js, init-indexes.js, CSS split into 15 files; plus all fork patches: DM support, pin/unpin status, edit post, favourite/reblog timeout guard, raw signed fetch fallback, timezone-aware status lookup, own Micropub posts mirrored into ap_timeline; trust proxy rate-limit fix).
 
 ---
 
@@ -751,6 +751,20 @@ Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.
 ---
 
 ## Changelog
+
+### 2026-03-27
+
+**merge: upstream v3.9.x — Fedify 2.1.0, 5 FEPs, security/perf audit** (`230bfd1` in svemagie/indiekit-endpoint-activitypub)
+14 upstream commits merged (`0820067..c1a6f7e`). Key changes: Fedify upgraded to 2.1.0; 5 FEP implementations added — FEP-4f05 soft-delete with Tombstone (deleted posts serve 410 + JSON-LD Tombstone, new `ap_tombstones` collection), FEP-3b86 Activity Intents (WebFinger links + `authorize_interaction` routes), FEP-5feb indexable/discoverable actor fields, FEP-f1d5/0151 enriched NodeInfo 2.1, FEP-8fcf Collection Sync outbound. Security audit fixes (27 issues): XSS/CSRF on OAuth authorization page, OAuth scope enforcement on all Mastodon API routes, rate limiting on API/auth/app-registration endpoints, access token expiry (1h) + refresh token rotation (90d), client secret hashing, SSRF fix, redirect_uri validation. Architecture refactoring: syndicator extracted to `lib/syndicator.js`, batch broadcast to `lib/batch-broadcast.js`, MongoDB index creation to `lib/init-indexes.js`, federation helpers to `lib/federation-actions.js` (`index.js` reduced by 35%); CSS split from one 3441-line `reader.css` into 15 feature-scoped files. Fork-specific conflict resolutions: `addTimelineItem` mirror moved from inline syndicator in `index.js` to `lib/syndicator.js`; fixed missing `await` on `jf2ToAS2Activity` in upstream's extracted syndicator; DM path, pin/unpin routes, edit post route, and `processStatusContent` retained in `statuses.js`; cache-first avatar approach retained in `enrich-accounts.js`; DM lock icon (🔒) retained in notification card template.
+
+**fix(accounts): missing tokenRequired/scopeRequired imports** (`b595734` in svemagie/indiekit-endpoint-activitypub)
+`accounts.js` started failing with `ReferenceError: tokenRequired is not defined` immediately on startup. During the merge conflict resolution, the upstream-added `tokenRequired`/`scopeRequired` imports in `accounts.js` were incorrectly dropped (they appeared to already exist in the file from a grep of the post-merge state, but in reality they were only referenced via route middleware, not imported). Fix: added the two missing `import` lines.
+
+**fix(index): missing resolveAuthor import** (`6f76ec4` in svemagie/indiekit-endpoint-activitypub)
+`resolveAuthor` from `lib/resolve-author.js` is used in `index.js` for like/boost delivery (within `batchBroadcast` handlers) but its import was dropped when the merge conflict replaced the inline syndicator block with `createSyndicator(this)`. Fix: restored the `import { resolveAuthor }` line.
+
+**fix(rate-limit): ERR_ERL_PERMISSIVE_TRUST_PROXY on every request** (`69ae731` in svemagie/indiekit-endpoint-activitypub)
+The new `express-rate-limit` middleware (from the upstream security audit) threw `ValidationError: ERR_ERL_PERMISSIVE_TRUST_PROXY` on every incoming request because the server sits behind nginx with `trust proxy: true` set in Express, which `express-rate-limit` v7+ treats as a misconfiguration warning by default. The error propagated up the middleware chain and caused Fedify to log spurious "Failed to verify HTTP Signatures" errors for all incoming inbox requests. Fix: added `validate: { trustProxy: false }` to all three rate limiter instances (`apiLimiter`, `authLimiter`, `appRegistrationLimiter`) in `lib/mastodon/router.js`, signalling that the trust proxy configuration is intentional.
 
 ### 2026-03-24
 

@@ -289,7 +289,7 @@ Patches run alphabetically via `for patch in scripts/patch-*.mjs`. For webmentio
 | `WEBMENTION_SENDER_MOUNT_PATH` | `/webmention-sender` | Plugin mount path in Express |
 | `WEBMENTION_SENDER_TIMEOUT` | `10000` | Per-endpoint send timeout (ms) |
 | `WEBMENTION_SENDER_USER_AGENT` | `"Indiekit Webmention Sender"` | User-Agent for outgoing requests |
-| `INTERNAL_FETCH_URL` | — | Internal nginx URL for self-fetches (e.g. `http://10.100.0.10`) |
+| `INTERNAL_FETCH_URL` | — | Direct Indiekit URL for self-fetches (e.g. `http://10.100.0.20:3000`) |
 | `SECRET` | _(required)_ | JWT signing secret for poller authentication |
 
 ### Troubleshooting
@@ -585,11 +585,13 @@ The node jail cannot reach the public HTTPS URL (`https://blog.giersig.eu`) beca
 - **Bluesky syndicator** — fetches photos for upload, OG metadata/images for link cards
 - **Micropub/syndicate** — self-fetches for token introspection, post updates
 
-All of these use a shared `_toInternalUrl()` helper (injected by patch scripts) that rewrites the public base URL to `INTERNAL_FETCH_URL`. This should point to the nginx web jail's **HTTP** (port 80) listener, which serves both static files and proxies dynamic routes to Indiekit — without TLS.
+All of these use a shared `_toInternalUrl()` helper (injected by patch scripts) that rewrites the public base URL to `INTERNAL_FETCH_URL`. This must point **directly to Indiekit** (node jail IP + port), not to nginx.
 
 ```
-INTERNAL_FETCH_URL=http://10.100.0.10
+INTERNAL_FETCH_URL=http://10.100.0.20:3000
 ```
+
+**Why not nginx (`http://10.100.0.10`)?** nginx's HTTP/80 listener for `blog.giersig.eu` returns a `301` redirect to `https://`. Node's fetch follows the redirect to the public HTTPS URL, which the node jail cannot reach: pf's `rdr` rule only fires on the external interface (`vtnet0`), so there is no hairpin NAT for jail-originated traffic. The result is `UND_ERR_SOCKET: other side closed` on every internal POST (editing posts, syndication, token introspection).
 
 ### nginx configuration (`/usr/local/etc/nginx/sites/blog.giersig.eu.conf`)
 
@@ -726,7 +728,7 @@ server {
 
 | Variable | Example | Purpose |
 |---|---|---|
-| `INTERNAL_FETCH_URL` | `http://10.100.0.10` | nginx HTTP endpoint for self-fetches |
+| `INTERNAL_FETCH_URL` | `http://10.100.0.20:3000` | Direct Indiekit endpoint for self-fetches (must bypass nginx — see Internal fetch URL) |
 | `INDIEKIT_BIND_HOST` | `10.100.0.20` | Jail IP (loopback unavailable in jails); used by webmention poller |
 | `PORT` | `3000` | Indiekit listen port (default 3000) |
 

@@ -233,47 +233,43 @@ Post content stored in MongoDB (`post.properties.content.html`) is just the post
 - `u-repost-of` — same template
 - `u-bookmark-of` — same template
 
-These links only exist in the live HTML page, so the webmention sender must always fetch the rendered page to discover them. This is what `patch-webmention-sender-livefetch.mjs` does.
+These links are **not** stored in MongoDB — only the live rendered page contains them. The livefetch patch (`patch-webmention-sender-livefetch.mjs`) solves this by building synthetic h-entry HTML from stored post properties directly, without fetching the live page.
+
+### How the livefetch patch works (v6)
+
+Instead of fetching the live page, v6 reads the stored post properties from MongoDB and builds a minimal synthetic HTML document:
+
+```html
+<div class="h-entry">
+  <a class="u-in-reply-to" href="https://example.com/target"></a>
+  <div class="e-content">…stored content…</div>
+</div>
+```
+
+This avoids all the networking complexity (nginx routing, Host headers, TLS, 502s) and is reliable even during deploys. The `extractLinks` function scopes to `.h-entry` and finds the anchor tags regardless of text content.
 
 ### Poller architecture (start.sh)
 
 The webmention sender plugin does not have its own scheduling — it exposes an HTTP endpoint that triggers a scan when POSTed to. The `start.sh` script runs a background shell loop:
 
-1. **Readiness check** — polls `GET /webmention-sender/api/status` every 2s until it returns 200 (up to 3 minutes). This ensures MongoDB collections and plugin routes are fully initialised before the first scan.
+1. **Readiness check** — polls `GET /webmention-sender/api/status` directly on `INDIEKIT_BIND_HOST:PORT` every 2s until it returns 200 (up to 3 minutes). This ensures MongoDB collections and plugin routes are fully initialised before the first scan.
 2. **JWT generation** — mints a short-lived token (`{ me, scope: "update" }`, 5-minute expiry) signed with `SECRET`.
 3. **POST trigger** — `curl -X POST /webmention-sender?token=JWT` triggers one scan cycle.
 4. **Sleep** — waits `WEBMENTION_SENDER_POLL_INTERVAL` seconds (default 300 = 5 minutes), then repeats.
 
-The poller routes through nginx (`INTERNAL_FETCH_URL`) rather than hitting Indiekit directly, so the request arrives with correct `Host` and `X-Forwarded-Proto` headers.
-
-### Internal URL rewriting
-
-When the livefetch patch fetches a post's live page, it rewrites the URL from the public domain to the internal nginx address:
-
-```
-https://blog.giersig.eu/replies/693e6/
-    ↓ rewrite via INTERNAL_FETCH_URL
-http://10.100.0.10/replies/693e6/
-    ↓ nginx proxies to Indiekit
-http://10.100.0.20:3000/replies/693e6/
-```
-
-Without this, the node jail cannot reach its own public HTTPS URL (TLS terminates on the web jail). The fallback chain is:
-
-1. `INTERNAL_FETCH_URL` environment variable (production: `http://10.100.0.10`)
-2. `http://localhost:${PORT}` (development)
+The poller connects **directly to Indiekit** (`http://INDIEKIT_BIND_HOST:PORT`) — not through nginx. This is essential because nginx's `000-defaults.conf` returns HTTP 444 (connection drop, no response) for any request whose `Host` header doesn't match a known `server_name`. The poller's curl sends `Host: 10.100.0.20` (the jail IP), which matches no `server_name`, so routing through nginx would silently fail.
 
 ### Retry behaviour
 
-If the live page fetch fails (e.g. deploy still in progress, 502 from nginx), the post is **not** marked as sent. It stays in the "unsent" queue and is retried on the next poll cycle. This prevents the original upstream bug where a failed fetch would permanently mark the post as sent with zero webmentions.
+If a post's stored properties can't produce any external links (e.g. `in-reply-to` is missing), the post is still marked as sent with empty results. This is correct behaviour — if the properties are genuinely empty there's nothing to retry. If the properties were incorrectly stored, bump the `MIGRATION_ID` in `patch-webmention-sender-reset-stale.mjs` to force a re-scan after fixing the data.
 
 ### Patches
 
 | Patch | Purpose |
 |---|---|
-| `patch-webmention-sender-livefetch.mjs` | **(v2)** Always fetch live HTML; validate it contains `h-entry` (rejects error pages/502s); skip without marking sent on any failure; rewrites URL via `INTERNAL_FETCH_URL` for jailed setups. Upgrades from v1 in-place. |
-| `patch-webmention-sender-retry.mjs` | Predecessor to livefetch — superseded by livefetch v2. Silently skips when livefetch v2 marker is present; logs "already applied" otherwise. Kept so it doesn't error if livefetch fails to apply. |
-| `patch-webmention-sender-reset-stale.mjs` | One-time MongoDB migration (v9): resets posts incorrectly marked as sent with empty results. Matches both old numeric-zero format and new v1.0.6+ empty-array format. Guarded by `migrations` collection (`webmention-sender-reset-stale-v9`). |
+| `patch-webmention-sender-livefetch.mjs` | **(v6)** Builds synthetic h-entry HTML from stored post properties (no live fetch). Logs which property links were found per post. Upgrades from any prior version (v1–v5) in-place. |
+| `patch-webmention-sender-retry.mjs` | Superseded by livefetch. Silently skips when any livefetch version marker is present (regex matches `[patched:livefetch]` and `[patched:livefetch:vN]`). Kept as safety fallback. |
+| `patch-webmention-sender-reset-stale.mjs` | One-time MongoDB migration (v11): resets posts incorrectly marked as sent with empty results. Matches both old numeric-zero format and new v1.0.6+ empty-array format. Guarded by `migrations` collection (`webmention-sender-reset-stale-v11`). |
 | `patch-webmention-sender-empty-details.mjs` | UI patch: shows "No external links discovered" in the dashboard when a post was processed but had no outbound links (instead of a blank row). |
 
 ### Patch ordering
@@ -283,7 +279,7 @@ Patches run alphabetically via `for patch in scripts/patch-*.mjs`. For webmentio
 1. `patch-webmention-sender-empty-details.mjs` — targets the `.njk` template (independent)
 2. `patch-webmention-sender-livefetch.mjs` — replaces the fetch block in `webmention-sender.js`
 3. `patch-webmention-sender-reset-stale.mjs` — MongoDB migration (independent)
-4. `patch-webmention-sender-retry.mjs` — detects the livefetch v2 marker and silently skips; logs "already applied" (not a misleading "package updated?" warning)
+4. `patch-webmention-sender-retry.mjs` — detects any livefetch version marker via regex and silently skips; logs "already applied"
 
 ### Environment variables
 
@@ -299,16 +295,13 @@ Patches run alphabetically via `for patch in scripts/patch-*.mjs`. For webmentio
 ### Troubleshooting
 
 **"No external links discovered in this post"**
-The live page was fetched, had a valid `.h-entry`, but no `<a href>` tags with external URLs were found. Check that the post's Eleventy template renders the microformat links (`u-like-of`, etc.) correctly. If the post previously processed with 0 results due to an error page (502, redirect), bump the `MIGRATION_ID` in `patch-webmention-sender-reset-stale.mjs` and restart to force a retry.
+The livefetch patch built the synthetic h-entry but no external links were found. Check the startup log for the line `[webmention] Built synthetic h-entry for <url>: N prop link(s) [in-reply-to]`. If it says `0 prop link(s) [none]`, the relevant property (`in-reply-to`, `like-of`, etc.) is missing from stored post properties in MongoDB — the data was never saved correctly. If the post was previously processed with 0 results due to the old live-fetch bugs, bump `MIGRATION_ID` in `patch-webmention-sender-reset-stale.mjs` and restart.
 
-**502 Bad Gateway on first poll**
-The readiness check (`/webmention-sender/api/status`) should prevent this. If it still happens, the plugin may have registered its routes but MongoDB isn't ready yet. Increase the readiness timeout or check MongoDB connectivity.
+**"webmention-sender not ready after 180s" / "Empty reply from server"**
+The readiness check or poll is routing through nginx, which returns 444 (connection drop) for requests with an unrecognised `Host` header. The poller must connect directly to `INDIEKIT_BIND_HOST:PORT`, not through `INTERNAL_FETCH_URL`. Check that `start.sh` uses `INDIEKIT_DIRECT_URL` (not `INTERNAL_FETCH_URL`) for `WEBMENTION_ENDPOINT`.
 
-**Posts stuck as "not sent" / retrying every cycle**
-The live page fetch is failing every time. Check:
-1. `INTERNAL_FETCH_URL` is set and nginx port 80 is reachable from the node jail
-2. nginx port 80 has `proxy_set_header X-Forwarded-Proto https` (prevents redirect loop)
-3. The post URL actually resolves to a page (not a 404)
+**Posts stuck as "not sent" / not appearing in the dashboard**
+The post was processed with empty results before the livefetch v6 fix was deployed. Bump `MIGRATION_ID` in `patch-webmention-sender-reset-stale.mjs` to force a re-scan on next restart.
 
 **Previously failed posts not retrying**
 Bump the `MIGRATION_ID` in `scripts/patch-webmention-sender-reset-stale.mjs` to a new version string and restart. The migration resets all posts marked as sent with empty results (both numeric-zero and empty-array formats). It is idempotent per ID — bumping the ID forces it to run once more.
@@ -527,14 +520,14 @@ Applies several guards to the listening endpoints: scopes Funkwhale history fetc
 
 ### Webmention sender
 
-**`patch-webmention-sender-livefetch.mjs`** (v2)
-Forces the webmention sender to always fetch the live published page. Validates the response contains `h-entry` before using it — rejects error pages and 502 responses that would silently produce zero links. Rewrites the fetch URL via `INTERNAL_FETCH_URL` for jailed setups. Does not fall back to stored content (which lacks template-rendered microformat links). Upgrades from v1 in-place; silently skips if already at v2.
+**`patch-webmention-sender-livefetch.mjs`** (v6)
+Replaces the upstream content-fetching block with a synthetic h-entry builder. Reads stored post properties directly from the MongoDB document (`in-reply-to`, `like-of`, `bookmark-of`, `repost-of`, `syndication`, `content.html`) and constructs a minimal `<div class="h-entry">` with the appropriate microformat anchor tags. No live page fetch, no nginx dependency, no networking failures. Logs which properties were found per post. Upgrades from any prior version (v1–v5) in-place.
 
 **`patch-webmention-sender-retry.mjs`**
-Predecessor to livefetch, now fully superseded. Silently skips when livefetch v2 marker is present so it does not log misleading "package updated?" warnings. Kept in case livefetch fails to find its target (acts as a partial fallback).
+Predecessor to livefetch, now fully superseded. Silently skips when any livefetch version marker is detected (regex: `/\[patched:livefetch(?::v\d+)?\]/`). Kept as safety fallback in case livefetch fails to find its target.
 
-**`patch-webmention-sender-reset-stale.mjs`** (v9)
-One-time migration (guarded by a `migrations` MongoDB collection entry, currently `webmention-sender-reset-stale-v9`) that resets posts incorrectly marked as webmention-sent with empty results. Matches both old numeric-zero format and new v1.0.6+ empty-array format. Bump the `MIGRATION_ID` to re-run after future bugs.
+**`patch-webmention-sender-reset-stale.mjs`** (v11)
+One-time migration (guarded by a `migrations` MongoDB collection entry, currently `webmention-sender-reset-stale-v11`) that resets posts incorrectly marked as webmention-sent with empty results. Matches both old numeric-zero format and new v1.0.6+ empty-array format. Bump the `MIGRATION_ID` to re-run after future bugs.
 
 ### Bluesky syndicator
 
@@ -905,6 +898,23 @@ Three successive fixes to the webmention sender livefetch patch, driven by split
 Removed a stray extra closing quote (`h-entry""`) introduced in the v2 patch, which broke the string match on case-sensitive systems.
 
 ---
+
+### 2026-03-27
+
+**fix(webmention): livefetch v6 — synthetic h-entry from stored properties, no live fetch**
+Root cause of persistent webmention failures: the livefetch patch was fetching the live page through nginx port 80, which `000-defaults.conf` answered with HTTP 444 (silent connection drop) for any request whose `Host` header didn't match a known `server_name`. The poller sent `Host: 10.100.0.10` (the nginx jail IP), which matched nothing.
+
+v6 eliminates the live-page fetch entirely. Instead, it reads the stored post properties from MongoDB and builds a minimal synthetic `<div class="h-entry">` with anchor tags for each microformat property (`in-reply-to`, `like-of`, `bookmark-of`, `repost-of`, `syndication`) plus the stored `content.html`. This is reliable, fast, and requires no networking.
+
+Additional changes:
+- livefetch v6: adds `console.log` per post showing which properties produced links — makes future debugging possible without server access
+- livefetch v6: upgrades from any prior version (v1–v5) in-place via per-version end-marker detection
+- retry patch: regex now matches `[patched:livefetch]` and `[patched:livefetch:vN]` for all versions
+- reset-stale v11: bumped to retry posts stuck before v6 deployment
+- start.sh: poller now uses `INDIEKIT_DIRECT_URL=http://INDIEKIT_BIND_HOST:PORT` instead of `INTERNAL_FETCH_URL` (nginx); poller was timing out for 180s every restart due to the 444 responses
+
+**chore: `sharp_from_source=true` in `.npmrc`**
+Builds the `sharp` native module from source for FreeBSD compatibility (no prebuilt binary available).
 
 ### 2026-03-19
 

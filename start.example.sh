@@ -61,11 +61,11 @@ done
 INDIEKIT_PID="$!"
 
 # Webmention sender — polls every N seconds (see @rmdes/indiekit-endpoint-webmention-sender README)
-# Routes through INTERNAL_FETCH_URL (nginx) so the request gets correct Host header
-# and X-Forwarded-Proto, avoiding empty-reply issues with direct jail connections.
+# Connects directly to Indiekit (not through nginx) so the Host header doesn't
+# need to match any nginx server_name. nginx port 80 returns 444 for unknown hosts.
 WEBMENTION_POLL_INTERVAL="${WEBMENTION_SENDER_POLL_INTERVAL:-300}"
-INDIEKIT_INTERNAL_URL="${INTERNAL_FETCH_URL:-http://${INDIEKIT_BIND_HOST:-127.0.0.1}:${PORT:-3000}}"
-WEBMENTION_ENDPOINT="${INDIEKIT_INTERNAL_URL}${WEBMENTION_SENDER_MOUNT_PATH:-/webmention-sender}"
+INDIEKIT_DIRECT_URL="http://${INDIEKIT_BIND_HOST:-127.0.0.1}:${PORT:-3000}"
+WEBMENTION_ENDPOINT="${INDIEKIT_DIRECT_URL}${WEBMENTION_SENDER_MOUNT_PATH:-/webmention-sender}"
 WEBMENTION_ORIGIN="${PUBLICATION_URL:-${SITE_URL:-}}"
 
 (

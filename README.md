@@ -19,7 +19,7 @@ Four packages are installed directly from GitHub forks rather than the npm regis
 
 In `package.json` these use the `github:owner/repo[#branch]` syntax so npm fetches them directly from GitHub on install.
 
-> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm install github:svemagie/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `69ae731` (upstream v3.9.x merged: Fedify 2.1.0, 5 FEPs — Tombstone/soft-delete, Activity Intents, indexable actor, NodeInfo enrichment, Collection Sync; security audit — XSS/CSRF/OAuth scope enforcement, rate limiting, token expiry, secret hashing; architecture refactor — syndicator.js, batch-broadcast.js, init-indexes.js, CSS split into 15 files; plus all fork patches: DM support, pin/unpin status, edit post, favourite/reblog timeout guard, raw signed fetch fallback, timezone-aware status lookup, own Micropub posts mirrored into ap_timeline; trust proxy rate-limit fix).
+> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm install github:svemagie/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `b54146c` (upstream v3.9.x merged: Fedify 2.1.0, 5 FEPs — Tombstone/soft-delete, Activity Intents, indexable actor, NodeInfo enrichment, Collection Sync; security audit — XSS/CSRF/OAuth scope enforcement, rate limiting, token expiry, secret hashing; architecture refactor — syndicator.js, batch-broadcast.js, init-indexes.js, CSS split into 15 files; plus all fork patches: DM support, pin/unpin status, edit post, favourite/reblog timeout guard, raw signed fetch fallback, timezone-aware status lookup, own Micropub posts mirrored into ap_timeline, inbox HTTP Signature noise suppressed, OAuth `state` parameter echo fix).
 
 ---
 
@@ -189,7 +189,10 @@ The patch replaces the broken date-from-URL regex with a simple last-path-segmen
 ### Troubleshooting
 
 **`ERR fedify·federation·inbox Failed to verify the request's HTTP Signatures`**
-The body buffering patch must preserve raw bytes in `req._rawBody`. If `JSON.stringify(req.body)` is used instead, the Digest header won't match. Check that `patch-inbox-skip-view-activity-parse` applied correctly.
+This message is expected at low volume (deleted actors, migrated servers with gone keys) and is suppressed to `fatal` level via a dedicated LogTape logger for `["fedify", "federation", "inbox"]` in `federation-setup.js` (`9b6db98`). If you see it flooding logs, check that the LogTape configuration applied. The body buffering patch must also preserve raw bytes in `req._rawBody` — if `JSON.stringify(req.body)` is used instead, the Digest header won't match.
+
+**Mastodon client OAuth fails with "OAuth callback failed. Missing parameters."**
+The OAuth 2.0 spec requires the server to echo the `state` parameter back in the authorization redirect. Mastodon clients (e.g. murmel.social) send a random `state` value for CSRF protection and fail if it is absent from the callback. Fixed in `b54146c`: `state` is now threaded through GET query → session store (surviving the IndieAuth login redirect) → hidden form field → POST body → callback URL (both approve and deny paths).
 
 **Activities appear in outbox but Mastodon doesn't receive them**
 1. Check Redis connectivity: `redis-cli -h 10.100.0.20 ping`

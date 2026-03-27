@@ -19,13 +19,13 @@ Four packages are installed directly from GitHub forks rather than the npm regis
 
 In `package.json` these use the `github:owner/repo[#branch]` syntax so npm fetches them directly from GitHub on install.
 
-> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm install github:svemagie/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `42f8c2d` (all upstream fixes through 2026-03-23 merged; DM support; pin/unpin status; favourite/reblog timeout guard; raw signed fetch fallback for non-standard AP servers; timezone-aware status lookup for pre-UTC-normalization timeline items; own Micropub posts mirrored into ap_timeline so context/statuses endpoints work for website-authored posts).
+> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm install github:svemagie/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `230bfd1` (upstream v3.9.x merged: Fedify 2.1.0, 5 FEPs — Tombstone/soft-delete, Activity Intents, indexable actor, NodeInfo enrichment, Collection Sync; security audit — XSS/CSRF/OAuth scope enforcement, rate limiting, token expiry, secret hashing; architecture refactor — syndicator.js, batch-broadcast.js, init-indexes.js, CSS split into 15 files; plus all fork patches: DM support, pin/unpin status, edit post, favourite/reblog timeout guard, raw signed fetch fallback, timezone-aware status lookup, own Micropub posts mirrored into ap_timeline).
 
 ---
 
 ## ActivityPub federation
 
-The blog is a native ActivityPub actor (`@svemagie@blog.giersig.eu`) powered by [Fedify](https://fedify.dev/) v2.0.3 via the `@rmdes/indiekit-endpoint-activitypub` package. All federation routes are mounted at `/activitypub`.
+The blog is a native ActivityPub actor (`@svemagie@blog.giersig.eu`) powered by [Fedify](https://fedify.dev/) v2.1.0 via the `@rmdes/indiekit-endpoint-activitypub` package. All federation routes are mounted at `/activitypub`.
 
 ### Actor identity
 

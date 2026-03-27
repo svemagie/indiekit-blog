@@ -38,6 +38,8 @@ const newCategorize = `function categorizeCommit(title) {
   if (/^perf[:(]/i.test(title)) return "performance";
   if (/^a11y[:(]/i.test(title)) return "accessibility";
   if (/^docs[:(]/i.test(title)) return "documentation";
+  if (/^chore[:(]/i.test(title)) return "chores";
+  if (/^refactor[:(]/i.test(title)) return "refactor";
   return "other";
 }
 
@@ -47,6 +49,8 @@ const CATEGORY_LABELS = {
   performance: "Performance",
   accessibility: "Accessibility",
   documentation: "Documentation",
+  chores: "Chores",
+  refactor: "Refactor",
   other: "Other",
 };`;
 

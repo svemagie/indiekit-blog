@@ -12,20 +12,20 @@ Four packages are installed directly from GitHub forks rather than the npm regis
 
 | Dependency | Source | Reason |
 |---|---|---|
-| `@rmdes/indiekit-endpoint-activitypub` | [svemagie/indiekit-endpoint-activitypub](https://github.com/svemagie/indiekit-endpoint-activitypub) | DM support, likes-as-bookmarks, OG images in AP objects, draft/unlisted outbox guards, merged with upstream v3.7.5 |
+| `@rmdes/indiekit-endpoint-activitypub` | [svemagie/indiekit-endpoint-activitypub](https://github.com/svemagie/indiekit-endpoint-activitypub) | DM support, likes-as-bookmarks, OG images in AP objects, draft/unlisted outbox guards, merged with upstream post-3.8.1 |
 | `@rmdes/indiekit-endpoint-blogroll` | [svemagie/indiekit-endpoint-blogroll#bookmark-import](https://github.com/svemagie/indiekit-endpoint-blogroll/tree/bookmark-import) | Bookmark import feature |
 | `@rmdes/indiekit-endpoint-microsub` | [svemagie/indiekit-endpoint-microsub#bookmarks-import](https://github.com/svemagie/indiekit-endpoint-microsub/tree/bookmarks-import) | Bookmarks import feature |
 | `@rmdes/indiekit-endpoint-youtube` | [svemagie/indiekit-endpoint-youtube](https://github.com/svemagie/indiekit-endpoint-youtube) | OAuth 2.0 liked-videos sync as "like" posts |
 
 In `package.json` these use the `github:owner/repo[#branch]` syntax so npm fetches them directly from GitHub on install.
 
-> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm update @rmdes/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `97a902b` (merged upstream v3.7.1–v3.7.5: async signed→unsigned lookup fallback, enrichAccountStats for embedded account objects, URL/mention linkification in statuses, domain_blocking in relationships, real domain_blocks endpoint, Moderation section in federation mgmt dashboard).
+> **Lockfile caveat:** The fork dependency is resolved to a specific commit in `package-lock.json`. When fixes are pushed to the fork, run `npm install github:svemagie/indiekit-endpoint-activitypub` to pull the latest commit. The fork HEAD is at `b54146c` (upstream v3.9.x merged: Fedify 2.1.0, 5 FEPs — Tombstone/soft-delete, Activity Intents, indexable actor, NodeInfo enrichment, Collection Sync; security audit — XSS/CSRF/OAuth scope enforcement, rate limiting, token expiry, secret hashing; architecture refactor — syndicator.js, batch-broadcast.js, init-indexes.js, CSS split into 15 files; plus all fork patches: DM support, pin/unpin status, edit post, favourite/reblog timeout guard, raw signed fetch fallback, timezone-aware status lookup, own Micropub posts mirrored into ap_timeline, inbox HTTP Signature noise suppressed, OAuth `state` parameter echo fix).
 
 ---
 
 ## ActivityPub federation
 
-The blog is a native ActivityPub actor (`@svemagie@blog.giersig.eu`) powered by [Fedify](https://fedify.dev/) v2.0.3 via the `@rmdes/indiekit-endpoint-activitypub` package. All federation routes are mounted at `/activitypub`.
+The blog is a native ActivityPub actor (`@svemagie@blog.giersig.eu`) powered by [Fedify](https://fedify.dev/) v2.1.0 via the `@rmdes/indiekit-endpoint-activitypub` package. All federation routes are mounted at `/activitypub`.
 
 ### Actor identity
 
@@ -189,7 +189,10 @@ The patch replaces the broken date-from-URL regex with a simple last-path-segmen
 ### Troubleshooting
 
 **`ERR fedify·federation·inbox Failed to verify the request's HTTP Signatures`**
-The body buffering patch must preserve raw bytes in `req._rawBody`. If `JSON.stringify(req.body)` is used instead, the Digest header won't match. Check that `patch-inbox-skip-view-activity-parse` applied correctly.
+This message is expected at low volume (deleted actors, migrated servers with gone keys) and is suppressed to `fatal` level via a dedicated LogTape logger for `["fedify", "federation", "inbox"]` in `federation-setup.js` (`9b6db98`). If you see it flooding logs, check that the LogTape configuration applied. The body buffering patch must also preserve raw bytes in `req._rawBody` — if `JSON.stringify(req.body)` is used instead, the Digest header won't match.
+
+**Mastodon client OAuth fails with "OAuth callback failed. Missing parameters."**
+The OAuth 2.0 spec requires the server to echo the `state` parameter back in the authorization redirect. Mastodon clients (e.g. murmel.social) send a random `state` value for CSRF protection and fail if it is absent from the callback. Fixed in `b54146c`: `state` is now threaded through GET query → session store (surviving the IndieAuth login redirect) → hidden form field → POST body → callback URL (both approve and deny paths).
 
 **Activities appear in outbox but Mastodon doesn't receive them**
 1. Check Redis connectivity: `redis-cli -h 10.100.0.20 ping`
@@ -233,47 +236,43 @@ Post content stored in MongoDB (`post.properties.content.html`) is just the post
 - `u-repost-of` — same template
 - `u-bookmark-of` — same template
 
-These links only exist in the live HTML page, so the webmention sender must always fetch the rendered page to discover them. This is what `patch-webmention-sender-livefetch.mjs` does.
+These links are **not** stored in MongoDB — only the live rendered page contains them. The livefetch patch (`patch-webmention-sender-livefetch.mjs`) solves this by building synthetic h-entry HTML from stored post properties directly, without fetching the live page.
+
+### How the livefetch patch works (v6)
+
+Instead of fetching the live page, v6 reads the stored post properties from MongoDB and builds a minimal synthetic HTML document:
+
+```html
+<div class="h-entry">
+  <a class="u-in-reply-to" href="https://example.com/target"></a>
+  <div class="e-content">…stored content…</div>
+</div>
+```
+
+This avoids all the networking complexity (nginx routing, Host headers, TLS, 502s) and is reliable even during deploys. The `extractLinks` function scopes to `.h-entry` and finds the anchor tags regardless of text content.
 
 ### Poller architecture (start.sh)
 
 The webmention sender plugin does not have its own scheduling — it exposes an HTTP endpoint that triggers a scan when POSTed to. The `start.sh` script runs a background shell loop:
 
-1. **Readiness check** — polls `GET /webmention-sender/api/status` every 2s until it returns 200 (up to 3 minutes). This ensures MongoDB collections and plugin routes are fully initialised before the first scan.
+1. **Readiness check** — polls `GET /webmention-sender/api/status` directly on `INDIEKIT_BIND_HOST:PORT` every 2s until it returns 200 (up to 3 minutes). This ensures MongoDB collections and plugin routes are fully initialised before the first scan.
 2. **JWT generation** — mints a short-lived token (`{ me, scope: "update" }`, 5-minute expiry) signed with `SECRET`.
 3. **POST trigger** — `curl -X POST /webmention-sender?token=JWT` triggers one scan cycle.
 4. **Sleep** — waits `WEBMENTION_SENDER_POLL_INTERVAL` seconds (default 300 = 5 minutes), then repeats.
 
-The poller routes through nginx (`INTERNAL_FETCH_URL`) rather than hitting Indiekit directly, so the request arrives with correct `Host` and `X-Forwarded-Proto` headers.
-
-### Internal URL rewriting
-
-When the livefetch patch fetches a post's live page, it rewrites the URL from the public domain to the internal nginx address:
-
-```
-https://blog.giersig.eu/replies/693e6/
-    ↓ rewrite via INTERNAL_FETCH_URL
-http://10.100.0.10/replies/693e6/
-    ↓ nginx proxies to Indiekit
-http://10.100.0.20:3000/replies/693e6/
-```
-
-Without this, the node jail cannot reach its own public HTTPS URL (TLS terminates on the web jail). The fallback chain is:
-
-1. `INTERNAL_FETCH_URL` environment variable (production: `http://10.100.0.10`)
-2. `http://localhost:${PORT}` (development)
+The poller connects **directly to Indiekit** (`http://INDIEKIT_BIND_HOST:PORT`) — not through nginx. This is essential because nginx's `000-defaults.conf` returns HTTP 444 (connection drop, no response) for any request whose `Host` header doesn't match a known `server_name`. The poller's curl sends `Host: 10.100.0.20` (the jail IP), which matches no `server_name`, so routing through nginx would silently fail.
 
 ### Retry behaviour
 
-If the live page fetch fails (e.g. deploy still in progress, 502 from nginx), the post is **not** marked as sent. It stays in the "unsent" queue and is retried on the next poll cycle. This prevents the original upstream bug where a failed fetch would permanently mark the post as sent with zero webmentions.
+If a post's stored properties can't produce any external links (e.g. `in-reply-to` is missing), the post is still marked as sent with empty results. This is correct behaviour — if the properties are genuinely empty there's nothing to retry. If the properties were incorrectly stored, bump the `MIGRATION_ID` in `patch-webmention-sender-reset-stale.mjs` to force a re-scan after fixing the data.
 
 ### Patches
 
 | Patch | Purpose |
 |---|---|
-| `patch-webmention-sender-livefetch.mjs` | **(v2)** Always fetch live HTML; validate it contains `h-entry` (rejects error pages/502s); skip without marking sent on any failure; rewrites URL via `INTERNAL_FETCH_URL` for jailed setups. Upgrades from v1 in-place. |
-| `patch-webmention-sender-retry.mjs` | Predecessor to livefetch — superseded by livefetch v2. Silently skips when livefetch v2 marker is present; logs "already applied" otherwise. Kept so it doesn't error if livefetch fails to apply. |
-| `patch-webmention-sender-reset-stale.mjs` | One-time MongoDB migration (v9): resets posts incorrectly marked as sent with empty results. Matches both old numeric-zero format and new v1.0.6+ empty-array format. Guarded by `migrations` collection (`webmention-sender-reset-stale-v9`). |
+| `patch-webmention-sender-livefetch.mjs` | **(v6)** Builds synthetic h-entry HTML from stored post properties (no live fetch). Logs which property links were found per post. Upgrades from any prior version (v1–v5) in-place. |
+| `patch-webmention-sender-retry.mjs` | Superseded by livefetch. Silently skips when any livefetch version marker is present (regex matches `[patched:livefetch]` and `[patched:livefetch:vN]`). Kept as safety fallback. |
+| `patch-webmention-sender-reset-stale.mjs` | One-time MongoDB migration (v11): resets posts incorrectly marked as sent with empty results. Matches both old numeric-zero format and new v1.0.6+ empty-array format. Guarded by `migrations` collection (`webmention-sender-reset-stale-v11`). |
 | `patch-webmention-sender-empty-details.mjs` | UI patch: shows "No external links discovered" in the dashboard when a post was processed but had no outbound links (instead of a blank row). |
 
 ### Patch ordering
@@ -283,7 +282,7 @@ Patches run alphabetically via `for patch in scripts/patch-*.mjs`. For webmentio
 1. `patch-webmention-sender-empty-details.mjs` — targets the `.njk` template (independent)
 2. `patch-webmention-sender-livefetch.mjs` — replaces the fetch block in `webmention-sender.js`
 3. `patch-webmention-sender-reset-stale.mjs` — MongoDB migration (independent)
-4. `patch-webmention-sender-retry.mjs` — detects the livefetch v2 marker and silently skips; logs "already applied" (not a misleading "package updated?" warning)
+4. `patch-webmention-sender-retry.mjs` — detects any livefetch version marker via regex and silently skips; logs "already applied"
 
 ### Environment variables
 
@@ -293,22 +292,19 @@ Patches run alphabetically via `for patch in scripts/patch-*.mjs`. For webmentio
 | `WEBMENTION_SENDER_MOUNT_PATH` | `/webmention-sender` | Plugin mount path in Express |
 | `WEBMENTION_SENDER_TIMEOUT` | `10000` | Per-endpoint send timeout (ms) |
 | `WEBMENTION_SENDER_USER_AGENT` | `"Indiekit Webmention Sender"` | User-Agent for outgoing requests |
-| `INTERNAL_FETCH_URL` | — | Internal nginx URL for self-fetches (e.g. `http://10.100.0.10`) |
+| `INTERNAL_FETCH_URL` | — | Direct Indiekit URL for self-fetches (e.g. `http://10.100.0.20:3000`) |
 | `SECRET` | _(required)_ | JWT signing secret for poller authentication |
 
 ### Troubleshooting
 
 **"No external links discovered in this post"**
-The live page was fetched, had a valid `.h-entry`, but no `<a href>` tags with external URLs were found. Check that the post's Eleventy template renders the microformat links (`u-like-of`, etc.) correctly. If the post previously processed with 0 results due to an error page (502, redirect), bump the `MIGRATION_ID` in `patch-webmention-sender-reset-stale.mjs` and restart to force a retry.
+The livefetch patch built the synthetic h-entry but no external links were found. Check the startup log for the line `[webmention] Built synthetic h-entry for <url>: N prop link(s) [in-reply-to]`. If it says `0 prop link(s) [none]`, the relevant property (`in-reply-to`, `like-of`, etc.) is missing from stored post properties in MongoDB — the data was never saved correctly. If the post was previously processed with 0 results due to the old live-fetch bugs, bump `MIGRATION_ID` in `patch-webmention-sender-reset-stale.mjs` and restart.
 
-**502 Bad Gateway on first poll**
-The readiness check (`/webmention-sender/api/status`) should prevent this. If it still happens, the plugin may have registered its routes but MongoDB isn't ready yet. Increase the readiness timeout or check MongoDB connectivity.
+**"webmention-sender not ready after 180s" / "Empty reply from server"**
+The readiness check or poll is routing through nginx, which returns 444 (connection drop) for requests with an unrecognised `Host` header. The poller must connect directly to `INDIEKIT_BIND_HOST:PORT`, not through `INTERNAL_FETCH_URL`. Check that `start.sh` uses `INDIEKIT_DIRECT_URL` (not `INTERNAL_FETCH_URL`) for `WEBMENTION_ENDPOINT`.
 
-**Posts stuck as "not sent" / retrying every cycle**
-The live page fetch is failing every time. Check:
-1. `INTERNAL_FETCH_URL` is set and nginx port 80 is reachable from the node jail
-2. nginx port 80 has `proxy_set_header X-Forwarded-Proto https` (prevents redirect loop)
-3. The post URL actually resolves to a page (not a 404)
+**Posts stuck as "not sent" / not appearing in the dashboard**
+The post was processed with empty results before the livefetch v6 fix was deployed. Bump `MIGRATION_ID` in `patch-webmention-sender-reset-stale.mjs` to force a re-scan on next restart.
 
 **Previously failed posts not retrying**
 Bump the `MIGRATION_ID` in `scripts/patch-webmention-sender-reset-stale.mjs` to a new version string and restart. The migration resets all posts marked as sent with empty results (both numeric-zero and empty-array formats). It is idempotent per ID — bumping the ID forces it to run once more.
@@ -527,14 +523,14 @@ Applies several guards to the listening endpoints: scopes Funkwhale history fetc
 
 ### Webmention sender
 
-**`patch-webmention-sender-livefetch.mjs`** (v2)
-Forces the webmention sender to always fetch the live published page. Validates the response contains `h-entry` before using it — rejects error pages and 502 responses that would silently produce zero links. Rewrites the fetch URL via `INTERNAL_FETCH_URL` for jailed setups. Does not fall back to stored content (which lacks template-rendered microformat links). Upgrades from v1 in-place; silently skips if already at v2.
+**`patch-webmention-sender-livefetch.mjs`** (v6)
+Replaces the upstream content-fetching block with a synthetic h-entry builder. Reads stored post properties directly from the MongoDB document (`in-reply-to`, `like-of`, `bookmark-of`, `repost-of`, `syndication`, `content.html`) and constructs a minimal `<div class="h-entry">` with the appropriate microformat anchor tags. No live page fetch, no nginx dependency, no networking failures. Logs which properties were found per post. Upgrades from any prior version (v1–v5) in-place.
 
 **`patch-webmention-sender-retry.mjs`**
-Predecessor to livefetch, now fully superseded. Silently skips when livefetch v2 marker is present so it does not log misleading "package updated?" warnings. Kept in case livefetch fails to find its target (acts as a partial fallback).
+Predecessor to livefetch, now fully superseded. Silently skips when any livefetch version marker is detected (regex: `/\[patched:livefetch(?::v\d+)?\]/`). Kept as safety fallback in case livefetch fails to find its target.
 
-**`patch-webmention-sender-reset-stale.mjs`** (v9)
-One-time migration (guarded by a `migrations` MongoDB collection entry, currently `webmention-sender-reset-stale-v9`) that resets posts incorrectly marked as webmention-sent with empty results. Matches both old numeric-zero format and new v1.0.6+ empty-array format. Bump the `MIGRATION_ID` to re-run after future bugs.
+**`patch-webmention-sender-reset-stale.mjs`** (v11)
+One-time migration (guarded by a `migrations` MongoDB collection entry, currently `webmention-sender-reset-stale-v11`) that resets posts incorrectly marked as webmention-sent with empty results. Matches both old numeric-zero format and new v1.0.6+ empty-array format. Bump the `MIGRATION_ID` to re-run after future bugs.
 
 ### Bluesky syndicator
 
@@ -592,41 +588,141 @@ The node jail cannot reach the public HTTPS URL (`https://blog.giersig.eu`) beca
 - **Bluesky syndicator** — fetches photos for upload, OG metadata/images for link cards
 - **Micropub/syndicate** — self-fetches for token introspection, post updates
 
-All of these use a shared `_toInternalUrl()` helper (injected by patch scripts) that rewrites the public base URL to `INTERNAL_FETCH_URL`. This should point to the nginx web jail's **HTTP** (port 80) listener, which serves both static files and proxies dynamic routes to Indiekit — without TLS.
+All of these use a shared `_toInternalUrl()` helper (injected by patch scripts) that rewrites the public base URL to `INTERNAL_FETCH_URL`. This must point **directly to Indiekit** (node jail IP + port), not to nginx.
 
 ```
-INTERNAL_FETCH_URL=http://10.100.0.10
+INTERNAL_FETCH_URL=http://10.100.0.20:3000
 ```
 
-### nginx port 80 configuration
+**Why not nginx (`http://10.100.0.10`)?** nginx's HTTP/80 listener for `blog.giersig.eu` returns a `301` redirect to `https://`. Node's fetch follows the redirect to the public HTTPS URL, which the node jail cannot reach: pf's `rdr` rule only fires on the external interface (`vtnet0`), so there is no hairpin NAT for jail-originated traffic. The result is `UND_ERR_SOCKET: other side closed` on every internal POST (editing posts, syndication, token introspection).
 
-The internal HTTP listener must:
+### nginx configuration (`/usr/local/etc/nginx/sites/blog.giersig.eu.conf`)
 
-1. **Serve content directly** (not redirect to HTTPS)
-2. **Set `X-Forwarded-Proto: https`** so Indiekit's `force-https` middleware does not redirect internal requests back to HTTPS
-3. Proxy dynamic routes to the node jail, serve static files from the Eleventy build output
+The full vhost config lives in the web jail. Key design points:
+
+- **ActivityPub content negotiation** — a `map` block (in `http {}`) detects AP clients by `Accept` header and routes them directly to Indiekit, bypassing `try_files`.
+- **Static-first serving** — browsers hit `try_files` in `location /`; static files are served from `/usr/local/www/blog` (Eleventy `_site/` output, rsynced on deploy). Unmatched paths fall through to `@indiekit`.
+- **Custom 404** — `error_page 404 /404.html` at the server level catches missing static files. `proxy_intercept_errors on` in `@indiekit` catches 404s from the Node upstream. Both serve Eleventy's generated `/404.html`.
+- **Internal listener** (`10.100.0.10:80`) — used by Indiekit for self-fetches only (not internet-facing). Must not intercept errors or redirect; must set `X-Forwarded-Proto: https` so Indiekit's force-https middleware doesn't redirect.
 
 ```nginx
-# Internal HTTP listener — used by Indiekit for self-fetches.
-# Not exposed to the internet (firewall blocks external port 80).
+# ActivityPub content negotiation — place in http {} block
+map $http_accept $is_activitypub {
+    default 0;
+    "~*application/activity\+json" 1;
+    "~*application/ld\+json" 1;
+}
+
+# ── 1. Internal HTTP listener (Indiekit self-fetches only) ──────────────────
+# Bound to jail IP, not exposed to the internet.
+# Passes responses through unmodified — no error interception.
 server {
     listen 10.100.0.10:80;
     server_name blog.giersig.eu;
 
-    # Tell Indiekit this is the real domain (not 10.100.0.10) and
-    # that TLS was terminated upstream so force-https doesn't redirect.
-    proxy_set_header Host blog.giersig.eu;
+    # Hardcode Host so Indiekit sees the real domain, not the jail IP.
+    # X-Forwarded-Proto https prevents force-https from redirecting.
+    proxy_set_header Host              blog.giersig.eu;
     proxy_set_header X-Forwarded-Proto https;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
 
-    # Static files from Eleventy build (rsynced to /usr/local/www/blog)
     location /images/ { root /usr/local/www/blog; }
     location /og/     { root /usr/local/www/blog; }
 
-    # Everything else → Indiekit
     location / {
         proxy_pass http://10.100.0.20:3000;
+    }
+}
+
+# ── 2. HTTP: giersig.eu + www → blog.giersig.eu ─────────────────────────────
+server {
+    listen 80;
+    server_name giersig.eu www.giersig.eu;
+    return 301 https://blog.giersig.eu$request_uri;
+}
+
+# ── 3. HTTP: blog.giersig.eu (ACME challenge + HTTPS redirect) ──────────────
+server {
+    listen 80;
+    server_name blog.giersig.eu;
+
+    location /.well-known/acme-challenge/ {
+        root /usr/local/www/letsencrypt;
+    }
+    location / {
+        return 301 https://blog.giersig.eu$request_uri;
+    }
+}
+
+# ── 4. HTTPS: giersig.eu + www → blog.giersig.eu ────────────────────────────
+server {
+    listen 443 ssl;
+    server_name giersig.eu www.giersig.eu;
+    ssl_certificate     /usr/local/etc/letsencrypt/live/giersig.eu/fullchain.pem;
+    ssl_certificate_key /usr/local/etc/letsencrypt/live/giersig.eu/privkey.pem;
+    include             /usr/local/etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam         /usr/local/etc/letsencrypt/ssl-dhparams.pem;
+    return 301 https://blog.giersig.eu$request_uri;
+}
+
+# ── 5. HTTPS: blog.giersig.eu (main) ────────────────────────────────────────
+server {
+    listen 443 ssl;
+    http2  on;
+    server_name blog.giersig.eu;
+    ssl_certificate     /usr/local/etc/letsencrypt/live/blog.giersig.eu/fullchain.pem;
+    ssl_certificate_key /usr/local/etc/letsencrypt/live/blog.giersig.eu/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache   shared:SSL:10m;
+
+    add_header X-Bridgy-Opt-Out          "yes" always;
+    add_header Strict-Transport-Security "max-age=63072000" always;
+
+    include /usr/local/etc/nginx/bots.d/ddos.conf;
+    include /usr/local/etc/nginx/bots.d/blockbots.conf;
+
+    root  /usr/local/www/blog;
+    index index.html;
+
+    # Custom 404 — served from Eleventy build output.
+    # proxy_intercept_errors in @indiekit ensures upstream 404s also use this.
+    error_page 404 /404.html;
+    location = /404.html {
+        root /usr/local/www/blog;
+        internal;
+    }
+
+    location = /contact {
+        return 301 /hello;
+    }
+
+    location / {
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # AP clients → proxy directly (bypasses try_files / static serving)
+        if ($is_activitypub) {
+            proxy_pass http://10.100.0.20:3000;
+        }
+
+        # Browsers → static file, then directory index, then .html extension,
+        # then fall through to Indiekit for dynamic routes.
+        try_files $uri $uri/ $uri.html @indiekit;
+    }
+
+    location @indiekit {
+        proxy_pass          http://10.100.0.20:3000;
+        proxy_set_header    Host              $host;
+        proxy_set_header    X-Real-IP         $remote_addr;
+        proxy_set_header    X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header    X-Forwarded-Proto $scheme;
+        # Intercept 404s from Node so error_page 404 above fires.
+        proxy_intercept_errors on;
     }
 }
 ```
@@ -635,7 +731,7 @@ server {
 
 | Variable | Example | Purpose |
 |---|---|---|
-| `INTERNAL_FETCH_URL` | `http://10.100.0.10` | nginx HTTP endpoint for self-fetches |
+| `INTERNAL_FETCH_URL` | `http://10.100.0.20:3000` | Direct Indiekit endpoint for self-fetches (must bypass nginx — see Internal fetch URL) |
 | `INDIEKIT_BIND_HOST` | `10.100.0.20` | Jail IP (loopback unavailable in jails); used by webmention poller |
 | `PORT` | `3000` | Indiekit listen port (default 3000) |
 
@@ -653,6 +749,94 @@ Environment variables are loaded from `.env` via `dotenv`. See `indiekit.config.
 ---
 
 ## Changelog
+
+### 2026-03-27
+
+**merge: upstream v3.9.x — Fedify 2.1.0, 5 FEPs, security/perf audit** (`230bfd1` in svemagie/indiekit-endpoint-activitypub)
+14 upstream commits merged (`0820067..c1a6f7e`). Key changes: Fedify upgraded to 2.1.0; 5 FEP implementations added — FEP-4f05 soft-delete with Tombstone (deleted posts serve 410 + JSON-LD Tombstone, new `ap_tombstones` collection), FEP-3b86 Activity Intents (WebFinger links + `authorize_interaction` routes), FEP-5feb indexable/discoverable actor fields, FEP-f1d5/0151 enriched NodeInfo 2.1, FEP-8fcf Collection Sync outbound. Security audit fixes (27 issues): XSS/CSRF on OAuth authorization page, OAuth scope enforcement on all Mastodon API routes, rate limiting on API/auth/app-registration endpoints, access token expiry (1h) + refresh token rotation (90d), client secret hashing, SSRF fix, redirect_uri validation. Architecture refactoring: syndicator extracted to `lib/syndicator.js`, batch broadcast to `lib/batch-broadcast.js`, MongoDB index creation to `lib/init-indexes.js`, federation helpers to `lib/federation-actions.js` (`index.js` reduced by 35%); CSS split from one 3441-line `reader.css` into 15 feature-scoped files. Fork-specific conflict resolutions: `addTimelineItem` mirror moved from inline syndicator in `index.js` to `lib/syndicator.js`; fixed missing `await` on `jf2ToAS2Activity` in upstream's extracted syndicator; DM path, pin/unpin routes, edit post route, and `processStatusContent` retained in `statuses.js`; cache-first avatar approach retained in `enrich-accounts.js`; DM lock icon (🔒) retained in notification card template.
+
+**fix(accounts): missing tokenRequired/scopeRequired imports** (`b595734` in svemagie/indiekit-endpoint-activitypub)
+`accounts.js` started failing with `ReferenceError: tokenRequired is not defined` immediately on startup. During the merge conflict resolution, the upstream-added `tokenRequired`/`scopeRequired` imports in `accounts.js` were incorrectly dropped (they appeared to already exist in the file from a grep of the post-merge state, but in reality they were only referenced via route middleware, not imported). Fix: added the two missing `import` lines.
+
+**fix(index): missing resolveAuthor import** (`6f76ec4` in svemagie/indiekit-endpoint-activitypub)
+`resolveAuthor` from `lib/resolve-author.js` is used in `index.js` for like/boost delivery (within `batchBroadcast` handlers) but its import was dropped when the merge conflict replaced the inline syndicator block with `createSyndicator(this)`. Fix: restored the `import { resolveAuthor }` line.
+
+**fix(rate-limit): ERR_ERL_PERMISSIVE_TRUST_PROXY on every request** (`69ae731` in svemagie/indiekit-endpoint-activitypub)
+The new `express-rate-limit` middleware (from the upstream security audit) threw `ValidationError: ERR_ERL_PERMISSIVE_TRUST_PROXY` on every incoming request because the server sits behind nginx with `trust proxy: true` set in Express, which `express-rate-limit` v7+ treats as a misconfiguration warning by default. The error propagated up the middleware chain and caused Fedify to log spurious "Failed to verify HTTP Signatures" errors for all incoming inbox requests. Fix: added `validate: { trustProxy: false }` to all three rate limiter instances (`apiLimiter`, `authLimiter`, `appRegistrationLimiter`) in `lib/mastodon/router.js`, signalling that the trust proxy configuration is intentional.
+
+### 2026-03-24
+
+**fix(syndicate): own Micropub posts missing from ap_timeline** (`42f8c2d` in svemagie/indiekit-endpoint-activitypub)
+`GET /api/v1/statuses/:id/context` returned 404 for replies and notes authored via the website admin (Micropub pipeline). Root cause: `addTimelineItem` was only called from inbox handlers (incoming AP) and the Mastodon Client API `POST /api/v1/statuses` route (posts created through Phanpy/Elk). Posts created through Micropub (`syndicate()` in `index.js`) were sent as `Create(Note)` activities to followers but never inserted into `ap_timeline`, so the Mastodon Client API had no record to look up by ID or cursor. Fix: after `logActivity` in `syndicate()`, when the activity type is `Create`, insert the post into `ap_timeline` by mapping JF2 properties (content, summary, sensitive, visibility, inReplyTo, published, author, photo/video/audio, categories) to the timeline item shape. Uses `$setOnInsert` (atomic upsert) so re-syndication of the same URL is idempotent.
+
+**fix(linkify): trailing punctuation included in auto-linked URLs** (`bd3a623` in svemagie/indiekit-endpoint-activitypub)
+URLs at the end of a sentence (e.g. `"See https://example.com."`) had the trailing period captured as part of the URL, producing a broken link (`https://example.com.` → 404). Root cause: the regex `[^\s<"]+` in `linkifyUrls()` (`lib/jf2-to-as2.js`) and `/(https?:\/\/[^\s<>"')\]]+)/g` in `processStatusContent()` (`lib/mastodon/routes/statuses.js`) both match until whitespace or tag-open, but `.`, `,`, `;`, `:`, `!`, `?` are common sentence-ending characters that follow URLs. Fix: replace the string template in both replace calls with a callback that strips `/[.,;:!?)\]'"]+$/` from the captured URL before inserting into the `<a>` tag. Applies to AP federation (outbox Notes) and Mastodon Client API post creation.
+
+### 2026-03-23
+
+**feat(mastodon-api): implement PUT /api/v1/statuses/:id (edit post)** (`e319c34` in svemagie/indiekit-endpoint-activitypub)
+`PUT /api/v1/statuses/:id` was not implemented, so "Beitrag bearbeiten" always failed. Route added to `lib/mastodon/routes/statuses.js`. Flow: (1) look up timeline item by cursor ID, 403 if not the local actor's own post; (2) build a Micropub `replace` operation for `content`, `summary`, `sensitive`, and `mp-language` and call `postData.update()` + `postContent.update()` to update the MongoDB posts collection and content file on disk; (3) patch the `ap_timeline` document in-place (`content`, `summary`, `sensitive`, `updatedAt`) — `serializeStatus` reads `updatedAt` → `edited_at`; (4) broadcast `Update(Note)` to all followers via shared inbox so remote servers display the edit pencil indicator; (5) return the serialized status. `Update` added to the top-level `@fedify/fedify/vocab` import.
+
+**feat(mastodon-api): implement pin/unpin status** (`b5ebf6a` in svemagie/indiekit-endpoint-activitypub)
+`POST /api/v1/statuses/:id/pin` and `POST /api/v1/statuses/:id/unpin` were returning 501 "Not implemented", so "In Profil anheften" always failed in Phanpy/Elk. Fix: both routes are now implemented in `lib/mastodon/routes/statuses.js`. Pin upserts a document into `ap_featured` (the same collection the admin UI uses), enforces the existing 5-post maximum, and calls `broadcastActorUpdate()` so remote servers re-fetch the AP featured collection immediately. Unpin deletes from `ap_featured` and broadcasts the same update. `loadItemInteractions()` now also queries `ap_featured` and returns a `pinnedIds` set, so `GET /api/v1/statuses/:id` correctly reflects pin state. `broadcastActorUpdate` wired into mastodon `pluginOptions` in `index.js`.
+
+**fix(mastodon-api): favourite still fails for timeline items stored with non-UTC timezone offsets** (`2660a1a` in svemagie/indiekit-endpoint-activitypub)
+`findTimelineItemById` converts the cursor ID (ms-since-epoch) to a UTC ISO string via `decodeCursor`, then tries exact string match against `published` in MongoDB. The UTC normalization fix in `a259c79` / `extractObjectData` ensures NEW inbox items are stored as UTC. But items already in the database from before that deploy still carry the original server's timezone offset (e.g., `"2026-03-21T16:33:50+01:00"`). The final fallback was a `$gte`/`$lte` range query on the string representation — which fails because `"16:33:50+01:00"` is lexicographically outside the UTC range `["15:33:50Z", "15:33:51Z"]`. Fix: replace the string range query with a `$or` that covers both storage formats: (1) BSON Date direct range comparison for Micropub-generated items, and (2) MongoDB `$dateFromString` + `$toLong` numeric range for string-stored dates. `$dateFromString` parses any ISO 8601 format including timezone offsets and returns a UTC Date; `$toLong` converts to ms-since-epoch; the numeric ±1 s window always matches regardless of how the original timezone was encoded.
+
+**merge: upstream raw signed fetch fallback for author resolution** (`c2920ca` merged into svemagie/indiekit-endpoint-activitypub as `b33932f`)
+Upstream added Strategy 1b to `resolveAuthor`: a raw signed HTTP fetch for servers (e.g. wafrn) that return ActivityPub JSON without `@context`, which Fedify's JSON-LD processor rejects and which `lookupWithSecurity` therefore cannot handle. The raw fetch extracts `attributedTo`/`actor` from the plain JSON, then resolves the actor URL via `lookupWithSecurity` as normal. Resolution: combined with our existing 5-second `Promise.race` timeout — `likePost`/`unlikePost`/`boostPost` now pass `privateKey`/`keyId` to `resolveAuthor` so the signed raw fetch can attach an HTTP Signature, while the timeout still guards all three resolution strategies against slow/unreachable remotes.
+
+**fix(mastodon-api): favourite/reblog blocks on unbound resolveAuthor requests → client timeout** (`01f6f81` in svemagie/indiekit-endpoint-activitypub)
+`likePost`, `unlikePost`, and `boostPost` in `lib/mastodon/helpers/interactions.js` all called `resolveAuthor()` — which makes up to 3 signed HTTP requests to the remote server (post fetch → actor fetch → `getAttributedTo()`) — with no timeout. If the remote server is slow or unreachable, the favourite/reblog HTTP response hangs until Node.js's socket default fires (~2 min). Mastodon clients (Phanpy, Elk) have their own shorter timeout and give up with "Failed to load post … Please try again later". Fix: wrap every `resolveAuthor()` call in `Promise.race()` with a 5 s cap. The interaction is still recorded in `ap_interactions` and the `Like`/`Announce` activity is still delivered when resolution succeeds within the window; on timeout, AP delivery is silently skipped but the client receives a correct 200 with the updated status (⭐ shows as toggled).
+
+**fix(mastodon-api): favourite/like returns "failed to load post" (404)** (`a259c79` in svemagie/indiekit-endpoint-activitypub)
+`POST /api/v1/statuses/:id/favourite` uses `findTimelineItemById` to resolve the status by its cursor ID (ms-since-epoch). Three failure modes were found: (1) Items written through the Micropub pipeline store `published` as a JavaScript `Date` → MongoDB BSON Date; a string comparison against `decodeCursor()`'s ISO output never matches. (2) Some AP servers emit `published` with a timezone offset (`+01:00`); `String(Temporal.Instant)` preserves the offset, so the stored string and the lookup key differ. (3) Items with an invalid or missing `published` date had their cursor set to `"0"` (truthy in JS) so `serializeStatus` used `"0"` as the ID instead of falling back to `item._id.toString()`, making them permanently un-lookupable. Fixes: `encodeCursor` now returns `""` (falsy) for invalid dates; `findTimelineItemById` adds a BSON Date fallback and a ±1 s ISO range query; `extractObjectData` in `timeline-store.js` now normalises `published` to UTC ISO before storing, so future items always match the exact-string lookup.
+
+**fix(mastodon): profile avatars disappear after first page load; actor created_at wrong timezone** (`da89554` in svemagie/indiekit-endpoint-activitypub)
+Two profile display regressions fixed: (1) `resolveRemoteAccount` fetched the correct avatar URL via `lookupWithSecurity` and applied it to the in-memory serialised status — but never stored it in the account cache. On the next request `serializeStatus` rebuilt the account from `item.author.photo` (empty for actors that were on a Secure Mode server when the timeline item was originally received), counts came from the in-memory cache so `enrichAccountStats`/`collectAccount` skipped re-fetching, and the avatar reverted to the default SVG. Fix: `cacheAccountStats` now stores `avatarUrl`; `collectAccount` always checks the cache first (before the "counts already populated" early-return) and applies `avatarUrl` + `createdAt`. (2) `actor.published` is a `Temporal.Instant`; `String()` on it preserves the original timezone offset (e.g. `+01:00`), so `created_at` in the Mastodon account entity could show a non-UTC timestamp that some clients refuse to parse. Fix: wrap in `new Date(String(...)).toISOString()` in both `resolve-account.js` and `timeline-store.js`.
+
+### 2026-03-22
+
+**fix(mastodon-api): follower/following accounts show wrong created_at; URL-type AP lookup** (`6c13eb8` in svemagie/indiekit-endpoint-activitypub)
+All places in `accounts.js` that build actor objects from `ap_followers`/`ap_following` documents were omitting the `createdAt` field. `serializeAccount()` fell back to `new Date().toISOString()`, so every follower and following account appeared to have joined "just now" in the Mastodon client. Fix: pass `createdAt: f.createdAt || undefined` in all five locations — the `/followers`, `/following`, `/lookup` endpoints and both branches of `resolveActorData()`. Additionally, HTTP actor URLs in `resolve-account.js` are now passed to `lookupWithSecurity()` as native `URL` objects instead of bare strings (matching Fedify's preferred type); the `acct:user@domain` WebFinger path stays as a string since WHATWG `new URL()` misparses the `@` as a user-info separator.
+
+**fix(mastodon): remote profile pictures and follower stats missing in Mastodon client** (`ed18446` in svemagie/indiekit-endpoint-activitypub)
+`resolveRemoteAccount()` in `lib/mastodon/helpers/resolve-account.js` called `ctx.lookupObject()` directly. Servers that return 400/403 for signed GETs (e.g. some Mastodon/Pleroma instances) caused the lookup to throw, so the function returned `null` — making profile pages show no avatar and zero follower/following/statuses counts. Fix: replace with `lookupWithSecurity()` (the same signed→unsigned fallback wrapper used everywhere else in the codebase) and obtain a `documentLoader` first so the signed attempt can attach the actor's HTTP signature. Additionally wrapped `getFollowers()`, `getFollowing()`, and `getOutbox()` collection fetches in a 5-second `Promise.race` timeout so slow remote servers no longer block the profile response indefinitely.
+
+**fix(mastodon-api): DM sent from Mastodon client created a public blog post** (`99964e9` in svemagie/indiekit-endpoint-activitypub)
+`POST /api/v1/statuses` with `visibility="direct"` fell through to the Micropub pipeline, which has no concept of Mastodon's `"direct"` visibility — so it created a normal public blog post. Fix: intercept `visibility === "direct"` before Micropub: resolve the `@user@domain` mention via WebFinger (Fedify lookup as fallback), build a `Create/Note` AP activity addressed only to the recipient (no public/followers `cc`), send via `ctx.sendActivity()`, store in `ap_notifications` for the DM thread view, return a minimal status JSON to the client. No blog post is created.
+
+**fix(mastodon-api): DM response returned "no data" in Mastodon client** (`4816033` in svemagie/indiekit-endpoint-activitypub)
+After the DM was sent, the Mastodon client received a bare `{}` object instead of a proper status entity, showing "no data". Root cause: the DM path returned a hand-rolled minimal JSON object instead of calling `serializeStatus()`. Fix: build a full `timelineItem` document (matching the shape used by the home timeline) and pass it through `serializeStatus()` so all ~20 required Mastodon status fields (`id`, `account`, `media_attachments`, `tags`, `emojis`, etc.) are present.
+
+**fix(mastodon-api): DM 404 immediately after send, then disappeared from thread view** (`7b838ea` in svemagie/indiekit-endpoint-activitypub)
+Follow-up to the "no data" fix: the DM item was never actually persisted because `addTimelineItem()` was called as `addTimelineItem(collections.ap_timeline, item)`, passing the raw MongoDB collection directly. `addTimelineItem` expects the whole `collections` object and destructures `{ ap_timeline }` from it — passing the collection itself caused `undefined.updateOne` to throw at insert time. The stored item was absent so the subsequent `GET /api/v1/statuses/:id` 404'd. Fix: pass `collections` (not `collections.ap_timeline`).
+
+**fix(activitypub): like/reblog from Mastodon client throws "collection.get is not a function"** (`0a686d7` in svemagie/indiekit-endpoint-activitypub)
+`resolveAuthor()` in `lib/resolve-author.js` called `collections.get("ap_timeline")` assuming a `Map` (correct for the native AP inbox path), but the Mastodon Client API passes `req.app.locals.mastodonCollections` as a plain object. Every favourite/reblog action from Phanpy, Elk, or any other Mastodon client hit this error. Fix: `typeof collections.get === "function"` guard selects between Map-style and object-style access so both paths work.
+
+**chore(patches): remove 11 obsolete AP patch scripts** (`18a946c9e`)
+All of the following features are now baked into `svemagie/indiekit-endpoint-activitypub` natively; the patch scripts were either no-ops or (in the case of `patch-ap-repost-commentary`) actively harmful (inserting a duplicate `else if` block on every deploy, preventing startup). Root cause: upstream merges absorbed our custom commits, leaving the OLD snippets absent from the source so patches silently skipped — except Fix D of repost-commentary which still matched a generic `} else {` block and corrupted `jf2-to-as2.js`.
+- `patch-ap-repost-commentary` — repost commentary in AP output (Create/Note with commentary)
+- `patch-ap-url-lookup-api` — `/api/ap-url` endpoint
+- `patch-ap-allow-private-address` — `allowPrivateAddress: true` in `createFederation`
+- `patch-ap-like-note-dispatcher` — reverted fake-Note approach for likes
+- `patch-ap-like-activity-id` — canonical `id` URI on Like activities (AP §6.2.1)
+- `patch-ap-like-activity-dispatcher` — `setObjectDispatcher(Like, …)` for dereferenceable like URLs (AP §3.1)
+- `patch-ap-url-lookup-api-like` — `/api/ap-url` returns `likeOf` URL for AP-likes
+- `patch-ap-remove-federation-diag` — removed verbose federation diagnostics inbox log
+- `patch-ap-normalize-nested-tags` — `cat.split("/").at(-1)` to strip nested tag prefixes
+- `patch-ap-object-url-trailing-slash` — trailing-slash normalisation on AP object URLs (3 orphan scripts not in `package.json`)
+- `patch-ap-og-image` — OG image in AP objects (orphan; feature remains undeployed)
+
+`patch-ap-skip-draft-syndication` kept — draft guard in `syndicate()` not yet in fork.
+
+**chore(deps): sync activitypub fork with upstream post-3.8.1** (`a37bece` in svemagie/indiekit-endpoint-activitypub)
+Four upstream fixes merged since 3.8.1, plus resolution of merge artifacts introduced by the upstream sync:
+- `9a0d6d20`: serve AP JSON for actor URLs received without an explicit `text/html` Accept header — fixes content negotiation for clients that omit Accept
+- `4495667e`: remove RSA Multikey from `assertionMethod` in the actor document — was causing tags.pub signature verification failures
+- `c71fd691`: direct follow workaround for tags.pub `identity/v1` JSON-LD context rejection — tags.pub rejects the W3C identity context on incoming follows; new `lib/direct-follow.js` sends follows without that context
+- Merge artifacts removed: duplicate `import { getActorUrlFromId }` in `accounts.js`, duplicate `const cachedUrl` declaration in `resolveActorUrl`, and a stray extra `import { remoteActorId }` in `account-cache.js` — all introduced when cherry-picked commits were merged back against upstream's copy of the same changes
 
 ### 2026-03-21
 
@@ -722,6 +906,23 @@ Three successive fixes to the webmention sender livefetch patch, driven by split
 Removed a stray extra closing quote (`h-entry""`) introduced in the v2 patch, which broke the string match on case-sensitive systems.
 
 ---
+
+### 2026-03-27
+
+**fix(webmention): livefetch v6 — synthetic h-entry from stored properties, no live fetch**
+Root cause of persistent webmention failures: the livefetch patch was fetching the live page through nginx port 80, which `000-defaults.conf` answered with HTTP 444 (silent connection drop) for any request whose `Host` header didn't match a known `server_name`. The poller sent `Host: 10.100.0.10` (the nginx jail IP), which matched nothing.
+
+v6 eliminates the live-page fetch entirely. Instead, it reads the stored post properties from MongoDB and builds a minimal synthetic `<div class="h-entry">` with anchor tags for each microformat property (`in-reply-to`, `like-of`, `bookmark-of`, `repost-of`, `syndication`) plus the stored `content.html`. This is reliable, fast, and requires no networking.
+
+Additional changes:
+- livefetch v6: adds `console.log` per post showing which properties produced links — makes future debugging possible without server access
+- livefetch v6: upgrades from any prior version (v1–v5) in-place via per-version end-marker detection
+- retry patch: regex now matches `[patched:livefetch]` and `[patched:livefetch:vN]` for all versions
+- reset-stale v11: bumped to retry posts stuck before v6 deployment
+- start.sh: poller now uses `INDIEKIT_DIRECT_URL=http://INDIEKIT_BIND_HOST:PORT` instead of `INTERNAL_FETCH_URL` (nginx); poller was timing out for 180s every restart due to the 444 responses
+
+**chore: `sharp_from_source=true` in `.npmrc`**
+Builds the `sharp` native module from source for FreeBSD compatibility (no prebuilt binary available).
 
 ### 2026-03-19
 

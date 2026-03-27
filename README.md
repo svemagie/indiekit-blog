@@ -878,6 +878,9 @@ New `patch-endpoint-github-contributions-log.mjs` suppresses the noisy per-contr
 
 ### 2026-03-20
 
+**fix(ap): fix OG image not included in ActivityPub activities**
+The fork's OG image code expected date-based URLs (`/articles/YYYY/MM/DD/slug/`) but this blog uses flat URLs (`/articles/slug/`). The regex never matched so no `image` property was set and Mastodon/fediverse clients showed no preview card. Added `patch-ap-og-image.mjs` which extracts the slug from the URL's last path segment and constructs `/og/{slug}.png` — the actual Eleventy OG filename format (e.g. `/og/2615b.png`).
+
 **fix(ap): include commentary in repost ActivityPub activities** (`b53afe2e`)
 Reposts with a body were silently broken in two ways: (1) `jf2ToAS2Activity()` always emitted a bare `Announce` pointing at an external URL that doesn't serve AP JSON, so Mastodon dropped the activity from followers' timelines; (2) `jf2ToActivityStreams()` hard-coded Note content to `🔁 <url>`, ignoring `properties.content`. New `patch-ap-repost-commentary.mjs` (4 targeted replacements): skips the `Announce` early-return when commentary is present and falls through to `Create(Note)` instead; formats Note as `<commentary>\n\n🔁 <url>`; extracts commentary in the content-negotiation path. Pure reposts (no body) keep the `Announce` behaviour unchanged.
 

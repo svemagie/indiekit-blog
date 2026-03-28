@@ -30,26 +30,30 @@ const candidates = [
 
 const MARKER = "// ap-webfinger-before-auth patch";
 
-const OLD_SNIPPET = `        // Only delegate to Fedify for NodeInfo data endpoint (/nodeinfo/2.1).
-        // All other paths in this root-mounted router are handled by the
-        // content negotiation catch-all below. Passing arbitrary paths like
-        // /notes/... to Fedify causes harmless but noisy 404 warnings.
-        if (!req.path.startsWith("/nodeinfo/")) return next();
-        return self._fedifyMiddleware(req, res, next);`;
+const OLD_SNIPPET = `      if (!self._fedifyMiddleware) return next();
+      if (req.method !== "GET" && req.method !== "HEAD") return next();
+      // Only delegate to Fedify for NodeInfo data endpoint (/nodeinfo/2.1).
+      // All other paths in this root-mounted router are handled by the
+      // content negotiation catch-all below. Passing arbitrary paths like
+      // /notes/... to Fedify causes harmless but noisy 404 warnings.
+      if (!req.path.startsWith("/nodeinfo/")) return next();
+      return self._fedifyMiddleware(req, res, next);`;
 
-const NEW_SNIPPET = `        // Delegate to Fedify for discovery endpoints:
-        //   /.well-known/webfinger  — actor/resource identity resolution
-        //   /.well-known/nodeinfo   — server capabilities advertised to the fediverse
-        //   /nodeinfo/2.1           — NodeInfo data document
-        // This router is mounted at "/" so req.url retains the full path, allowing
-        // Fedify to match its internal routes correctly. (routesWellKnown strips
-        // the /.well-known/ prefix, causing Fedify to miss the webfinger route.)
-        // ap-webfinger-before-auth patch
-        const isDiscoveryRoute =
-          req.path.startsWith("/nodeinfo/") ||
-          req.path.startsWith("/.well-known/");
-        if (!isDiscoveryRoute) return next();
-        return self._fedifyMiddleware(req, res, next);`;
+const NEW_SNIPPET = `      if (!self._fedifyMiddleware) return next();
+      if (req.method !== "GET" && req.method !== "HEAD") return next();
+      // Delegate to Fedify for discovery endpoints:
+      //   /.well-known/webfinger  — actor/resource identity resolution
+      //   /.well-known/nodeinfo   — server capabilities advertised to the fediverse
+      //   /nodeinfo/2.1           — NodeInfo data document
+      // This router is mounted at "/" so req.url retains the full path, allowing
+      // Fedify to match its internal routes correctly. (routesWellKnown strips
+      // the /.well-known/ prefix, causing Fedify to miss the webfinger route.)
+      // ap-webfinger-before-auth patch
+      const isDiscoveryRoute =
+        req.path.startsWith("/nodeinfo/") ||
+        req.path.startsWith("/.well-known/");
+      if (!isDiscoveryRoute) return next();
+      return self._fedifyMiddleware(req, res, next);`;
 
 async function exists(filePath) {
   try {

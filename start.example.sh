@@ -57,7 +57,7 @@ for patch in scripts/patch-*.mjs; do
   "${NODE_BIN}" "$patch"
 done
 
-"${NODE_BIN}" node_modules/@indiekit/indiekit/bin/cli.js serve --config indiekit.config.mjs &
+"${NODE_BIN}" --require ./metrics-shim.cjs node_modules/@indiekit/indiekit/bin/cli.js serve --config indiekit.config.mjs &
 INDIEKIT_PID="$!"
 
 # Webmention sender — polls every N seconds (see @rmdes/indiekit-endpoint-webmention-sender README)

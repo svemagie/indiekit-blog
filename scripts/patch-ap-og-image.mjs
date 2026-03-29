@@ -1,21 +1,23 @@
 /**
  * Patch: fix OG image URL generation in ActivityPub jf2-to-as2.js.
  *
- * Root cause:
- *   Both 842fc5af and 45f8ba9 versions of jf2-to-as2.js try to extract the
- *   post slug from the URL using a regex that expects date-based URLs like
- *   /articles/2024/01/15/slug/ but this blog uses flat URLs like /articles/slug/.
- *   The regex never matches so the `image` property is never set — no OG image
- *   preview card reaches Mastodon or other fediverse servers.
+ * Root cause (original):
+ *   jf2-to-as2.js used a date-based URL regex to extract the post slug, which
+ *   never matches this blog's flat URLs (/articles/slug/ vs /articles/2024/.../slug/).
+ *   The image property was never set, so no preview card reached Mastodon.
  *
- * Fix:
- *   Replace the date-from-URL regex with a simple last-path-segment extraction.
- *   Constructs /og/{slug}.png — the actual filename pattern the Eleventy build
- *   generates for static OG preview images (e.g. /og/2615b.png).
+ * Fix (v2 — this patch):
+ *   For posts with a photo attachment (properties.photo), use the photo URL
+ *   directly as the preview image — Eleventy does NOT generate /og/*.png for
+ *   photo post types.
+ *   For all other post types (replies, bookmarks, articles) fall back to
+ *   /og/{slug}.png, which Eleventy does generate.
  *
  *   Both jf2ToActivityStreams() (plain JSON-LD) and jf2ToAS2Activity() (Fedify
- *   vocab objects) are patched. Both 842fc5af and 45f8ba9 variants are handled
- *   so the patch works regardless of which commit npm install resolved.
+ *   vocab objects) are patched. Handles all known file states:
+ *     - Original upstream code  (ogMatch / ogMatchF variable names)
+ *     - v1 patch                (ogSlug / ogSlugF + // og-image fix comments)
+ *     - Already v2              (// og-image-v2 marker) → skip
  */
 
 import { access, readFile, writeFile } from "node:fs/promises";
@@ -25,45 +27,54 @@ const candidates = [
   "node_modules/@indiekit/indiekit/node_modules/@rmdes/indiekit-endpoint-activitypub/lib/jf2-to-as2.js",
 ];
 
-const MARKER = "// og-image fix";
+const MARKER = "// og-image-v2";
 
 // ---------------------------------------------------------------------------
-// Use JS regex patterns to locate the OG image blocks.
-// Both 842fc5af and 45f8ba9 share the same variable names (ogMatch / ogMatchF)
-// and the same if-block structure, differing only in the URL construction.
-//
-// Pattern: matches from "const ogMatch[F] = postUrl && postUrl.match(" to the
-// closing "}" (2-space indent) of the if block.
+// Match the OG image block in jf2ToActivityStreams.
+// Handles both the original upstream code (ogMatch) and the v1 patch (ogSlug).
 // ---------------------------------------------------------------------------
 const CN_BLOCK_RE =
-  /  const ogMatch = postUrl && postUrl\.match\([^\n]+\n  if \(ogMatch\) \{[\s\S]*?\n  \}/;
+  /  const og(?:Slug|Match) = postUrl && postUrl\.match\([^\n]+\n  if \(og(?:Slug|Match)\) \{[\s\S]*?\n  \}/;
 
+// Match the OG image block in jf2ToAS2Activity (ogMatchF / ogSlugF variants).
 const AS2_BLOCK_RE =
-  /  const ogMatchF = postUrl && postUrl\.match\([^\n]+\n  if \(ogMatchF\) \{[\s\S]*?\n  \}/;
+  /  const og(?:SlugF|MatchF) = postUrl && postUrl\.match\([^\n]+\n  if \(og(?:SlugF|MatchF)\) \{[\s\S]*?\n  \}/;
 
 // ---------------------------------------------------------------------------
-// Replacement: extract slug from last URL path segment.
-// Build /og/{slug}.png to match the Eleventy OG filenames (e.g. /og/2615b.png).
+// v2 replacements:
+//   1. Use properties.photo[0] URL for photo posts (resolveMediaUrl handles
+//      relative paths; guessMediaType detects jpeg/png/webp).
+//   2. Fall back to /og/{slug}.png for replies, bookmarks, articles.
 //
-// Template literal note: backslashes inside the injected regex are doubled so
-// they survive the template literal → string conversion:
-//   \\\/ → \/ (escaped slash in regex)
-//   [\\\w-] → [\w-] (word char class)
+// Template literal escaping (patch string → injected JS source):
+//   \\/ → \/   (regex escaped slash)
+//   [\\\w-] → [\w-]  (word-char class)
+//   \`\${ → `${   (start of injected template literal)
 // ---------------------------------------------------------------------------
-const NEW_CN = `  const ogSlug = postUrl && postUrl.match(/\\/([\\\w-]+)\\/?$/)?.[1]; // og-image fix
-  if (ogSlug) { // og-image fix
+const NEW_CN = `  const _ogPhoto = properties.photo && asArray(properties.photo)[0]; // og-image-v2
+  const _ogPhotoUrl = _ogPhoto && (typeof _ogPhoto === "string" ? _ogPhoto : _ogPhoto.url); // og-image-v2
+  const ogSlug = postUrl && postUrl.match(/\\/([\\\w-]+)\\/?$/)?.[1]; // og-image-v2
+  const _ogUrl = _ogPhotoUrl
+    ? resolveMediaUrl(_ogPhotoUrl, publicationUrl) // og-image-v2
+    : ogSlug ? \`\${publicationUrl.replace(/\\/$/, "")}/og/\${ogSlug}.png\` : null; // og-image-v2
+  if (_ogUrl) { // og-image-v2
     object.image = {
       type: "Image",
-      url: \`\${publicationUrl.replace(/\\/$/, "")}/og/\${ogSlug}.png\`, // og-image fix
-      mediaType: "image/png",
+      url: _ogUrl, // og-image-v2
+      mediaType: _ogPhotoUrl ? guessMediaType(_ogUrl) : "image/png", // og-image-v2
     };
   }`;
 
-const NEW_AS2 = `  const ogSlugF = postUrl && postUrl.match(/\\/([\\\w-]+)\\/?$/)?.[1]; // og-image fix
-  if (ogSlugF) { // og-image fix
+const NEW_AS2 = `  const _ogPhotoF = properties.photo && asArray(properties.photo)[0]; // og-image-v2
+  const _ogPhotoUrlF = _ogPhotoF && (typeof _ogPhotoF === "string" ? _ogPhotoF : _ogPhotoF.url); // og-image-v2
+  const ogSlugF = postUrl && postUrl.match(/\\/([\\\w-]+)\\/?$/)?.[1]; // og-image-v2
+  const _ogUrlF = _ogPhotoUrlF
+    ? resolveMediaUrl(_ogPhotoUrlF, publicationUrl) // og-image-v2
+    : ogSlugF ? \`\${publicationUrl.replace(/\\/$/, "")}/og/\${ogSlugF}.png\` : null; // og-image-v2
+  if (_ogUrlF) { // og-image-v2
     noteOptions.image = new Image({
-      url: new URL(\`\${publicationUrl.replace(/\\/$/, "")}/og/\${ogSlugF}.png\`), // og-image fix
-      mediaType: "image/png",
+      url: new URL(_ogUrlF), // og-image-v2
+      mediaType: _ogPhotoUrlF ? guessMediaType(_ogUrlF) : "image/png", // og-image-v2
     });
   }`;
 
